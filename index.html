@@ -919,18 +919,32 @@ function eleMult(a, d) {
   return 1;
 }
 
-/* 按距离加权选目标：前排更容易挨打 */
+/* 受击优先级：确定性，不再随机
+   1. 先打与自己「同一排」的目标（横排 = row）
+   2. 同一排内：前线(col2) → 中军(col1) → 后阵(col0)，即从外面往里面
+   3. 同排清空后：从下往上，第3排 → 第2排 → 第1排，每排同样由外向内
+   例：第3排的单位先打 3前/3中/3后，清空后打 2前/2中/2后，最后 1前/1中/1后 */
+const ROW_SWEEP = [2, 1, 0];   // 从下往上：row 2 = 第 3 排（最下面）
+const COL_SWEEP = [2, 1, 0];   // 从外面往里面：col 2 = 前线
+
+/* 行优先级：自己的排打头，其余按「从下往上」补 */
+function rowPriority(u) {
+  const own = Number.isInteger(u.row) && u.row >= 0 && u.row < 3 ? u.row : -1;
+  const order = own >= 0 ? [own] : [];
+  for (const r of ROW_SWEEP) if (r !== own) order.push(r);
+  return order;
+}
+
 function pickTarget(u, pool) {
-  const cands = pool || aliveUnits(otherSide(u.side));
+  const cands = (pool || aliveUnits(otherSide(u.side))).filter(t => t && t.alive !== false);
   if (!cands.length) return null;
-  const weights = cands.map(t => 1 / (1 + dist(u, t)));
-  const total = weights.reduce((a, b) => a + b, 0);
-  let r = Math.random() * total;
-  for (let i = 0; i < cands.length; i++) {
-    r -= weights[i];
-    if (r <= 0) return cands[i];
+  for (const r of rowPriority(u)) {
+    for (const c of COL_SWEEP) {
+      const t = cands.find(x => x.row === r && x.col === c);
+      if (t) return t;
+    }
   }
-  return cands[cands.length - 1];
+  return cands[0];   // 兜底：坐标系外的目标
 }
 
 /* ============================================================================
