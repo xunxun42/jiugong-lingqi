@@ -42,6 +42,65 @@ index.html 底部 <script> 里三张表：
 - STAGES —— 关卡敌方阵容与属性倍率
 - PROGRESS_PER_CLEAR —— 每通关一关的成长系数
 
+## 扩展指南
+
+### 加一只精灵
+
+在 `SPIRITS` 数组里加一条就行，图鉴、布阵面板、出手排序会全部自动跟上：
+
+```js
+{ id:'newone', name:'名字', title:'称号', emoji:'🌊', element:'water',
+  hp:900, atk:130, spd:100, role:'定位·描述',
+  ult:{ name:'大招名', type:'aoe', mult:1.4, desc:'对全体造成 140% 伤害' } },
+```
+
+| 字段 | 说明 |
+|---|---|
+| `id` | 唯一标识，关卡 `team` 和存档都用它，别重复 |
+| `emoji` | 没配立绘时的头像，也是立绘加载失败时的兜底 |
+| `element` | `fire / wind / earth / water / light / dark`，克制表在 `ELEM` |
+| `hp / atk / spd` | 基础值，关卡倍率和灵契加成会再乘上去 |
+| `ult.type` | 决定结算逻辑，见下 |
+| `ult.mult` | 技能倍率（1.55 = 155%），溢出气势会乘在它上面 |
+
+### 加一种大招类型
+
+三处要一起改，否则图鉴会显示成「技能」或者数值不全：
+
+1. `castUlt()` 里的 `switch (ult.type)` 加一个 `case`
+2. `ULT_TAG` 加中文标签（图鉴上的小圆角标签）
+3. `ultDetail()` 加数值描述（图鉴上的「伤害 155% · …」那行）
+
+### 加一个关卡
+
+`STAGES` 里加一条，`team` 里的 `slot = 行*3 + 列`，`col=2` 是前线：
+
+```js
+{ name:'关卡名', desc:'描述', mult:{hp:1.1, atk:1.1}, boss:'nox',
+  team:[ {id:'golem',slot:5}, {id:'phoenix',slot:8} ] }
+```
+
+### 把 emoji 换成正式立绘
+
+**每条精灵都支持可选的 `art` 字段**，没写就继续用 emoji，所以可以一只一只慢慢换：
+
+```js
+{ id:'phoenix', name:'菲尼克', emoji:'🔥', art:'assets/spirits/phoenix.webp', ... }
+```
+
+换了之后，**战斗卡、布阵卡、图鉴**三处同时生效，不用改别的代码。
+
+- 建议 256×256 透明底 `webp` 或 `png`，放 `assets/spirits/`，文件名直接用 `id`
+- GitHub Pages 会直接托管 `assets/`，不需要构建
+- 图片加载失败会自动退回 emoji（`onerror`）
+- 想保持「单文件 HTML 零依赖」，就把图片转成 data URI 塞进 `art` 字段（代价是文件变大）
+
+### 为什么迟早要换掉 emoji
+
+- **跨平台不一致**：同一个 emoji 在 Android / iOS / Windows 上是三套不同的画，做不了品牌统一
+- **数量上限**：能当头像、又互相区分得开的 emoji 就那么几十个，精灵一多就撞车
+- **浏览器差异**：部分设备缺字体会显示成方框
+
 ## License
 
 MIT

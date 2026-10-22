@@ -224,6 +224,11 @@ body.is-fs #btnFull .ic-compress{display:block}
 .unit .fx .dn{color:#ff9b9b}
 .unit .fx .po{color:#b9ff5c}
 .unit .fx .ov{color:#ffd76b;font-weight:800}
+/* 立绘：只有设了 art 字段才会出现，没设就是原来的 emoji */
+.pix{display:block;height:1.12em;width:auto;max-width:100%;object-fit:contain;pointer-events:none;user-select:none}
+.unit .uanim{display:flex;align-items:center;justify-content:center}
+.rc-emoji{display:flex;align-items:center;justify-content:center}
+.cdx-emoji{display:flex;align-items:center;justify-content:center;flex:none}
 .unit .bars{width:100%;margin-top:auto;display:flex;flex-direction:column;gap:2px;padding:2px 0 3px}
 .unit .uanim,.unit .uname,.unit .fx,.unit .bars,.unit .pstats{flex:0 0 auto}
 .bar{height:4px;border-radius:3px;background:rgba(0,0,0,.55);overflow:hidden}
@@ -1108,6 +1113,15 @@ function pickTarget(u, pool) {
 /* ============================================================================
    5. DOM 渲染 —— 单位卡
    ========================================================================== */
+/* 立绘：有 art 就上图，没有就退回 emoji
+   换正式美术只需在 SPIRITS 里给那只加一行 art:'assets/spirits/xxx.webp' */
+function faceHTML(sp) {
+  if (!sp || !sp.art) return (sp && sp.emoji) || '';
+  const fb = String(sp.emoji || '').replace(/['"\\<>&]/g, '');
+  return `<img class="pix" src="${sp.art}" alt="${sp.name}" draggable="false"`
+    + ` onerror="this.replaceWith(document.createTextNode('${fb}'))">`;
+}
+
 function cardHTML(u, preview = false) {
   const el = ELEM[u.element];
   return `<div class="unit ${preview ? 'preview' : ''} ${u.isBoss ? 'boss' : ''}" data-uid="${u.uid}"
@@ -1115,7 +1129,7 @@ function cardHTML(u, preview = false) {
       <span class="ebadge" style="color:${el.color}">${el.emoji}</span>
       <span class="onum">${u.ordText || ''}</span>
       ${u.isBoss ? '<span class="crown">👑</span>' : ''}
-      <span class="uanim">${u.emoji}</span>
+      <span class="uanim">${faceHTML(u.spirit)}</span>
       <span class="uname">${u.name}</span>
       <span class="fx"></span>
       <span class="bars">
@@ -1658,7 +1672,7 @@ function renderCodex(focusId) {
     const el = ELEM[s.element];
     return `<div class="cdx${s.id === focusId ? ' hl' : ''}" data-sid="${s.id}">
       <div class="cdx-top">
-        <span class="cdx-emoji">${s.emoji}</span><b>${s.name}</b>
+        <span class="cdx-emoji">${faceHTML(s)}</span><b>${s.name}</b>
         <span style="color:${el.color};font-size:10.5px">${el.emoji}${el.name}系</span>
         <span class="cdx-meta">${s.role}</span>
       </div>
@@ -1697,7 +1711,7 @@ function renderRoster() {
     b.style.setProperty('--el', el.color);
     b.title = `${s.name} · ${s.title}\n${s.role}\nHP ${s.hp}　攻击 ${s.atk}　灵速 ${s.spd}\n大招【${s.ult.name}】${s.ult.desc}`;
     b.innerHTML = `
-      <span class="rc-emoji" style="filter:drop-shadow(0 0 6px ${hexA(el.color, .6)})">${s.emoji}</span>
+      <span class="rc-emoji" style="filter:drop-shadow(0 0 6px ${hexA(el.color, .6)})">${faceHTML(s)}</span>
       <span class="rc-name">${s.name}<span>${el.emoji}${s.title}</span></span>
       <span class="rc-line"><span>❤${s.hp}</span><span>⚔${s.atk}</span><span>⚡${s.spd}</span></span>
       <span class="rc-role">${s.role}</span>`;
