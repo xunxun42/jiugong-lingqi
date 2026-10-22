@@ -328,7 +328,52 @@ body.is-fs #btnFull .ic-compress{display:block}
 .unit.lunge-l{animation:lungeL .3s ease}
 @keyframes lungeR{0%{transform:translateX(0)}40%{transform:translateX(16px) scale(1.06)}100%{transform:translateX(0)}}
 @keyframes lungeL{0%{transform:translateX(0)}40%{transform:translateX(-16px) scale(1.06)}100%{transform:translateX(0)}}
-.unit.hit{animation:hitShake .28s ease}
+.unit.hit{animation:hitShake .26s cubic-bezier(.2,.9,.3,1), hitFlash .24s ease}
+@keyframes hitFlash{
+  0%{filter:brightness(2.8) saturate(.35)}
+  55%{filter:brightness(1.6) saturate(.8)}
+  100%{filter:brightness(1) saturate(1)}
+}
+/* 冲击环 */
+.impact-ring{
+  position:absolute;left:50%;top:46%;width:12px;height:12px;margin:-6px 0 0 -6px;
+  border-radius:50%;border:2px solid var(--c,#fff);pointer-events:none;z-index:9;
+  box-shadow:0 0 14px var(--c,#fff),inset 0 0 8px var(--c,#fff);
+  animation:ringOut .6s cubic-bezier(.2,.8,.3,1) forwards;
+}
+@keyframes ringOut{0%{transform:scale(.3);opacity:1}100%{transform:scale(7.5);opacity:0}}
+
+/* ---------- 大招全屏演出 ---------- */
+#ultFx{position:fixed;inset:0;z-index:82;pointer-events:none;opacity:0;display:grid;place-items:center;overflow:hidden}
+#ultFx.play{animation:ultFxIn .98s ease forwards}
+.ult-vignette{position:absolute;inset:0;background:radial-gradient(circle at 50% 52%,transparent 24%,rgba(0,0,0,.85) 100%)}
+.ult-sweep{
+  position:absolute;inset:-12%;
+  background:linear-gradient(100deg,transparent 38%,var(--c,#fff) 50%,transparent 62%);
+  opacity:.5;mix-blend-mode:screen;transform:translateX(-130%);
+}
+#ultFx.play .ult-sweep{animation:ultSweep .52s ease-out .02s}
+.ult-title{position:relative;text-align:center;padding:0 16px}
+.ult-caster{
+  display:block;font-size:12px;letter-spacing:5px;color:rgba(255,255,255,.88);
+  text-shadow:0 2px 12px rgba(0,0,0,.95);margin-bottom:8px;
+}
+.ult-name{
+  display:block;font-size:clamp(26px,5.2vw,56px);font-weight:900;letter-spacing:9px;line-height:1.05;
+  color:#fff;
+  text-shadow:0 0 18px var(--c,#fff),0 0 54px var(--c,#fff),0 3px 0 rgba(0,0,0,.6);
+}
+#ultFx.play .ult-name{animation:ultNameIn .58s cubic-bezier(.2,.9,.3,1.35) both}
+@keyframes ultFxIn{0%{opacity:0}9%{opacity:1}74%{opacity:1}100%{opacity:0}}
+@keyframes ultSweep{from{transform:translateX(-130%)}to{transform:translateX(130%)}}
+@keyframes ultNameIn{
+  0%{opacity:0;transform:scale(2.5) skewX(-14deg);filter:blur(10px)}
+  22%{opacity:1;transform:scale(.95) skewX(-3deg);filter:blur(0)}
+  100%{opacity:1;transform:scale(1) skewX(0)}
+}
+/* 镜头推进 */
+.arena-wrap{transition:transform .26s cubic-bezier(.2,.8,.3,1)}
+.arena-wrap.push{transform:scale(1.035)}
 @keyframes hitShake{
   0%,100%{transform:translate(0)}
   25%{transform:translate(-4px,2px)}
@@ -360,7 +405,13 @@ body.is-fs #btnFull .ic-compress{display:block}
   18%{opacity:1;transform:translate(-50%,-4px) scale(1.18)}
   100%{opacity:0;transform:translate(-50%,-40px) scale(1)}
 }
-.float.dmg{color:#ff7b7b}
+.float.dmg{color:#ff7b7b;animation:floatPop .9s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes floatPop{
+  0%{opacity:0;transform:translate(-50%,8px) scale(.45)}
+  22%{opacity:1;transform:translate(-50%,-9px) scale(1.38)}
+  38%{transform:translate(-50%,-13px) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-48px) scale(.9)}
+}
 .float.crit{
   color:#ff2d2d;font-size:22px;font-weight:900;letter-spacing:.5px;
   text-shadow:0 0 10px rgba(255,45,45,.95),0 0 24px rgba(255,0,0,.75),0 3px 10px rgba(0,0,0,.95);
@@ -803,6 +854,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
 <body>
 
 <div class="flash" id="flash"></div>
+<div id="ultFx"></div>
 <div class="toast" id="toast"></div>
 
 <div class="app">
@@ -1100,6 +1152,16 @@ let uidSeq = 0;
 const clock = { speed: 1, paused: false, aborted: false, token: 0 };
 
 class AbortBattle extends Error {}
+/* ---- 打击感：顿帧 + 慢镜（只影响战斗节拍，不影响 CSS 动画） ---- */
+let freezeUntil = 0, slowUntil = 0, slowFactor = 1;
+function hitStop(ms) {
+  // 高倍速下按比例缩短，避免 4x 时顿帧拖沓
+  const k = clock.speed >= 4 ? 0.35 : clock.speed >= 2 ? 0.65 : 1;
+  freezeUntil = Math.max(freezeUntil, performance.now() + (ms * k | 0));
+}
+function slowMo(f, ms) { slowFactor = f; slowUntil = performance.now() + (ms | 0); }
+function resetFeel() { freezeUntil = 0; slowUntil = 0; slowFactor = 1; }
+
 function sleep(ms) {
   const tk = clock.token;
   return new Promise(resolve => {
@@ -1107,9 +1169,12 @@ function sleep(ms) {
     let last = performance.now();
     function frame(now) {
       if (tk !== clock.token || clock.aborted) return resolve('abort');
+      // 顿帧：这一帧完全不推进计时，画面继续播 CSS 动画
+      if (now < freezeUntil) { last = now; requestAnimationFrame(frame); return; }
       const dt = now - last;
       last = now;
-      if (!clock.paused) remain -= dt * clock.speed;
+      const spd = now < slowUntil ? clock.speed * slowFactor : clock.speed;
+      if (!clock.paused) remain -= dt * spd;
       if (remain <= 0) return resolve('ok');
       requestAnimationFrame(frame);
     }
@@ -1440,6 +1505,46 @@ function shakeArena() {
   void a.offsetWidth;
   a.classList.add('shake');
 }
+/* 冲击环：命中/暴击/击杀时在卡面上炸开一圈 */
+function impactRing(el, color) {
+  if (!el) return;
+  const r = document.createElement('span');
+  r.className = 'impact-ring';
+  r.style.setProperty('--c', color || '#fff');
+  el.appendChild(r);
+  setTimeout(() => r.remove(), 640);
+}
+/* 镜头推进（打在大战场面板上，避免和震屏的 transform 打架） */
+let pushTimer = null;
+function cameraPush(on) {
+  const w = $('.arena-wrap');
+  if (!w) return;
+  w.classList.toggle('push', on);
+}
+/* 大招全屏演出 */
+function ultCinematic(u) {
+  const el = ELEM[u.element];
+  const fx = $('#ultFx');
+  if (fx) {
+    fx.style.setProperty('--c', el.color);
+    fx.innerHTML = '<div class="ult-vignette"></div><div class="ult-sweep"></div>'
+      + '<div class="ult-title">'
+      + `<span class="ult-caster">${u.name} · ${el.name}系</span>`
+      + `<span class="ult-name">${u.spirit.ult.name}</span>`
+      + '</div>';
+    fx.classList.remove('play');
+    void fx.offsetWidth;
+    fx.classList.add('play');
+    setTimeout(() => fx.classList.remove('play'), 1050);
+  }
+  clearTimeout(pushTimer);
+  cameraPush(true);
+  pushTimer = setTimeout(() => cameraPush(false), 560);
+  sfx.ult();
+  flashScreen(el.color, 0.15);
+  slowMo(0.3, 640);   // 慢镜
+  hitStop(130);       // 定帧
+}
 function flashScreen(color, opacity) {
   const f = $('#flash');
   f.style.background = color;
@@ -1498,7 +1603,12 @@ function killUnit(u, src) {
   u.alive = false;
   u.hp = 0;
   if (src) src.stats.kills++;
-  if (u.el) u.el.classList.add('dead');
+  if (u.el) {
+    u.el.classList.add('dead');
+    impactRing(u.el, '#ff6b6b');
+  }
+  hitStop(150);
+  shakeArena();
   log(`💀 ${tag(u)} 阵亡`, 'die');
   sfx.death();
   syncUnit(u);
@@ -1558,7 +1668,12 @@ function strike(src, tgt, mult) {
   floatText(floatHost, `-${total}`, crit ? 'crit' : 'dmg', rnd(-6, 6));
   if (absorbed > 0) floatText(tgt.el, `🛡${absorbed}`, 'shield', rnd(-10, 10));
   if (em > 1) floatText(src.el, '克制', 'elem', rnd(-8, 8));
-  if (crit) { sfx.crit(); shakeArena(); flashScreen('#ff2d2d', .16); } else { sfx.hit(); }
+  if (crit) {
+    sfx.crit(); shakeArena(); flashScreen('#ff2d2d', .18);
+    hitStop(105); impactRing(tgt.el, '#ffd76b');
+  } else {
+    sfx.hit(); hitStop(38);
+  }
 
   syncUnit(tgt);
 
@@ -1597,8 +1712,7 @@ async function castUlt(u) {
   u.overflow = 0;                                           // 溢出被这一次大招消耗掉
   syncUnit(u);
   u.el.classList.add('casting');
-  sfx.ult();
-  flashScreen(ELEM[u.element].color, 0.20);
+  ultCinematic(u);
   log(`✦ ${tag(u)} 释放【${ult.name}】`
     + (ovBonus ? ` <span style="color:#ffd76b">气势溢出 +${ovBonus}%</span>` : ''), 'ult');
   await pace(340);
@@ -2111,6 +2225,8 @@ async function startBattle() {
   clock.paused = false;
   clock.speed = state.speed;
   state.paused = false;
+  resetFeel();
+  cameraPush(false);
 
   buildBattle();
   state.phase = 'battle';
