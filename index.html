@@ -2,7 +2,13 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07060f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="九宫灵契">
+<meta name="format-detection" content="telephone=no">
 <title>九宫灵契 · 精灵战记</title>
 <style>
 /* ============================================================
@@ -44,7 +50,8 @@ body::before{
 
 /* ---------- 布局骨架 ---------- */
 .app{
-  position:relative;z-index:1;max-width:1520px;margin:0 auto;min-height:100vh;
+  position:relative;z-index:1;max-width:1520px;margin:0 auto;
+  min-height:100vh;min-height:100dvh;
   padding:12px 18px 20px;display:flex;flex-direction:column;gap:12px;
 }
 .topbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -93,6 +100,11 @@ body::before{
 }
 .btn.primary:hover{filter:brightness(1.1);box-shadow:0 6px 26px rgba(232,192,106,.5)}
 .btn.danger{color:#ffb3b3;border-color:rgba(255,120,120,.3)}
+.btn.iconbtn{padding:8px 10px;line-height:1;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+.btn.iconbtn svg{width:15px;height:15px;display:block;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#btnFull .ic-compress{display:none}
+body.is-fs #btnFull .ic-expand{display:none}
+body.is-fs #btnFull .ic-compress{display:block}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .mini{
   font:inherit;font-size:10px;color:var(--muted);background:none;border:none;
@@ -104,13 +116,12 @@ body::before{
 .main{
   display:grid;grid-template-columns:minmax(0,1fr) 318px;gap:14px;
   align-items:stretch;min-height:0;flex:1;
-}
-.panel{
+}.panel{
   background:var(--panel);border:1px solid var(--line);border-radius:18px;
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   box-shadow:0 20px 50px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06);
 }
-.arena-wrap{padding:12px 14px 10px;display:flex;flex-direction:column;gap:10px}
+.arena-wrap{padding:12px 14px 10px;display:flex;flex-direction:column;gap:10px;min-width:0}
 
 /* ---------- 速度条 ---------- */
 .speedbar{
@@ -213,6 +224,7 @@ body::before{
 .unit .fx .dn{color:#ff9b9b}
 .unit .fx .po{color:#b9ff5c}
 .unit .bars{width:100%;margin-top:auto;display:flex;flex-direction:column;gap:2px;padding:2px 0 3px}
+.unit .uanim,.unit .uname,.unit .fx,.unit .bars,.unit .pstats{flex:0 0 auto}
 .bar{height:4px;border-radius:3px;background:rgba(0,0,0,.55);overflow:hidden}
 .bar i{display:block;height:100%;width:100%;transition:width .3s ease;border-radius:3px}
 .bar.hp i{background:linear-gradient(90deg,#63e08a,#2fbf6a)}
@@ -224,9 +236,10 @@ body::before{
 .unit .pstats{display:none}
 .unit.preview .bars{display:none}
 .unit.preview .pstats{
-  display:block;margin-top:auto;margin-bottom:4px;font-size:8.5px;
-  color:rgba(255,255,255,.62);letter-spacing:.2px;white-space:nowrap;
+  display:flex;justify-content:center;gap:5px;margin-top:auto;margin-bottom:4px;
+  font-size:8.5px;color:rgba(255,255,255,.62);letter-spacing:.2px;white-space:nowrap;
 }
+.unit.preview .pstats i{font-style:normal}
 .unit.preview .uname{color:#fff}
 .unit.preview .uanim{font-size:clamp(18px,2.4vw,30px)}
 
@@ -293,7 +306,7 @@ body::before{
 
 /* ---------- 出手顺序条 ---------- */
 .orderstrip{
-  display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+  display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0;
   padding:6px 9px;border-radius:11px;background:rgba(0,0,0,.26);
   border:1px solid rgba(255,255,255,.05);min-height:32px;
 }
@@ -327,7 +340,7 @@ body::before{
 .log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:3px}
 .log-line{color:#b9b4d4;animation:fadeIn .25s ease;min-width:0;overflow-wrap:anywhere;word-break:break-word}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:none}}
-.log-line.round{color:var(--gold);font-weight:700;margin-top:7px;letter-spacing:1px;font-size:11.5px}
+.log-line.roundhead{color:var(--gold);font-weight:700;margin-top:7px;letter-spacing:1px;font-size:11.5px}
 .log-line.ult{color:#e4c9ff}
 .log-line.die{color:#ff9b9b;opacity:.9}
 .log-line.sys{color:var(--muted);font-style:italic}
@@ -431,19 +444,136 @@ table.stats .tname em{font-style:normal;font-size:13px}
 
 .hidden{display:none!important}
 
-/* ---------- 响应式 ---------- */
+/* ---------- 响应式：平板 / 手机 ---------- */
 @media (max-width:1180px){
-  .main{grid-template-columns:1fr}
-  .logpanel{height:190px;min-height:150px}
+  .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);flex:1;min-height:0}
+  .logpanel{height:auto;min-height:110px}
+  .arena{flex:0 0 auto}
 }
 @media (max-width:860px){
-  .app{padding:10px}
-  .stages{order:3;width:100%;margin-left:0}
-  .side{width:clamp(140px,30vw,220px)}
-  .grid{gap:4px;padding:4px}
-  .colheads{gap:4px;font-size:8px;letter-spacing:1px}
-  .deploy-right{flex-direction:row;align-items:center;flex-wrap:wrap}
-  .panelrow{flex-direction:column}
+  /* 基础触屏优化 */
+  html{-webkit-text-size-adjust:100%}
+  body{overscroll-behavior-y:contain}
+  .app{padding:8px;padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));gap:8px;min-height:100vh;min-height:100dvh}
+  .btn,.stage-chip,.rcard,.cell,.mini{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .iconbtn{padding:7px 10px;font-size:13px;line-height:1}
+
+  /* 顶栏 */
+  .topbar{gap:8px}
+  .brand{gap:8px}
+  .brand h1{font-size:15px;letter-spacing:3px}
+  .brand p{font-size:8.5px;letter-spacing:1.2px}
+  .sigil{font-size:19px}
+  .stages{order:4;width:100%;margin-left:0;flex-wrap:nowrap;overflow-x:auto;padding:1px 0 3px;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,#000 0,#000 86%,transparent 100%);
+    mask-image:linear-gradient(90deg,#000 0,#000 86%,transparent 100%)}
+  .stages::-webkit-scrollbar{display:none}
+  .stage-chip{flex:none;font-size:10.5px;padding:5px 9px}
+  .topbtns{margin-left:auto;gap:5px}
+  .topbtns .btn{padding:6px 9px;font-size:11px}
+
+  /* 战场 */
+  .main{gap:8px}
+  .arena-wrap{padding:8px;gap:7px}
+  .speedbar{padding:5px 8px;gap:6px;border-radius:10px}
+  .sp-side{font-size:9.5px;gap:3px}
+  .sp-side b{font-size:12px}
+  .sp-row label{display:none}
+  .sp-bars{gap:3px}
+  .sp-track{height:4px}
+  .first-tag{font-size:9px;padding:2px 6px;letter-spacing:0}
+
+  .arena{grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);gap:4px;padding:0}
+  .side{width:100%;gap:4px}
+  .side-head{font-size:9.5px;letter-spacing:.4px;gap:4px}
+  .side-head .dot{width:5px;height:5px}
+  .colheads{font-size:7px;letter-spacing:.5px;gap:3px}
+  .grid{gap:3px;padding:3px;border-radius:11px}
+  .cell{border-radius:6px}
+  .unit{inset:2px;border-radius:6px;padding:1px 2px 0}
+  .unit .ebadge{font-size:7px;top:1px;left:2px}
+  .unit .onum{font-size:7px;top:1px;right:2px}
+  .unit .crown{font-size:7px}
+  .unit .uanim{font-size:clamp(14px,4.8vw,21px);margin-top:2px}
+  .unit .uname{font-size:7.5px;letter-spacing:0;margin-top:0}
+  .unit .fx{font-size:6px}
+  .unit .fx:not(:empty){height:7px}
+  .unit .bars{gap:1px;padding:1px 0 2px}
+  .bar{height:3px}
+  .bar.en{height:2px}
+  .unit .pstats{font-size:6.5px;gap:3px;margin-bottom:2px}
+  .unit.dead::after{font-size:13px}
+  .float{font-size:10.5px}
+  .float.crit{font-size:12.5px}
+  .float.shield,.float.debuff,.float.buff,.float.poison,.float.elem{font-size:9px}
+
+  .center{gap:2px}
+  .round{font-size:8px;padding:1px 5px;letter-spacing:.5px}
+  .vsmark{font-size:12px;letter-spacing:0}
+  .ordernote{display:none}
+
+  .orderstrip{padding:4px 6px;gap:3px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,#000 0,#000 90%,transparent 100%);
+    mask-image:linear-gradient(90deg,#000 0,#000 90%,transparent 100%)}
+  .orderstrip::-webkit-scrollbar{display:none}
+  .strip-label{font-size:8.5px;flex:none}
+  .chip{font-size:9px;padding:1px 6px;gap:2px;flex:none}
+  .chip.first-of-side{margin-left:3px}
+
+  /* 底部操作区（吸底） */
+  .dock{margin-top:auto;position:sticky;bottom:0;z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+  .dock .panel{background:rgba(11,9,24,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 -10px 30px rgba(0,0,0,.55)}
+  .panelrow{padding:8px 10px;flex-direction:column;gap:8px}
+  .deploy-left{width:100%}
+  .deploy-right{flex-direction:row;align-items:center;flex-wrap:wrap;gap:8px}
+  .hintline{font-size:9.5px}
+  .btnrow{gap:6px;width:100%}
+  .btnrow .btn{flex:1;text-align:center;padding:11px 8px;font-size:12px;border-radius:9px}
+  .roster{gap:6px;touch-action:pan-x;scrollbar-width:none}
+  .roster::-webkit-scrollbar{display:none}
+  .rcard{width:86px;min-height:92px;padding:6px 7px;gap:1px}
+  .rc-emoji{font-size:17px}
+  .rc-name{font-size:10px}
+  .rc-name span{font-size:7px}
+  .rc-line{font-size:7px;gap:4px}
+  .rc-role{font-size:7px}
+  .battle-left{width:100%;justify-content:center}
+  .bstate{font-size:11px}
+  .logpanel{min-height:104px;padding:8px 10px;gap:4px}
+  .log{font-size:10px;line-height:1.5}
+  .loghead{font-size:10px;letter-spacing:1.5px}
+
+  /* 弹窗 */
+  .mask{padding:12px}
+  .modal{padding:16px;border-radius:16px;max-height:92vh;max-height:92dvh}
+  .modal h2{font-size:20px;letter-spacing:4px}
+  .modal .sub{font-size:10px;letter-spacing:1px;margin-bottom:10px}
+  .stars{font-size:18px;margin-bottom:10px}
+  .kv{gap:10px;font-size:10px;margin-bottom:10px}
+  .kv b{font-size:12px}
+  table.stats{font-size:10px}
+  table.stats th{font-size:9px;padding:4px 3px}
+  table.stats td{padding:4px 3px}
+  .modal ul{font-size:11px;gap:6px}
+  .modal .btnrow{margin-top:12px}
+  .toast{font-size:11px;bottom:calc(16px + env(safe-area-inset-bottom));padding:8px 14px;max-width:88vw;text-align:center}
+}
+@media (max-width:420px){
+  .unit .uanim{font-size:clamp(13px,4.4vw,19px)}
+  .unit .uname{font-size:7px}
+  .unit .pstats{font-size:6px;gap:2px}
+  .unit .pstats i:nth-child(2),.unit .pstats i:nth-child(3){display:none}
+  .side-head{font-size:9px}
+  .colheads{font-size:6.5px}
+  .rcard{width:80px;min-height:88px}
+  .brand p{display:none}
+}
+@media (max-height:520px) and (orientation:landscape){
+  .app{min-height:auto}
+  .logpanel{height:64px;min-height:64px}
+  .unit .uanim{font-size:clamp(12px,3vw,17px)}
+  .panelrow{padding:6px 10px}
+  .rcard{min-height:78px}
 }
 </style>
 </head>
@@ -466,7 +596,11 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <nav class="stages" id="stageChips"></nav>
     <div class="topbtns">
       <button class="btn ghost" id="btnRules">玩法</button>
-      <button class="btn ghost" id="btnSound">🔊</button>
+      <button class="btn ghost iconbtn" id="btnSound" title="音效">🔊</button>
+      <button class="btn ghost iconbtn" id="btnFull" title="全屏" aria-label="全屏">
+        <svg class="ic-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+        <svg class="ic-compress" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+      </button>
     </div>
   </header>
 
@@ -816,7 +950,7 @@ function cardHTML(u, preview = false) {
         <span class="bar hp"><i></i></span>
         <span class="bar en"><i></i></span>
       </span>
-      <span class="pstats">❤${u.maxHp} ⚔${u.atk} ⚡${u.spd}</span>
+      <span class="pstats"><i>❤${u.maxHp}</i><i>⚔${u.atk}</i><i>⚡${u.spd}</i></span>
     </div>`;
 }
 
@@ -1214,7 +1348,7 @@ async function battleLoop() {
     B.order = info.ordered;
     B.current = null;
     renderStrip();
-    log(`<span class="roundtag">第 ${B.round} 回合</span> · ${info.first === 'player' ? '我方' : '敌方'}先手（总灵速 ${info.pSpd.toFixed(0)} : ${info.eSpd.toFixed(0)}），双方交替出手`, 'round');
+    log(`<span class="roundtag">第 ${B.round} 回合</span> · ${info.first === 'player' ? '我方' : '敌方'}先手（总灵速 ${info.pSpd.toFixed(0)} : ${info.eSpd.toFixed(0)}）`, 'roundhead');
     await pace(360);
 
     for (const u of info.ordered) {
@@ -1248,7 +1382,7 @@ function judgeByHp() {
     return max ? cur / max : 0;
   };
   const pr = ratio('player'), er = ratio('enemy');
-  log(`⏳ 达到 ${MAX_ROUNDS} 回合上限，按剩余血量判定：我方 ${(pr * 100).toFixed(0)}% vs 敌方 ${(er * 100).toFixed(0)}%`, 'round');
+  log(`⏳ 达到 ${MAX_ROUNDS} 回合上限，按剩余血量判定：我方 ${(pr * 100).toFixed(0)}% vs 敌方 ${(er * 100).toFixed(0)}%`, 'roundhead');
   return pr >= er ? 'win' : 'lose';
 }
 
@@ -1469,7 +1603,7 @@ async function startBattle() {
   $('#battleState').innerHTML = '<b>战斗进行中…</b>';
   $('#stageChips').querySelectorAll('button').forEach(b => b.disabled = true);
 
-  log(`⚔ 关卡 ${state.stage + 1}「${STAGES[state.stage].name}」开战！`, 'round');
+  log(`⚔ 关卡 ${state.stage + 1}「${STAGES[state.stage].name}」开战！`, 'roundhead');
   sfx.tick();
 
   try {
@@ -1593,7 +1727,40 @@ function loadProgress() {
 }
 
 /* ============================================================================
-   13. 事件绑定 / 启动
+   13. 全屏
+   ========================================================================== */
+function fsEl() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+function syncFullBtn() {
+  const b = $('#btnFull');
+  if (!b) return;
+  const on = !!fsEl();
+  b.title = on ? '退出全屏' : '全屏';
+  b.setAttribute('aria-label', on ? '退出全屏' : '全屏');
+  document.body.classList.toggle('is-fs', on);
+}
+async function toggleFull() {
+  try {
+    if (fsEl()) {
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    } else {
+      const el = document.documentElement;
+      if (el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else { toast('此浏览器不支持全屏：iPhone 可在「分享 → 添加到主屏幕」后全屏运行'); return; }
+    }
+  } catch (e) {
+    toast('全屏失败：' + (e && e.message ? e.message : e));
+  }
+  syncFullBtn();
+}
+document.addEventListener('fullscreenchange', syncFullBtn);
+document.addEventListener('webkitfullscreenchange', syncFullBtn);
+
+/* ============================================================================
+   14. 事件绑定 / 启动
    ========================================================================== */
 function bindEvents() {
   // 布阵：点格子
@@ -1673,6 +1840,8 @@ function bindEvents() {
     if (state.sound) sfx.tick();
   };
 
+  $('#btnFull').onclick = () => toggleFull();
+
   $('#btnClearLog').onclick = () => { $('#log').innerHTML = ''; };
 
   // 快捷键
@@ -1680,6 +1849,10 @@ function bindEvents() {
     if (e.code === 'Space' && state.phase === 'battle') {
       e.preventDefault();
       $('#btnPause').click();
+    }
+    if (e.code === 'KeyF' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      toggleFull();
     }
   });
 }
@@ -1692,6 +1865,7 @@ function init() {
   renderStageChips();
   log('欢迎，灵契者。选择关卡与阵容，然后开战。', 'sys');
   log('提示：右列是前线，先出手、也最容易被集火。', 'sys');
+  syncFullBtn();
 }
 
 init();
