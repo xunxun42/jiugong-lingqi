@@ -689,6 +689,53 @@ table.stats .tname em{font-style:normal;font-size:13px}
   .panelrow{padding:6px 10px}
   .rcard{min-height:78px}
 }
+
+/* ---------- 养成面板 ---------- */
+.h2sm{font-size:19px;letter-spacing:4px}
+.grow-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.crystal{font-size:11px;color:var(--muted);letter-spacing:.5px}
+.crystal b{color:var(--gold);font-size:14px;font-variant-numeric:tabular-nums}
+.grow-sec{margin-bottom:14px}
+.grow-title{font-size:10px;letter-spacing:2px;color:var(--muted);margin:0 0 7px}
+.soul-pack{display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow-y:auto;padding:2px}
+.soul{
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  width:54px;padding:5px 3px;border-radius:8px;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+  font-size:9px;color:#cfc9e8;line-height:1.15;transition:.15s;
+}
+.soul:hover{background:rgba(255,255,255,.11);transform:translateY(-1px)}
+.soul b{font-size:10px;font-weight:800}
+.soul i{font-style:normal;font-size:9px;opacity:.8}
+.soul.empty{opacity:.4;cursor:default}
+.grow-row{
+  display:grid;grid-template-columns:40px 1fr auto auto;gap:8px;align-items:center;
+  padding:8px 9px;border-radius:10px;border:1px solid var(--line);
+  background:rgba(255,255,255,.03);margin-bottom:7px;transition:.15s;cursor:pointer;
+}
+.grow-row.sel{border-color:rgba(232,192,106,.8);background:rgba(232,192,106,.08)}
+.grow-face{width:40px;height:40px;border-radius:8px;overflow:hidden;flex:none;background:#151024}
+.grow-face img{width:100%;height:100%;object-fit:cover;display:block}
+.grow-name{font-size:12px;color:#fff;font-weight:700}
+.grow-name em{font-style:normal;color:var(--gold);font-size:11px;margin-left:4px}
+.grow-xp{height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin:4px 0 3px;overflow:hidden}
+.grow-xp i{display:block;height:100%;background:linear-gradient(90deg,#7fd6ff,#4aa8ff)}
+.grow-meta{font-size:9px;color:var(--muted);letter-spacing:.3px}
+.grow-slots{display:flex;gap:3px}
+.gslot{
+  width:22px;height:22px;border-radius:6px;display:grid;place-items:center;
+  font-size:9px;border:1px dashed rgba(255,255,255,.22);color:rgba(255,255,255,.35);
+  transition:.15s;
+}
+.gslot.on{border-style:solid;font-weight:800}
+.gbtn{
+  font:inherit;font-size:10px;padding:5px 9px;border-radius:7px;cursor:pointer;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:var(--ink);
+}
+.gbtn:hover{background:rgba(255,255,255,.16)}
+.gbtn:disabled{opacity:.4;cursor:not-allowed}
+.float.dodge{color:#c98bff;font-size:12px}
+.float.block{color:#7fd6ff;font-size:11px}
 </style>
 </head>
 <body>
@@ -709,6 +756,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
     </div>
     <nav class="stages" id="stageChips"></nav>
     <div class="topbtns">
+      <button class="btn ghost" id="btnGrow">养成</button>
       <button class="btn ghost" id="btnCodex">图鉴</button>
       <button class="btn ghost" id="btnRules">玩法</button>
       <button class="btn ghost iconbtn" id="btnSound" title="音效">🔊</button>
@@ -823,6 +871,8 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <li><b>气势溢出</b>：满 100 后多出的部分<b>不清空</b>，每 <b>10 点</b>让下一次大招效果 <b>+5%</b>（溢出 30 → +15%），释放后清零。</li>
       <li><b>受击优先级</b>：先打与自己<b>同一排</b>的敌人，排内按 <b>前线 → 中军 → 后阵</b>；同排清空后<b>从下往上</b>（第3排 → 第2排 → 第1排）。</li>
       <li><b>元素克制</b>：炎 → 风 → 土 → 水 → 炎，光 ↔ 暗互克。克制 ×1.5，被克 ×0.75。</li>
+      <li><b>灵晶与等级</b>：通关掉落 <b>200 + 5×关卡</b> 灵晶，<b>1 灵晶 = 20 经验</b>。角色最高 <b>Lv 100</b>，每级 <b>+2% 生命与攻击</b>（满级 ×2.98）。</li>
+      <li><b>灵念</b>：花 <b>120 灵晶</b>抽一个，9 种属性（格挡 / 暴击 / 防暴 / 破击 / 命中 / 闪避 / 固伤 / 伤害 / 全属性），分凡·珍·绝三档。每个角色最多装 <b>3 个</b>。</li>
       <li><b>自动结算</b>：一方全灭或打满 20 回合（按剩余血量判定），自动弹出伤害 / 治疗 / 承伤 / MVP 战报。</li>
       <li><b>观战</b>：战斗中可以暂停、1x / 2x / 4x 调速，也可以随时撤退重来。</li>
     </ul>
@@ -840,6 +890,29 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="codex" id="codexList"></div>
     <div class="btnrow" style="margin-top:16px">
       <button class="btn primary" id="btnCloseCodex">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 养成 ================= -->
+<div class="mask hidden" id="growModal">
+  <div class="modal">
+    <h2 class="h2sm">灵契养成</h2>
+    <div class="sub">灵晶换经验 · 灵念配装</div>
+    <div class="grow-head">
+      <span class="crystal">灵晶 <b id="growCrystal">0</b></span>
+      <button class="btn primary" id="btnDrawSoul">抽灵念 · 120</button>
+    </div>
+    <div class="grow-sec">
+      <div class="grow-title">灵念背包（点一下装备到选中的角色）</div>
+      <div class="soul-pack" id="soulPack"></div>
+    </div>
+    <div class="grow-sec">
+      <div class="grow-title">角色（点一行选中，每个角色 3 个灵念位）</div>
+      <div id="growList"></div>
+    </div>
+    <div class="btnrow" style="margin-top:6px">
+      <button class="btn primary" id="btnCloseGrow">关闭</button>
     </div>
   </div>
 </div>
@@ -1092,8 +1165,16 @@ const sfx = {
    ========================================================================== */
 function makeUnit(spiritId, side, slot, mult, isBoss = false) {
   const s = SPIRITS.find(x => x.id === spiritId);
-  const hpMul  = mult.hp  * (isBoss ? 1.5 : 1);
-  const atkMul = mult.atk * (isBoss ? 1.12 : 1);
+  let hpMul  = mult.hp  * (isBoss ? 1.5 : 1);
+  let atkMul = mult.atk * (isBoss ? 1.12 : 1);
+  let soul = {};
+  if (side === 'player') {
+    const p = spiritSave(spiritId);
+    soul = soulStats(p);
+    const bonus = lvMult(p.lv) * (1 + (soul.allStats || 0) / 100);
+    hpMul *= bonus;
+    atkMul *= bonus;
+  }
   const maxHp = Math.round(s.hp * hpMul);
   return {
     uid: ++uidSeq, side, slot, spirit: s,
@@ -1101,6 +1182,7 @@ function makeUnit(spiritId, side, slot, mult, isBoss = false) {
     name: s.name, title: s.title, emoji: s.emoji, element: s.element,
     maxHp, hp: maxHp,
     atk: Math.round(s.atk * atkMul),
+    soul,
     spd: s.spd,
     energy: 0, overflow: 0, shield: 0, shieldRounds: 0,
     effects: [], alive: true, isBoss,
@@ -1343,10 +1425,30 @@ function killUnit(u, src) {
 function strike(src, tgt, mult) {
   if (!tgt || !tgt.alive) return { dmg: 0, crit: false, em: 1, killed: false };
 
+  const A = src.soul || {}, D = tgt.soul || {};
+
+  // 命中 / 闪避
+  const hitRate = clamp(0.92 + (A.hit || 0) / 100 - (D.dodge || 0) / 100, 0.5, 1);
+  if (rnd(0, 1) > hitRate) {
+    if (tgt.el) floatText(tgt.el, '闪避', 'dodge');
+    log(`${tag(src)} 的攻击被 ${tag(tgt)} 闪避`, 'sys');
+    return { dmg: 0, crit: false, em: 1, killed: false, miss: true };
+  }
+
   const em = eleMult(src.element, tgt.element);
-  const crit = chance(0.12);
+  const critRate = clamp(0.12 + (A.crit || 0) / 100 - (D.critRes || 0) / 100, 0.02, 0.65);
+  const crit = chance(critRate);
   const variance = rnd(0.9, 1.1);
   let raw = src.atk * atkMod(src) * mult * em * variance * (crit ? 1.55 : 1);
+  raw *= (1 + (A.dmg || 0) / 100);
+
+  // 格挡 / 破击
+  const blockPct = clamp(((D.block || 0) / 100) * (1 - (A.pierce || 0) / 100), 0, 0.35);
+  if (blockPct > 0) {
+    raw *= (1 - blockPct);
+    if (blockPct >= 0.04 && tgt.el) floatText(tgt.el, '格挡', 'block');
+  }
+  if (A.flat) raw += A.flat;
   raw = Math.max(1, Math.round(raw));
 
   let absorbed = 0;
@@ -1970,10 +2072,14 @@ function finishBattle(result) {
     else stars = 1;
   }
 
-  // 解锁
+  // 解锁 + 灵晶掉落
   if (win) {
     const next = Math.min(STAGES.length, state.stage + 2);
-    if (next > state.unlocked) { state.unlocked = next; saveProgress(); }
+    if (next > state.unlocked) state.unlocked = next;
+    const gain = 200 + 5 * (state.stage + 1);
+    saveData().crystal += gain;
+    log(`💎 通关奖励 ${gain} 灵晶（当前 ${saveData().crystal}）`, 'sys');
+    saveProgress();
   }
 
   // —— 标题 ——
@@ -2050,14 +2156,237 @@ function backToDeploy() {
 /* ============================================================================
    12. 进度存档
    ========================================================================== */
+const SAVE_KEY = 'jiugong_save_v2';
+function saveData() {
+  if (!state.save) state.save = { crystal: 0, spirits: {}, pack: [], uid: 1 };
+  const d = state.save;
+  d.spirits = d.spirits || {}; d.pack = d.pack || []; d.crystal = d.crystal || 0; d.uid = d.uid || 1;
+  return d;
+}
 function saveProgress() {
-  try { localStorage.setItem('jiugong_unlocked', String(state.unlocked)); } catch (e) {}
+  try {
+    const d = saveData();
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      v: 2, unlocked: state.unlocked, crystal: d.crystal,
+      spirits: d.spirits, pack: d.pack, uid: d.uid,
+    }));
+    localStorage.setItem('jiugong_unlocked', String(state.unlocked));
+  } catch (e) {}
 }
 function loadProgress() {
   try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) {
+      const o = JSON.parse(raw) || {};
+      const u = parseInt(o.unlocked, 10);
+      if (u >= 1 && u <= STAGES.length) state.unlocked = u;
+      state.save = {
+        crystal: o.crystal || 0, spirits: o.spirits || {},
+        pack: o.pack || [], uid: o.uid || 1,
+      };
+      return;
+    }
     const v = parseInt(localStorage.getItem('jiugong_unlocked') || '1', 10);
     if (v >= 1 && v <= STAGES.length) state.unlocked = v;
   } catch (e) {}
+}
+
+
+/* ============================================================================
+   12b. 养成：灵晶 / 等级 / 灵念
+   ========================================================================== */
+const LV_MAX = 100;
+const EXP_PER_CRYSTAL = 20;      // 1 灵晶 = 20 经验
+const SOUL_COST = 120;           // 单次抽灵念
+const lvExpNeed = lv => 60 + 24 * lv;
+const lvMult = lv => 1 + 0.02 * (lv - 1);    // Lv100 = ×2.98
+
+const SOUL_TYPES = {
+  block:   { name:'格挡', color:'#7fd6ff', unit:'%', lo:0.6, hi:2.4, desc:'受到伤害降低' },
+  crit:    { name:'暴击', color:'#ff6b6b', unit:'%', lo:0.8, hi:3.2, desc:'暴击率提升' },
+  critRes: { name:'防暴', color:'#ffb0b0', unit:'%', lo:0.8, hi:3.2, desc:'被暴击概率降低' },
+  pierce:  { name:'破击', color:'#ffd76b', unit:'%', lo:1.0, hi:4.0, desc:'无视目标格挡' },
+  hit:     { name:'命中', color:'#9dffcc', unit:'%', lo:0.8, hi:3.2, desc:'命中率提升' },
+  dodge:   { name:'闪避', color:'#c98bff', unit:'%', lo:0.6, hi:2.4, desc:'闪避概率提升' },
+  flat:    { name:'固伤', color:'#ff9b9b', unit:'',  lo:6,   hi:24,  desc:'每次攻击追加伤害' },
+  dmg:     { name:'伤害', color:'#ff7a45', unit:'%', lo:1.2, hi:5.0, desc:'造成伤害提升' },
+  allStats:{ name:'全属性', color:'#ffe07a', unit:'%', lo:1.0, hi:4.0, desc:'生命与攻击提升' },
+};
+const SOUL_KEYS = Object.keys(SOUL_TYPES);
+const SOUL_RARITY = [
+  { name:'凡', mult:1.0, weight:70, color:'#b9b4d4' },
+  { name:'珍', mult:1.6, weight:25, color:'#7fd6ff' },
+  { name:'绝', mult:2.4, weight:5,  color:'#ffd76b' },
+];
+
+function blankSpirit() { return { lv: 1, exp: 0, souls: [null, null, null] }; }
+function spiritSave(id) {
+  const d = saveData();
+  if (!d.spirits[id]) d.spirits[id] = blankSpirit();
+  const p = d.spirits[id];
+  if (p.lv == null) p.lv = 1;
+  if (p.exp == null) p.exp = 0;
+  if (!Array.isArray(p.souls)) p.souls = [null, null, null];
+  while (p.souls.length < 3) p.souls.push(null);
+  return p;
+}
+function soulById(uid) { return saveData().pack.find(x => x.uid === uid) || null; }
+function equippedUids() {
+  const set = new Set();
+  const d = saveData();
+  for (const id in d.spirits) for (const u of (d.spirits[id].souls || [])) if (u != null) set.add(u);
+  return set;
+}
+function soulStats(p) {
+  const out = {};
+  for (const k of SOUL_KEYS) out[k] = 0;
+  for (const uid of (p.souls || [])) {
+    if (uid == null) continue;
+    const s = soulById(uid);
+    if (!s || !out.hasOwnProperty(s.type)) continue;
+    out[s.type] += s.value;
+  }
+  return out;
+}
+
+/* 灵晶 → 经验，最多花 maxCrystal 个 */
+function levelUpWithCrystal(id, maxCrystal) {
+  const p = spiritSave(id);
+  const d = saveData();
+  let used = 0, ups = 0;
+  while (p.lv < LV_MAX && used < maxCrystal && d.crystal > 0) {
+    const needExp = lvExpNeed(p.lv) - p.exp;
+    const needCrystal = Math.max(1, Math.ceil(needExp / EXP_PER_CRYSTAL));
+    const spend = Math.min(needCrystal, d.crystal, maxCrystal - used);
+    if (spend <= 0) break;
+    d.crystal -= spend; used += spend;
+    p.exp += spend * EXP_PER_CRYSTAL;
+    while (p.lv < LV_MAX && p.exp >= lvExpNeed(p.lv)) {
+      p.exp -= lvExpNeed(p.lv); p.lv++; ups++;
+    }
+    if (p.lv >= LV_MAX) { p.exp = 0; break; }
+  }
+  return { used, ups };
+}
+
+function rollSoul() {
+  const d = saveData();
+  const total = SOUL_RARITY.reduce((a, b) => a + b.weight, 0);
+  let r = Math.random() * total, rarity = SOUL_RARITY[0];
+  for (const t of SOUL_RARITY) { r -= t.weight; if (r <= 0) { rarity = t; break; } }
+  const type = SOUL_KEYS[Math.floor(Math.random() * SOUL_KEYS.length)];
+  const T = SOUL_TYPES[type];
+  let v = (T.lo + Math.random() * (T.hi - T.lo)) * rarity.mult;
+  v = T.unit === '%' ? Math.round(v * 10) / 10 : Math.round(v);
+  return { uid: d.uid++, type, value: v, rarity: rarity.name, color: rarity.color };
+}
+function drawSoul() {
+  const d = saveData();
+  if (d.crystal < SOUL_COST) { toast('灵晶不足，先去打关卡'); return null; }
+  d.crystal -= SOUL_COST;
+  const soul = rollSoul();
+  d.pack.push(soul);
+  saveProgress();
+  const T = SOUL_TYPES[soul.type];
+  log(`✦ 抽到灵念【${T.name} +${soul.value}${T.unit}】<span style="color:${soul.color}">${soul.rarity}</span>`, 'sys');
+  return soul;
+}
+
+/* ---------------- 面板 ---------------- */
+let growSel = null;
+function openGrow() {
+  if (!growSel) growSel = SPIRITS[0].id;
+  renderGrow();
+  $('#growModal').classList.remove('hidden');
+}
+function renderGrow() {
+  const d = saveData();
+  $('#growCrystal').textContent = d.crystal;
+
+  const eq = equippedUids();
+  const free = d.pack.filter(x => !eq.has(x.uid));
+  const pack = $('#soulPack');
+  pack.innerHTML = free.length
+    ? free.map(x => {
+        const T = SOUL_TYPES[x.type];
+        return `<div class="soul" data-uid="${x.uid}" style="border-color:${x.color}66">
+          <b style="color:${T.color}">${T.name}</b>
+          <i>${x.value}${T.unit}</i>
+          <i style="opacity:.55">${x.rarity}</i>
+        </div>`;
+      }).join('')
+    : '<div class="soul empty">背包空</div>';
+
+  $('#growList').innerHTML = SPIRITS.map(sp => {
+    const p = spiritSave(sp.id);
+    const maxed = p.lv >= LV_MAX;
+    const needExp = maxed ? 0 : lvExpNeed(p.lv) - p.exp;
+    const cost = maxed ? 0 : Math.max(1, Math.ceil(needExp / EXP_PER_CRYSTAL));
+    const pct = maxed ? 100 : Math.min(100, (p.exp / lvExpNeed(p.lv)) * 100);
+    const slots = p.souls.slice(0, 3).map((uid, i) => {
+      const sl = uid != null ? soulById(uid) : null;
+      const T = sl ? SOUL_TYPES[sl.type] : null;
+      return `<span class="gslot ${sl ? 'on' : ''}" data-id="${sp.id}" data-slot="${i}"
+        style="${sl ? `border-color:${sl.color};color:${T.color}` : ''}">${sl ? T.name.slice(0, 1) : '+'}</span>`;
+    }).join('');
+    return `<div class="grow-row ${growSel === sp.id ? 'sel' : ''}" data-id="${sp.id}">
+      <span class="grow-face">${sp.art ? `<img src="${sp.art}" alt="">` : sp.emoji}</span>
+      <span>
+        <span class="grow-name">${sp.name}<em>Lv ${p.lv}</em></span>
+        <span class="grow-xp"><i style="width:${pct}%"></i></span>
+        <span class="grow-meta">${maxed ? '已满级' : `升级需 ${cost} 灵晶 · 攻击 ×${lvMult(p.lv).toFixed(2)}`}</span>
+      </span>
+      <span class="grow-slots">${slots}</span>
+      <button class="gbtn" data-up="${sp.id}" ${(!maxed && d.crystal >= cost) ? '' : 'disabled'}>升级</button>
+    </div>`;
+  }).join('');
+}
+
+function bindGrow() {
+  $('#btnGrow').onclick = () => { openGrow(); sfx.tick(); };
+  $('#btnCloseGrow').onclick = () => $('#growModal').classList.add('hidden');
+  $('#growModal').addEventListener('click', e => {
+    if (e.target.id === 'growModal') $('#growModal').classList.add('hidden');
+  });
+  $('#btnDrawSoul').onclick = () => {
+    const got = drawSoul();
+    if (got) {
+      const T = SOUL_TYPES[got.type];
+      toast(`抽到 ${T.name} +${got.value}${T.unit} · ${got.rarity}`);
+      renderGrow();
+    }
+  };
+  $('#soulPack').addEventListener('click', e => {
+    const el = e.target.closest('.soul[data-uid]');
+    if (!el) return;
+    const uid = +el.dataset.uid;
+    const p = spiritSave(growSel);
+    const idx = p.souls.findIndex(x => x == null);
+    if (idx < 0) { toast('该角色 3 个灵念位都满了'); return; }
+    p.souls[idx] = uid;
+    saveProgress(); renderGrow(); sfx.tick();
+  });
+  $('#growList').addEventListener('click', e => {
+    const up = e.target.closest('[data-up]');
+    if (up) {
+      const id = up.dataset.up;
+      const r = levelUpWithCrystal(id, saveData().crystal);
+      if (r.ups > 0) { toast(`升级 +${r.ups} 级`); sfx.win(); }
+      else toast('灵晶不够');
+      saveProgress(); renderGrow();
+      return;
+    }
+    const slot = e.target.closest('.gslot[data-id]');
+    if (slot) {
+      const p = spiritSave(slot.dataset.id);
+      const i = +slot.dataset.slot;
+      if (p.souls[i] != null) { p.souls[i] = null; saveProgress(); renderGrow(); sfx.tick(); }
+      else toast('点背包里的灵念来装备');
+      return;
+    }
+    const row = e.target.closest('.grow-row[data-id]');
+    if (row) { growSel = row.dataset.id; renderGrow(); sfx.tick(); }
+  });
 }
 
 /* ============================================================================
@@ -2173,6 +2502,8 @@ function bindEvents() {
   $('#codexModal').addEventListener('click', e => {
     if (e.target.id === 'codexModal') $('#codexModal').classList.add('hidden');
   });
+  bindGrow();
+
   // 战斗中直接点角色看它的技能
   $('#arena').addEventListener('click', e => {
     if (state.phase !== 'battle' || !B) return;
