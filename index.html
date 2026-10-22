@@ -211,8 +211,12 @@ body.is-fs #btnFull .ic-compress{display:block}
   transition:transform .2s;
 }
 .unit .uname{
-  font-size:clamp(8px,.78vw,10px);color:#efeaff;white-space:nowrap;
-  margin-top:1px;letter-spacing:.3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  font-size:clamp(8px,.78vw,10px);color:#fff;white-space:nowrap;
+  margin-top:1px;letter-spacing:.3px;max-width:calc(100% - 4px);
+  overflow:hidden;text-overflow:ellipsis;
+  padding:1px 5px;border-radius:5px;
+  background:linear-gradient(90deg,rgba(8,6,16,.82),rgba(8,6,16,.42));
+  text-shadow:0 1px 3px rgba(0,0,0,.95);
 }
 .unit .fx{
   display:flex;gap:1px;font-size:8px;line-height:1;height:0;overflow:hidden;
@@ -225,10 +229,35 @@ body.is-fs #btnFull .ic-compress{display:block}
 .unit .fx .po{color:#b9ff5c}
 .unit .fx .ov{color:#ffd76b;font-weight:800}
 /* 立绘：只有设了 art 字段才会出现，没设就是原来的 emoji */
-.pix{display:block;height:1.12em;width:auto;max-width:100%;object-fit:contain;pointer-events:none;user-select:none}
 .unit .uanim{display:flex;align-items:center;justify-content:center}
 .rc-emoji{display:flex;align-items:center;justify-content:center}
-.cdx-emoji{display:flex;align-items:center;justify-content:center;flex:none}
+
+/* ---------- 立绘：铺满容器，而不是 emoji 那个小方块 ---------- */
+.pix{
+  display:block;width:100%;height:100%;object-fit:cover;object-position:50% 16%;
+  pointer-events:none;user-select:none;
+}
+/* 战斗卡：人像铺满整张卡，文字压在底部渐变上 */
+.unit .portrait{position:absolute;inset:0;z-index:-1;overflow:hidden;border-radius:inherit}
+.unit .portrait::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,
+    rgba(8,6,16,.06) 0%,rgba(8,6,16,.24) 40%,rgba(8,6,16,.80) 72%,rgba(8,6,16,.97) 100%);
+}
+/* 布阵卡 */
+.rcard{overflow:hidden}
+.rc-portrait{position:absolute;inset:0;z-index:-1;overflow:hidden;border-radius:inherit}
+.rc-portrait::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,
+    rgba(8,6,16,.02) 0%,rgba(8,6,16,.45) 46%,rgba(8,6,16,.92) 100%);
+}
+/* 图鉴 */
+.cdx-emoji{
+  width:46px;height:46px;border-radius:10px;overflow:hidden;flex:none;
+  display:grid;place-items:center;font-size:20px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.10),0 2px 8px rgba(0,0,0,.4);
+}
 .unit .bars{width:100%;margin-top:auto;display:flex;flex-direction:column;gap:2px;padding:2px 0 3px}
 .unit .uanim,.unit .uname,.unit .fx,.unit .bars,.unit .pstats{flex:0 0 auto}
 .bar{height:4px;border-radius:3px;background:rgba(0,0,0,.55);overflow:hidden}
@@ -419,6 +448,8 @@ body.is-fs #btnFull .ic-compress{display:block}
 .rc-name span{font-size:8.5px;font-weight:400;color:var(--muted);margin-left:3px}
 .rc-line{display:flex;gap:5px;font-size:8.5px;color:rgba(255,255,255,.55);font-variant-numeric:tabular-nums}
 .rc-role{font-size:8.5px;color:rgba(255,255,255,.34);letter-spacing:.3px}
+.rc-name,.rc-line,.rc-role{text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 6px rgba(0,0,0,.7)}
+.rc-name{color:#fff}
 .deploy-right{display:flex;flex-direction:column;justify-content:center;gap:8px;flex:none}
 .hintline{font-size:10.5px;color:var(--muted);white-space:nowrap}
 .hintline b{color:var(--gold);font-variant-numeric:tabular-nums}
@@ -1129,7 +1160,9 @@ function cardHTML(u, preview = false) {
       <span class="ebadge" style="color:${el.color}">${el.emoji}</span>
       <span class="onum">${u.ordText || ''}</span>
       ${u.isBoss ? '<span class="crown">👑</span>' : ''}
-      <span class="uanim">${faceHTML(u.spirit)}</span>
+      ${u.spirit.art
+        ? `<span class="portrait">${faceHTML(u.spirit)}</span>`
+        : `<span class="uanim">${faceHTML(u.spirit)}</span>`}
       <span class="uname">${u.name}</span>
       <span class="fx"></span>
       <span class="bars">
@@ -1711,7 +1744,9 @@ function renderRoster() {
     b.style.setProperty('--el', el.color);
     b.title = `${s.name} · ${s.title}\n${s.role}\nHP ${s.hp}　攻击 ${s.atk}　灵速 ${s.spd}\n大招【${s.ult.name}】${s.ult.desc}`;
     b.innerHTML = `
-      <span class="rc-emoji" style="filter:drop-shadow(0 0 6px ${hexA(el.color, .6)})">${faceHTML(s)}</span>
+      ${s.art
+        ? `<span class="rc-portrait">${faceHTML(s)}</span>`
+        : `<span class="rc-emoji" style="filter:drop-shadow(0 0 6px ${hexA(el.color, .6)})">${faceHTML(s)}</span>`}
       <span class="rc-name">${s.name}<span>${el.emoji}${s.title}</span></span>
       <span class="rc-line"><span>❤${s.hp}</span><span>⚔${s.atk}</span><span>⚡${s.spd}</span></span>
       <span class="rc-role">${s.role}</span>`;
