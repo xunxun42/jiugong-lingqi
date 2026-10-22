@@ -90,11 +90,9 @@ index.html 底部 <script> 里三张表：
 
 换了之后，**战斗卡、布阵卡、图鉴**三处同时生效，不用改别的代码。
 
-- 现成 9 个 SVG 立绘在 `assets/spirits/`，可直接覆盖同名文件替换
-- 建议 256×256 透明底，`svg` / `webp` / `png` 都支持
-- GitHub Pages 会直接托管 `assets/`，不需要构建
-- 图片加载失败会自动退回 emoji（`onerror`）
-- 想保持「单文件 HTML 零依赖」，就把图片转成 data URI 塞进 `art` 字段（代价是文件变大）
+- 现成 9 张 512×512 webp 立绘在 `assets/spirits/`，覆盖同名文件即可替换
+- 生成用的提示词模板见 `assets/spirits/PROMPT-TEMPLATE.md`
+- 加载失败会自动退回 `emoji` 字段
 
 ### 为什么迟早要换掉 emoji
 
