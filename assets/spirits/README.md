@@ -1,13 +1,23 @@
-# 精灵立绘放这里
+# 精灵立绘
 
-命名用 `SPIRITS` 里的 `id`，例如 `phoenix.webp`、`golem.webp`。
-
-然后在 `index.html` 的 `SPIRITS` 条目里加一行：
+现在是 9 个手写 SVG 占位立绘，文件名 = `SPIRITS` 里的 `id`。
+`index.html` 的 `SPIRITS` 条目通过 `art` 字段引用它们：
 
 ```js
-art: 'assets/spirits/phoenix.webp',
+art: 'assets/spirits/phoenix.svg',
 ```
 
-没加 `art` 的精灵继续用 emoji，所以可以逐只替换。
-建议 256×256、透明底、webp（png 也行）。
-加载失败会自动退回 emoji。
+## 换成正式美术
+
+直接把手绘图导出成同尺寸文件，**覆盖同名文件**即可，不用改代码：
+
+- 尺寸：正方形，建议 256×256（`viewBox="0 0 256 256"` 或等比图片）
+- 透明底
+- 格式：`svg` / `webp` / `png` 都行；换格式记得同步改 `SPIRITS` 里的扩展名
+- 想单独替换某一只：只覆盖那一个文件
+
+## 注意
+
+- 图片加载失败会自动退回 `emoji` 字段，所以不会出现空白格
+- 每只都保留了 `emoji` 兜底，删掉 `art` 字段就能退回原来的 emoji
+- SVG 里不要放 `<script>` 或外链资源，`<img>` 加载会拦截

@@ -90,7 +90,8 @@ index.html 底部 <script> 里三张表：
 
 换了之后，**战斗卡、布阵卡、图鉴**三处同时生效，不用改别的代码。
 
-- 建议 256×256 透明底 `webp` 或 `png`，放 `assets/spirits/`，文件名直接用 `id`
+- 现成 9 个 SVG 立绘在 `assets/spirits/`，可直接覆盖同名文件替换
+- 建议 256×256 透明底，`svg` / `webp` / `png` 都支持
 - GitHub Pages 会直接托管 `assets/`，不需要构建
 - 图片加载失败会自动退回 emoji（`onerror`）
 - 想保持「单文件 HTML 零依赖」，就把图片转成 data URI 塞进 `art` 字段（代价是文件变大）
