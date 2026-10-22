@@ -281,7 +281,28 @@ body.is-fs #btnFull .ic-compress{display:block}
   100%{opacity:0;transform:translate(-50%,-40px) scale(1)}
 }
 .float.dmg{color:#ff7b7b}
-.float.crit{color:#ffd76b;font-size:16px}
+.float.crit{
+  color:#ff2d2d;font-size:22px;font-weight:900;letter-spacing:.5px;
+  text-shadow:0 0 10px rgba(255,45,45,.95),0 0 24px rgba(255,0,0,.75),0 3px 10px rgba(0,0,0,.95);
+  animation:critPop 1.05s cubic-bezier(.2,.7,.3,1) forwards;z-index:12;
+}
+@keyframes critPop{
+  0%  {opacity:0;transform:translate(-50%,10px) scale(.45) rotate(-7deg)}
+  13% {opacity:1;transform:translate(-50%,-8px) scale(1.95) rotate(4deg)}
+  26% {opacity:1;transform:translate(-50%,-12px) scale(1.32) rotate(-2deg)}
+  40% {opacity:1;transform:translate(-50%,-16px) scale(1.55) rotate(0)}
+  100%{opacity:0;transform:translate(-50%,-56px) scale(1.05)}
+}
+.float.critlabel{
+  top:20%;font-size:11px;font-weight:900;letter-spacing:3px;color:#ff6b6b;
+  text-shadow:0 0 8px rgba(255,45,45,.9),0 2px 8px rgba(0,0,0,.95);
+  animation:critTag .9s cubic-bezier(.2,.7,.3,1) forwards;z-index:13;
+}
+@keyframes critTag{
+  0%  {opacity:0;transform:translate(-50%,6px) scale(.6)}
+  16% {opacity:1;transform:translate(-50%,-4px) scale(1.25)}
+  100%{opacity:0;transform:translate(-50%,-34px) scale(1)}
+}
 .float.heal{color:#7dffb0}
 .float.shield{color:#7fd6ff;font-size:11px}
 .float.debuff{color:#c98bff;font-size:11px}
@@ -504,7 +525,8 @@ table.stats .tname em{font-style:normal;font-size:13px}
   .unit .pstats{font-size:6.5px;gap:3px;margin-bottom:2px}
   .unit.dead::after{font-size:13px}
   .float{font-size:10.5px}
-  .float.crit{font-size:12.5px}
+  .float.crit{font-size:17px}
+  .float.critlabel{font-size:9px;letter-spacing:2px}
   .float.shield,.float.debuff,.float.buff,.float.poison,.float.elem{font-size:9px}
 
   .center{gap:2px}
@@ -860,26 +882,102 @@ function audio() {
   if (actx.state === 'suspended') actx.resume();
   return actx;
 }
-function tone(freq, dur, type = 'sine', gain = .06, slideTo = null) {
-  const ac = audio(); if (!ac) return;
+/* 主总线：挂一个压缩器，允许峰值更响而不破音（这是"不软"的关键） */
+let master = null, noiseBuf = null;
+function bus() {
+  const ac = audio(); if (!ac) return null;
+  if (!master) {
+    const comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -20;
+    comp.knee.value = 8;
+    comp.ratio.value = 12;
+    comp.attack.value = 0.001;
+    comp.release.value = 0.15;
+    master = ac.createGain();
+    master.gain.value = 0.8;
+    master.connect(comp);
+    comp.connect(ac.destination);
+  }
+  return { ac, out: master };
+}
+
+/* 单振荡器：快速起音 + 指数衰减，才有打击的"嗒" */
+function tone(freq, dur, type = 'sine', gain = .3, slideTo = null, when = 0) {
+  const b = bus(); if (!b) return;
+  const { ac, out } = b;
+  const t0 = ac.currentTime + when;
   const o = ac.createOscillator(), g = ac.createGain();
   o.type = type;
-  o.frequency.setValueAtTime(freq, ac.currentTime);
-  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, ac.currentTime + dur);
-  g.gain.setValueAtTime(gain, ac.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
-  o.connect(g); g.connect(ac.destination);
-  o.start(); o.stop(ac.currentTime + dur);
+  o.frequency.setValueAtTime(freq, t0);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(out);
+  o.start(t0); o.stop(t0 + dur + .03);
 }
+
+/* 噪声爆点：冲击感、"沙"的质感全靠它 */
+function noiseBurst(dur = .12, gain = .3, freq = 1400, q = 0.9, type = 'bandpass', when = 0) {
+  const b = bus(); if (!b) return;
+  const { ac, out } = b;
+  if (!noiseBuf) {
+    noiseBuf = ac.createBuffer(1, Math.floor(ac.sampleRate), ac.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const t0 = ac.currentTime + when;
+  const src = ac.createBufferSource();
+  src.buffer = noiseBuf;
+  const flt = ac.createBiquadFilter();
+  flt.type = type;
+  flt.frequency.setValueAtTime(freq, t0);
+  flt.frequency.exponentialRampToValueAtTime(Math.max(120, freq * .3), t0 + dur);
+  flt.Q.value = q;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(flt); flt.connect(g); g.connect(out);
+  src.start(t0); src.stop(t0 + dur + .03);
+}
+
+/* 低频闷锤：打击的下盘，没有它听起来就是"软绵绵" */
+function thump(from = 180, to = 55, dur = .16, gain = .5, when = 0) {
+  tone(from, dur, 'sine', gain, to, when);
+  tone(from * .5, dur * 1.3, 'triangle', gain * .45, Math.max(20, to * .8), when);
+}
+
 const sfx = {
-  hit()   { tone(rnd(180, 240), .1, 'square', .05, 90); },
-  crit()  { tone(320, .16, 'square', .07, 120); tone(620, .1, 'triangle', .04); },
-  ult()   { tone(160, .38, 'sawtooth', .045, 700); },
-  heal()  { tone(520, .2, 'sine', .05, 780); },
-  death() { tone(220, .34, 'sawtooth', .05, 60); },
-  win()   { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, .26, 'triangle', .05), i * 110)); },
-  lose()  { [392, 330, 262].forEach((f, i) => setTimeout(() => tone(f, .34, 'sine', .05), i * 150)); },
-  tick()  { tone(880, .05, 'sine', .03); },
+  hit() {
+    noiseBurst(.075, .34, 2200, .8);
+    thump(rnd(190, 240), rnd(50, 72), .13, .55);
+    tone(rnd(300, 380), .05, 'square', .12, 140);
+  },
+  crit() {
+    noiseBurst(.14, .5, 3200, 1.1);
+    thump(300, 45, .24, .85);
+    tone(1100, .18, 'square', .28, 220);        // 金属下坠
+    tone(1650, .09, 'triangle', .18, 900, .01); // 高频"叮"
+    tone(220, .3, 'sawtooth', .2, 60, .02);     // 低频咆哮
+  },
+  ult() {
+    tone(120, .45, 'sawtooth', .3, 780);
+    noiseBurst(.3, .22, 900, .7, 'lowpass', .02);
+    thump(140, 40, .4, .4);
+  },
+  heal() {
+    tone(560, .22, 'sine', .22, 840);
+    tone(840, .26, 'sine', .14, 1180, .06);
+  },
+  death() {
+    tone(240, .4, 'sawtooth', .3, 50);
+    noiseBurst(.35, .25, 700, .6, 'lowpass', .02);
+    thump(160, 35, .3, .35, .05);
+  },
+  win()  { [523, 659, 784, 1046].forEach((f, i) => tone(f, .26, 'triangle', .26, null, i * .11)); },
+  lose() { [392, 330, 262].forEach((f, i) => tone(f, .34, 'sine', .26, null, i * .15)); },
+  tick() { tone(880, .05, 'sine', .12); noiseBurst(.03, .08, 4000, 1.2); },
 };
 
 /* ============================================================================
@@ -1120,10 +1218,13 @@ function strike(src, tgt, mult) {
     tgt.el.classList.add('hit');
     setTimeout(() => tgt.el && tgt.el.classList.remove('hit'), 300);
   }
-  floatText(tgt.el, `-${total}`, crit ? 'crit' : 'dmg', rnd(-6, 6));
+  // 暴击飘字要够大，挂到 .cell 上，避开 .unit 的 overflow:hidden 裁剪
+  const floatHost = (crit && tgt.el && tgt.el.parentElement) ? tgt.el.parentElement : tgt.el;
+  if (crit) floatText(floatHost, '暴击', 'critlabel', rnd(-4, 4));
+  floatText(floatHost, `-${total}`, crit ? 'crit' : 'dmg', rnd(-6, 6));
   if (absorbed > 0) floatText(tgt.el, `🛡${absorbed}`, 'shield', rnd(-10, 10));
   if (em > 1) floatText(src.el, '克制', 'elem', rnd(-8, 8));
-  if (crit) { sfx.crit(); shakeArena(); } else { sfx.hit(); }
+  if (crit) { sfx.crit(); shakeArena(); flashScreen('#ff2d2d', .16); } else { sfx.hit(); }
 
   syncUnit(tgt);
 
