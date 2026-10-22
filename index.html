@@ -212,11 +212,19 @@ body.is-fs #btnFull .ic-compress{display:block}
 }
 .unit .uname{
   font-size:clamp(8px,.78vw,10px);color:#fff;white-space:nowrap;
-  margin-top:1px;letter-spacing:.3px;max-width:calc(100% - 4px);
+  letter-spacing:.3px;max-width:100%;
   overflow:hidden;text-overflow:ellipsis;
-  padding:1px 5px;border-radius:5px;
-  background:linear-gradient(90deg,rgba(8,6,16,.82),rgba(8,6,16,.42));
-  text-shadow:0 1px 3px rgba(0,0,0,.95);
+  text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 7px rgba(0,0,0,.85);
+  font-weight:700;
+}
+
+/* 卡片底部信息条：名字 + 血条 + 气势条 一起坐在渐变上 */
+.unit .cardinfo{
+  position:absolute;left:0;right:0;bottom:0;z-index:1;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:12px 4px 4px;
+  background:linear-gradient(180deg,
+    rgba(8,6,16,0) 0%,rgba(8,6,16,.45) 26%,rgba(8,6,16,.90) 56%,rgba(8,6,16,.97) 100%);
 }
 .unit .fx{
   display:flex;gap:1px;font-size:8px;line-height:1;height:0;overflow:hidden;
@@ -234,7 +242,7 @@ body.is-fs #btnFull .ic-compress{display:block}
 
 /* ---------- 立绘：铺满容器，而不是 emoji 那个小方块 ---------- */
 .pix{
-  display:block;width:100%;height:100%;object-fit:cover;object-position:50% 16%;
+  display:block;width:100%;height:100%;object-fit:cover;object-position:50% 28%;
   pointer-events:none;user-select:none;
 }
 /* 战斗卡：人像铺满整张卡，文字压在底部渐变上 */
@@ -258,12 +266,40 @@ body.is-fs #btnFull .ic-compress{display:block}
   display:grid;place-items:center;font-size:20px;
   box-shadow:0 0 0 1px rgba(255,255,255,.10),0 2px 8px rgba(0,0,0,.4);
 }
-.unit .bars{width:100%;margin-top:auto;display:flex;flex-direction:column;gap:2px;padding:2px 0 3px}
+.unit .bars{width:100%;display:flex;flex-direction:column;gap:2px}
 .unit .uanim,.unit .uname,.unit .fx,.unit .bars,.unit .pstats{flex:0 0 auto}
-.bar{height:4px;border-radius:3px;background:rgba(0,0,0,.55);overflow:hidden}
+.bar{
+  position:relative;height:5px;border-radius:3px;overflow:hidden;
+  background:rgba(255,255,255,.14);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.55);
+}
 .bar i{display:block;height:100%;width:100%;transition:width .3s ease;border-radius:3px}
+/* 气势条：更矮、琥珀色、带 4 段刻度，能一眼看出攒了几格 */
+.bar.en{height:3px;background:rgba(0,0,0,.62);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+.bar.en i{
+  background:linear-gradient(180deg,#ffe29a,#ffb52e);
+  box-shadow:0 0 6px rgba(255,190,60,.7);
+  position:relative;
+}
+.bar.en i::after{
+  content:'';position:absolute;inset:0;border-radius:3px;
+  background:repeating-linear-gradient(90deg,
+    transparent 0 calc(25% - 1px), rgba(0,0,0,.85) calc(25% - 1px) 25%);
+}
 .bar.hp i{background:linear-gradient(90deg,#63e08a,#2fbf6a)}
 .bar.hp.low i{background:linear-gradient(90deg,#ff9a5c,#e0432a)}
+.bar .hpval{
+  position:absolute;inset:0;z-index:2;display:none;
+  align-items:center;justify-content:center;
+  font-size:8px;font-weight:800;color:#fff;letter-spacing:.2px;
+  text-shadow:0 1px 2px rgba(0,0,0,.95);
+  font-variant-numeric:tabular-nums;
+}
+@media(min-width:900px){
+  .bar.hp{height:8px}
+  .bar.en{height:4px}
+  .bar .hpval{display:flex;font-size:8px}
+}
 .bar.en{height:3px}
 .bar.en i{background:linear-gradient(90deg,#ffd86b,#ff9f2e);width:0}
 .unit.ready{border-color:rgba(255,216,107,.9)!important;box-shadow:inset 0 0 26px rgba(255,216,107,.5),0 0 18px rgba(255,216,107,.35);animation:readyGlow 1.8s ease-in-out infinite}
@@ -1160,16 +1196,16 @@ function cardHTML(u, preview = false) {
       <span class="ebadge" style="color:${el.color}">${el.emoji}</span>
       <span class="onum">${u.ordText || ''}</span>
       ${u.isBoss ? '<span class="crown">👑</span>' : ''}
-      ${u.spirit.art
-        ? `<span class="portrait">${faceHTML(u.spirit)}</span>`
-        : `<span class="uanim">${faceHTML(u.spirit)}</span>`}
-      <span class="uname">${u.name}</span>
-      <span class="fx"></span>
-      <span class="bars">
-        <span class="bar hp"><i></i></span>
-        <span class="bar en"><i></i></span>
+      ${u.spirit.art ? `<span class="portrait">${faceHTML(u.spirit)}</span>` : `<span class="uanim">${faceHTML(u.spirit)}</span>`}
+      <span class="cardinfo">
+        <span class="uname">${u.name}</span>
+        <span class="fx"></span>
+        <span class="bars">
+          <span class="bar hp"><i></i><b class="hpval"></b></span>
+          <span class="bar en"><i></i></span>
+        </span>
+        <span class="pstats"><i>❤${u.maxHp}</i><i>⚔${u.atk}</i><i>⚡${u.spd}</i></span>
       </span>
-      <span class="pstats"><i>❤${u.maxHp}</i><i>⚔${u.atk}</i><i>⚡${u.spd}</i></span>
     </div>`;
 }
 
@@ -1180,6 +1216,8 @@ function syncUnit(u) {
   hpBar.querySelector('i').style.width = hpPct + '%';
   hpBar.classList.toggle('low', hpPct < 35);
   u.el.querySelector('.bar.en i').style.width = clamp(u.energy, 0, 100) + '%';
+  const hpv = u.el.querySelector('.hpval');
+  if (hpv) hpv.textContent = Math.ceil(u.hp) + '/' + u.maxHp;
 
   const fx = u.el.querySelector('.fx');
   const parts = [];
