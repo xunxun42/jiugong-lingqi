@@ -223,6 +223,7 @@ body.is-fs #btnFull .ic-compress{display:block}
 .unit .fx .up{color:#7dffb0}
 .unit .fx .dn{color:#ff9b9b}
 .unit .fx .po{color:#b9ff5c}
+.unit .fx .ov{color:#ffd76b;font-weight:800}
 .unit .bars{width:100%;margin-top:auto;display:flex;flex-direction:column;gap:2px;padding:2px 0 3px}
 .unit .uanim,.unit .uname,.unit .fx,.unit .bars,.unit .pstats{flex:0 0 auto}
 .bar{height:4px;border-radius:3px;background:rgba(0,0,0,.55);overflow:hidden}
@@ -309,6 +310,25 @@ body.is-fs #btnFull .ic-compress{display:block}
 .float.buff{color:#9dffcc;font-size:11px}
 .float.poison{color:#b9ff5c;font-size:11px}
 .float.elem{color:#fff3b0;font-size:10px}
+
+/* ---------- 图鉴 / 技能说明 ---------- */
+.codex{display:flex;flex-direction:column;gap:9px}
+.cdx{padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.03);transition:.2s}
+.cdx.hl{border-color:rgba(232,192,106,.75);box-shadow:0 0 18px rgba(232,192,106,.28)}
+.cdx-top{display:flex;align-items:center;gap:7px;font-size:13px;color:#fff;flex-wrap:wrap}
+.cdx-top b{font-weight:800;letter-spacing:.5px}
+.cdx-emoji{font-size:16px}
+.cdx-meta{margin-left:auto;font-size:10px;color:var(--muted);letter-spacing:.5px}
+.cdx-stats{font-size:10.5px;color:#9d97b8;font-variant-numeric:tabular-nums;margin-top:5px}
+.cdx-row{font-size:11.5px;line-height:1.65;color:#c9c3e2;margin-top:6px;display:flex;gap:7px;align-items:flex-start}
+.cdx-row > i{
+  flex:none;font-style:normal;font-size:9.5px;letter-spacing:1px;color:var(--gold);
+  border:1px solid rgba(232,192,106,.35);border-radius:5px;padding:0 5px;line-height:15px;margin-top:3px;
+}
+.cdx-row em{font-style:normal;color:#fff;font-weight:700}
+.cdx-tag{font-size:9.5px;color:#8f88b0;border:1px solid var(--line);border-radius:5px;padding:0 5px;margin-left:5px}
+.codex-note{font-size:10.5px;line-height:1.75;color:#8f88b0;border-top:1px solid var(--line);padding-top:9px;margin-top:4px}
+.codex-note b{color:var(--gold)}
 
 /* ---------- 中间 VS ---------- */
 .center{display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 2px}
@@ -617,6 +637,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
     </div>
     <nav class="stages" id="stageChips"></nav>
     <div class="topbtns">
+      <button class="btn ghost" id="btnCodex">图鉴</button>
       <button class="btn ghost" id="btnRules">玩法</button>
       <button class="btn ghost iconbtn" id="btnSound" title="音效">🔊</button>
       <button class="btn ghost iconbtn" id="btnFull" title="全屏" aria-label="全屏">
@@ -726,13 +747,27 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <li><b>布阵</b>：从下方精灵库挑 <b>4~6 只</b>放进左边九宫格。右列是<b>前线</b>，先出手、也最容易被盯上。</li>
       <li><b>自动出手</b>：开战瞬间比较双方<b>初始总灵速</b>（存活精灵灵速之和），高的一方成为先手并<b>整场锁定</b>。之后每回合双方<b>交替出手</b>：先手 1 号 → 后手 1 号 → 先手 2 号 → 后手 2 号……一方出完则另一方补完。</li>
       <li><b>谁先动</b>：每方内部按「<b>前线 → 中军 → 后阵</b>，每列从上到下」排序，所以前线三格最先出手。</li>
-      <li><b>能量大招</b>：普攻 +26 能量，挨打 +9 能量，攒满 100 <b>自动释放</b>大招。</li>
+      <li><b>气势</b>：上限统一 <b>100</b>，普攻 <b>+50</b>、受击 <b>+50</b>，攒满 <b>自动释放</b>大招。</li>
+      <li><b>气势溢出</b>：满 100 后多出的部分<b>不清空</b>，每 <b>10 点</b>让下一次大招效果 <b>+5%</b>（溢出 30 → +15%），释放后清零。</li>
+      <li><b>受击优先级</b>：先打与自己<b>同一排</b>的敌人，排内按 <b>前线 → 中军 → 后阵</b>；同排清空后<b>从下往上</b>（第3排 → 第2排 → 第1排）。</li>
       <li><b>元素克制</b>：炎 → 风 → 土 → 水 → 炎，光 ↔ 暗互克。克制 ×1.5，被克 ×0.75。</li>
       <li><b>自动结算</b>：一方全灭或打满 20 回合（按剩余血量判定），自动弹出伤害 / 治疗 / 承伤 / MVP 战报。</li>
       <li><b>观战</b>：战斗中可以暂停、1x / 2x / 4x 调速，也可以随时撤退重来。</li>
     </ul>
     <div class="btnrow" style="margin-top:18px">
       <button class="btn primary" id="btnCloseRules">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 图鉴 / 技能说明 ================= -->
+<div class="mask hidden" id="codexModal">
+  <div class="modal">
+    <h2 style="font-size:19px;letter-spacing:4px">精灵图鉴</h2>
+    <div class="sub">技能说明 · 战斗中点角色也能看</div>
+    <div class="codex" id="codexList"></div>
+    <div class="btnrow" style="margin-top:16px">
+      <button class="btn primary" id="btnCloseCodex">知道了</button>
     </div>
   </div>
 </div>
@@ -995,7 +1030,7 @@ function makeUnit(spiritId, side, slot, mult, isBoss = false) {
     maxHp, hp: maxHp,
     atk: Math.round(s.atk * atkMul),
     spd: s.spd,
-    energy: 0, shield: 0, shieldRounds: 0,
+    energy: 0, overflow: 0, shield: 0, shieldRounds: 0,
     effects: [], alive: true, isBoss,
     stats: { dmg: 0, heal: 0, taken: 0, kills: 0 },
     el: null,
@@ -1010,6 +1045,31 @@ const atkMod = u => {
 const aliveUnits = side => B.units.filter(u => u.side === side && u.alive);
 const otherSide = side => (side === 'player' ? 'enemy' : 'player');
 const dist = (a, b) => Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
+
+/* ============================================================================
+   4b. 气势（能量）
+   —— 上限统一 100；攻击 / 受击各 +50
+   —— 溢出不清空：每 10 点溢出，使下一次大招「技能效果」+0.05（+5%）
+   ========================================================================== */
+const ENERGY_MAX = 100;
+const ENERGY_GAIN_ATTACK = 50;
+const ENERGY_GAIN_HIT = 50;
+const OVERFLOW_PER_STEP = 10;
+const OVERFLOW_BONUS_PER_STEP = 0.05;
+
+/* 加气势，返回本次溢出量（满 100 后的超出部分不丢弃） */
+function gainEnergy(u, amount) {
+  if (!u || !u.alive) return 0;
+  const raw = u.energy + amount;
+  const overflow = Math.max(0, raw - ENERGY_MAX);
+  u.energy = Math.min(ENERGY_MAX, raw);
+  if (overflow > 0) u.overflow = (u.overflow || 0) + overflow;
+  return overflow;
+}
+
+/* 溢出换算：每 10 点 → 一层，每层 +5% 技能效果 */
+function overflowSteps(u) { return Math.floor((u.overflow || 0) / OVERFLOW_PER_STEP); }
+function ultPower(u) { return 1 + overflowSteps(u) * OVERFLOW_BONUS_PER_STEP; }
 
 function eleMult(a, d) {
   if (ELEM[a].beats === d) return 1.5;
@@ -1077,6 +1137,8 @@ function syncUnit(u) {
   const fx = u.el.querySelector('.fx');
   const parts = [];
   if (u.shield > 0) parts.push(`<b class="sh">🛡${Math.round(u.shield)}</b>`);
+  const ovSteps = overflowSteps(u);
+  if (ovSteps > 0) parts.push(`<b class="ov">⚡+${ovSteps * 5}%</b>`);
   for (const e of u.effects) {
     if (e.type === 'atkUp')   parts.push('<b class="up">🔺</b>');
     if (e.type === 'atkDown') parts.push('<b class="dn">🔻</b>');
@@ -1091,6 +1153,8 @@ function syncUnit(u) {
     : `攻击 ×${e.value}`).join('，');
   u.el.title = `${u.name} · ${u.title} · ${ELEM[u.element].name}系\n`
     + `HP ${Math.ceil(u.hp)}/${u.maxHp}　攻击 ${u.atk}　灵速 ${u.spd}\n`
+    + `气势 ${Math.round(u.energy)}/${ENERGY_MAX}`
+    + (u.overflow > 0 ? `（溢出 ${u.overflow}，大招 +${ovSteps * 5}%）` : '') + `\n`
     + `大招【${u.spirit.ult.name}】${u.spirit.ult.desc}`
     + (fxs ? `\n状态：${fxs}` : '');
 }
@@ -1210,7 +1274,7 @@ function strike(src, tgt, mult) {
   tgt.hp = Math.max(0, tgt.hp - raw);
   tgt.stats.taken += total;
   src.stats.dmg += total;
-  tgt.energy = Math.min(100, tgt.energy + 9);   // 挨打攒能量
+  gainEnergy(tgt, ENERGY_GAIN_HIT);   // 挨打攒气势（+50，溢出转技能加成）
 
   if (tgt.el) {
     tgt.el.classList.remove('hit');
@@ -1247,7 +1311,7 @@ async function basicAttack(u) {
   u.el.classList.add(u.side === 'player' ? 'lunge-r' : 'lunge-l');
   await pace(170);
   strike(u, t, 1.0);
-  u.energy = Math.min(100, u.energy + 26);
+  gainEnergy(u, ENERGY_GAIN_ATTACK);   // 普攻攒气势（+50，溢出转技能加成）
   syncUnit(u);
   await pace(190);
   u.el.classList.remove('lunge-r', 'lunge-l');
@@ -1255,13 +1319,18 @@ async function basicAttack(u) {
 }
 
 async function castUlt(u) {
-  const ult = u.spirit.ult;
+  const base = u.spirit.ult;
+  const pw = ultPower(u);                                   // 溢出气势 → 技能效果倍率
+  const ult = Object.assign({}, base, { mult: base.mult * pw });
+  const ovBonus = Math.round((pw - 1) * 100);
   u.energy = 0;
+  u.overflow = 0;                                           // 溢出被这一次大招消耗掉
   syncUnit(u);
   u.el.classList.add('casting');
   sfx.ult();
   flashScreen(ELEM[u.element].color, 0.20);
-  log(`✦ ${tag(u)} 释放【${ult.name}】`, 'ult');
+  log(`✦ ${tag(u)} 释放【${ult.name}】`
+    + (ovBonus ? ` <span style="color:#ffd76b">气势溢出 +${ovBonus}%</span>` : ''), 'ult');
   await pace(340);
 
   const foes  = aliveUnits(otherSide(u.side));
@@ -1550,6 +1619,69 @@ function renderStageChips() {
     };
     box.appendChild(b);
   });
+}
+
+/* ============================================================================
+   精灵图鉴 / 技能说明
+   ========================================================================== */
+const ULT_TAG = {
+  aoe: '全体伤害', aoeDebuff: '全体伤害 · 削弱', singleBuff: '单体爆发 · 自强化',
+  healAll: '全体治疗 · 净化', shieldAll: '全体护盾', multi: '随机多段',
+  poison: '单体 · 中毒', buffAll: '全体增益 · 治疗', drain: '单体 · 吸血',
+};
+
+function ultDetail(ult) {
+  const pct = v => Math.round(v * 100) + '%';
+  const bits = [];
+  switch (ult.type) {
+    case 'multi':     bits.push(`${ult.hits} 段 × ${pct(ult.mult)}`); break;
+    case 'healAll':   bits.push(`治疗 ${pct(ult.mult)} 攻击力`); break;
+    case 'shieldAll': bits.push(`护盾 ${pct(ult.mult)} 攻击力`); break;
+    case 'buffAll':   bits.push(`攻击 +${Math.round((ult.mult - 1) * 100)}%`); break;
+    default:          bits.push(`伤害 ${pct(ult.mult)}`);
+  }
+  if (ult.selfAtk)   bits.push(`自身攻击 +${Math.round((ult.selfAtk - 1) * 100)}%`);
+  if (ult.debuff)    bits.push(`目标攻击 -${Math.round((1 - ult.debuff) * 100)}%`);
+  if (ult.dot)       bits.push(`中毒 ${pct(ult.dot)}/回合`);
+  if (ult.dotRounds) bits.push(`中毒 ${ult.dotRounds} 回合`);
+  if (ult.heal)      bits.push(`附带治疗 ${pct(ult.heal)} 攻击力`);
+  if (ult.drain)     bits.push(`吸血 ${pct(ult.drain)}`);
+  if (ult.cleanse)   bits.push('清除友方减益');
+  if (ult.rounds)    bits.push(`持续 ${ult.rounds} 回合`);
+  return bits.join(' · ');
+}
+
+function renderCodex(focusId) {
+  const box = $('#codexList');
+  if (!box) return;
+  box.innerHTML = SPIRITS.map(s => {
+    const el = ELEM[s.element];
+    return `<div class="cdx${s.id === focusId ? ' hl' : ''}" data-sid="${s.id}">
+      <div class="cdx-top">
+        <span class="cdx-emoji">${s.emoji}</span><b>${s.name}</b>
+        <span style="color:${el.color};font-size:10.5px">${el.emoji}${el.name}系</span>
+        <span class="cdx-meta">${s.role}</span>
+      </div>
+      <div class="cdx-stats">HP ${s.hp} · 攻击 ${s.atk} · 灵速 ${s.spd}</div>
+      <div class="cdx-row"><i>普攻</i><span>单体 <em>100%</em> 攻击伤害，暴击率 12%（暴击 ×1.55）。<br>
+        命中回复气势 <em>+50</em>，目标也回 <em>+50</em>。</span></div>
+      <div class="cdx-row"><i>大招</i><span><em>${s.ult.name}</em><span class="cdx-tag">${ULT_TAG[s.ult.type] || '技能'}</span><br>
+        ${s.ult.desc}<br><span style="color:#9d97b8">${ultDetail(s.ult)}</span><br>
+        <span style="color:#9d97b8">气势满 100 释放；溢出每 10 点使本次效果 +5%</span></span></div>
+    </div>`;
+  }).join('') + `<div class="codex-note">
+    <b>气势</b>：上限统一 100，普攻 +50、受击 +50。<br>
+    <b>溢出</b>：满 100 后多出的部分不清空，每 10 点让下一次大招效果 +5%（溢出 30 → +15%），释放后清零。<br>
+    <b>受击优先级</b>：先打与自己同一排的敌人，排内 前线 → 中军 → 后阵；同排清空后从下往上（第3排 → 第2排 → 第1排）。<br>
+    <b>元素克制</b>：炎 → 风 → 土 → 水 → 炎，光 ↔ 暗互克。克制 ×1.5，被克 ×0.75。
+  </div>`;
+  const hl = box.querySelector('.cdx.hl');
+  if (hl) setTimeout(() => hl.scrollIntoView({ block: 'center', behavior: 'smooth' }), 40);
+}
+
+function openCodex(focusId) {
+  renderCodex(focusId);
+  $('#codexModal').classList.remove('hidden');
 }
 
 function renderRoster() {
@@ -1946,6 +2078,21 @@ function bindEvents() {
   $('#btnCloseRules').onclick = () => $('#rulesModal').classList.add('hidden');
   $('#rulesModal').addEventListener('click', e => {
     if (e.target.id === 'rulesModal') $('#rulesModal').classList.add('hidden');
+  });
+
+  // 图鉴 / 技能说明
+  $('#btnCodex').onclick = () => { openCodex(); sfx.tick(); };
+  $('#btnCloseCodex').onclick = () => $('#codexModal').classList.add('hidden');
+  $('#codexModal').addEventListener('click', e => {
+    if (e.target.id === 'codexModal') $('#codexModal').classList.add('hidden');
+  });
+  // 战斗中直接点角色看它的技能
+  $('#arena').addEventListener('click', e => {
+    if (state.phase !== 'battle' || !B) return;
+    const card = e.target.closest('.unit');
+    if (!card) return;
+    const u = B.units.find(x => String(x.uid) === card.dataset.uid);
+    if (u) { openCodex(u.spirit.id); sfx.tick(); }
   });
 
   // 音效开关
