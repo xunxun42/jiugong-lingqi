@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>九宫灵契 · 精灵战记</title>
+<style>
+/* ============================================================
+   九宫灵契 · 精灵战记
+   九宫格自动战斗 / 自动出手 / 自动结算
+   ------------------------------------------------------------
+   想改数值？拉到最下面 script 里的 SPIRITS（精灵）和
+   STAGES（关卡）两张表，改数字就能调平衡。
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#e8c06a;
+  --ink:#e9e7f7;
+  --muted:#8f8bb0;
+  --panel:rgba(255,255,255,.045);
+  --line:rgba(255,255,255,.09);
+  --p:#7fb0ff;
+  --e:#ff8a8a;
+}
+html,body{height:100%}
+body{
+  font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  background:#07060f;color:var(--ink);overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+body::before{
+  content:'';position:fixed;inset:-25%;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(42% 42% at 18% 12%, rgba(96,64,255,.26), transparent 68%),
+    radial-gradient(38% 38% at 84% 22%, rgba(255,64,140,.17), transparent 68%),
+    radial-gradient(48% 48% at 52% 104%, rgba(40,220,200,.13), transparent 70%),
+    radial-gradient(30% 30% at 70% 68%, rgba(255,190,90,.07), transparent 70%);
+  animation:drift 30s ease-in-out infinite alternate;
+}
+@keyframes drift{
+  0%{transform:translate3d(0,0,0) scale(1)}
+  100%{transform:translate3d(-3%,2%,0) scale(1.08)}
+}
+
+/* ---------- 布局骨架 ---------- */
+.app{
+  position:relative;z-index:1;max-width:1520px;margin:0 auto;min-height:100vh;
+  padding:12px 18px 20px;display:flex;flex-direction:column;gap:12px;
+}
+.topbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px}
+.sigil{
+  font-size:26px;color:var(--gold);line-height:1;
+  filter:drop-shadow(0 0 12px rgba(232,192,106,.85));
+  animation:pulse 3.4s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:.75;transform:scale(1)}50%{opacity:1;transform:scale(1.12)}}
+.brand h1{
+  font-size:19px;letter-spacing:5px;font-weight:600;
+  background:linear-gradient(100deg,#fff,#e8c06a 55%,#b98bff);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.brand p{font-size:10.5px;color:var(--muted);letter-spacing:2.4px;margin-top:1px}
+
+.stages{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.stage-chip{
+  font:inherit;font-size:11.5px;letter-spacing:.5px;color:var(--muted);
+  background:rgba(255,255,255,.03);border:1px solid var(--line);
+  padding:6px 11px;border-radius:999px;cursor:pointer;transition:.18s;white-space:nowrap;
+}
+.stage-chip:hover:not(:disabled){color:#fff;border-color:rgba(255,255,255,.28);transform:translateY(-1px)}
+.stage-chip.active{
+  color:#1a1408;font-weight:700;
+  background:linear-gradient(140deg,#ffe6a8,#e8c06a);
+  border-color:transparent;box-shadow:0 0 16px rgba(232,192,106,.4);
+}
+.stage-chip:disabled{opacity:.32;cursor:not-allowed}
+.topbtns{display:flex;gap:7px}
+
+/* ---------- 按钮 ---------- */
+.btn{
+  font:inherit;font-size:12px;letter-spacing:.6px;color:var(--ink);cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid var(--line);
+  padding:8px 15px;border-radius:10px;transition:.16s;white-space:nowrap;
+}
+.btn:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25)}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:transparent}
+.btn.primary{
+  color:#1a1206;font-weight:800;letter-spacing:2px;
+  background:linear-gradient(140deg,#ffe9b0,#e8c06a 50%,#d29a3a);
+  border-color:transparent;box-shadow:0 4px 20px rgba(232,192,106,.32);
+}
+.btn.primary:hover{filter:brightness(1.1);box-shadow:0 6px 26px rgba(232,192,106,.5)}
+.btn.danger{color:#ffb3b3;border-color:rgba(255,120,120,.3)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.mini{
+  font:inherit;font-size:10px;color:var(--muted);background:none;border:none;
+  cursor:pointer;padding:2px 6px;border-radius:6px;
+}
+.mini:hover{color:#fff;background:rgba(255,255,255,.08)}
+
+/* ---------- 主区域 ---------- */
+.main{
+  display:grid;grid-template-columns:minmax(0,1fr) 318px;gap:14px;
+  align-items:stretch;min-height:0;flex:1;
+}
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 20px 50px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.arena-wrap{padding:12px 14px 10px;display:flex;flex-direction:column;gap:10px}
+
+/* ---------- 速度条 ---------- */
+.speedbar{
+  display:flex;align-items:center;gap:10px;font-size:11px;
+  padding:7px 11px;border-radius:12px;background:rgba(0,0,0,.28);
+  border:1px solid rgba(255,255,255,.06);
+}
+.sp-side{display:flex;align-items:center;gap:5px;color:var(--muted);white-space:nowrap}
+.sp-side b{font-size:13px;color:#fff;font-variant-numeric:tabular-nums;}
+.sp-bars{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.sp-row{display:flex;align-items:center;gap:7px}
+.sp-row label{width:34px;font-size:9.5px;color:var(--muted);flex:none}
+.sp-track{flex:1;height:5px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden}
+.sp-track i{display:block;height:100%;width:0;border-radius:4px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.sp-track i.p{background:linear-gradient(90deg,#3f6fe0,#7fb0ff)}
+.sp-track i.e{background:linear-gradient(90deg,#e04a4a,#ff9a7a)}
+.first-tag{
+  font-size:10.5px;font-weight:700;letter-spacing:.6px;padding:3px 9px;border-radius:999px;
+  border:1px solid;white-space:nowrap;transition:.25s;
+}
+.first-tag.p{color:#9dc4ff;border-color:rgba(127,176,255,.5);background:rgba(127,176,255,.1)}
+.first-tag.e{color:#ffb0b0;border-color:rgba(255,138,138,.5);background:rgba(255,138,138,.1)}
+.first-tag.tie{color:var(--muted);border-color:var(--line);background:rgba(255,255,255,.04)}
+
+/* ---------- 战场 ---------- */
+.arena{
+  display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(6px,1.6vw,26px);
+  align-items:center;justify-items:center;align-content:center;padding:2px 0;flex:1;
+}
+.arena.shake{animation:shake .34s ease}
+@keyframes shake{
+  0%,100%{transform:translate(0,0)}
+  20%{transform:translate(-5px,3px)}
+  45%{transform:translate(5px,-3px)}
+  70%{transform:translate(-3px,2px)}
+}
+.side{width:clamp(224px,24vw,326px);display:flex;flex-direction:column;gap:6px}
+.side-head{
+  display:flex;align-items:center;gap:6px;font-size:11.5px;letter-spacing:1.6px;
+  color:#cfc9e8;
+}
+.side-head .dot{width:7px;height:7px;border-radius:50%;flex:none}
+.side-head .dot.p{background:#7fb0ff;box-shadow:0 0 10px #7fb0ff}
+.side-head .dot.e{background:#ff8a8a;box-shadow:0 0 10px #ff8a8a}
+.side.enemy .side-head{justify-content:flex-end}
+.colheads{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:7px;
+  font-size:9.5px;letter-spacing:2px;color:rgba(255,255,255,.22);text-align:center;
+}
+.grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:7px;
+  padding:7px;border-radius:16px;
+  background:radial-gradient(circle at 50% 0%,rgba(120,90,255,.1),rgba(0,0,0,.32));
+  border:1px solid rgba(255,255,255,.075);
+}
+.side.enemy .grid{background:radial-gradient(circle at 50% 0%,rgba(255,80,90,.1),rgba(0,0,0,.32))}
+.cell{
+  position:relative;aspect-ratio:1/1;border-radius:12px;
+  background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.055);
+  transition:.18s;
+}
+.cell.clickable{cursor:pointer}
+.cell.clickable:hover{background:rgba(255,255,255,.075);border-color:rgba(255,255,255,.24)}
+.cell.targetable{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.05)}
+.cell .slotno{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.14);pointer-events:none;
+}
+
+/* ---------- 单位卡 ---------- */
+.unit{
+  position:absolute;inset:3px;border-radius:11px;overflow:hidden;
+  background:linear-gradient(165deg,rgba(255,255,255,.10),rgba(255,255,255,.015));
+  border:1px solid var(--el-border,rgba(255,255,255,.16));
+  display:flex;flex-direction:column;align-items:center;
+  padding:2px 3px 0;
+  box-shadow:inset 0 0 22px var(--el-glow,transparent),0 4px 12px rgba(0,0,0,.4);
+  transition:transform .2s cubic-bezier(.3,0,.2,1),box-shadow .35s,opacity .45s,filter .45s,border-color .3s;
+  will-change:transform;
+}
+.unit .ebadge{position:absolute;top:2px;left:4px;font-size:9px;line-height:1;opacity:.9}
+.unit .onum{position:absolute;top:2px;right:4px;font-size:9px;line-height:1;color:rgba(255,255,255,.45)}
+.unit .crown{position:absolute;bottom:2px;right:3px;font-size:9px;opacity:.85}
+.unit .uanim{
+  font-size:clamp(17px,2.3vw,29px);line-height:1.15;margin-top:4px;
+  filter:drop-shadow(0 0 7px var(--el-glow,transparent));
+  transition:transform .2s;
+}
+.unit .uname{
+  font-size:clamp(8px,.78vw,10px);color:#efeaff;white-space:nowrap;
+  margin-top:1px;letter-spacing:.3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+}
+.unit .fx{
+  display:flex;gap:1px;font-size:8px;line-height:1;height:0;overflow:hidden;
+  transition:height .2s;margin-top:1px;
+}
+.unit .fx:not(:empty){height:10px}
+.unit .fx .sh{color:#7fd6ff;font-weight:700}
+.unit .fx .up{color:#7dffb0}
+.unit .fx .dn{color:#ff9b9b}
+.unit .fx .po{color:#b9ff5c}
+.unit .bars{width:100%;margin-top:auto;display:flex;flex-direction:column;gap:2px;padding:2px 0 3px}
+.bar{height:4px;border-radius:3px;background:rgba(0,0,0,.55);overflow:hidden}
+.bar i{display:block;height:100%;width:100%;transition:width .3s ease;border-radius:3px}
+.bar.hp i{background:linear-gradient(90deg,#63e08a,#2fbf6a)}
+.bar.hp.low i{background:linear-gradient(90deg,#ff9a5c,#e0432a)}
+.bar.en{height:3px}
+.bar.en i{background:linear-gradient(90deg,#ffd86b,#ff9f2e);width:0}
+.unit.ready{border-color:rgba(255,216,107,.9)!important;box-shadow:inset 0 0 26px rgba(255,216,107,.5),0 0 18px rgba(255,216,107,.35);animation:readyGlow 1.8s ease-in-out infinite}
+@keyframes readyGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.16)}}
+.unit .pstats{display:none}
+.unit.preview .bars{display:none}
+.unit.preview .pstats{
+  display:block;margin-top:auto;margin-bottom:4px;font-size:8.5px;
+  color:rgba(255,255,255,.62);letter-spacing:.2px;white-space:nowrap;
+}
+.unit.preview .uname{color:#fff}
+.unit.preview .uanim{font-size:clamp(18px,2.4vw,30px)}
+
+/* 战斗动作 */
+.unit.lunge-r{animation:lungeR .3s ease}
+.unit.lunge-l{animation:lungeL .3s ease}
+@keyframes lungeR{0%{transform:translateX(0)}40%{transform:translateX(16px) scale(1.06)}100%{transform:translateX(0)}}
+@keyframes lungeL{0%{transform:translateX(0)}40%{transform:translateX(-16px) scale(1.06)}100%{transform:translateX(0)}}
+.unit.hit{animation:hitShake .28s ease}
+@keyframes hitShake{
+  0%,100%{transform:translate(0)}
+  25%{transform:translate(-4px,2px)}
+  60%{transform:translate(4px,-2px)}
+}
+.unit.casting{
+  border-color:#fff!important;
+  box-shadow:0 0 0 2px rgba(255,255,255,.9),0 0 34px var(--el-glow,#fff)!important;
+  animation:castPop .5s ease;
+  z-index:5;
+}
+@keyframes castPop{0%{transform:scale(1)}45%{transform:scale(1.13)}100%{transform:scale(1.05)}}
+.unit.dead{filter:grayscale(1) brightness(.45);opacity:.34;transform:scale(.92)}
+.unit.dead .uanim{transform:rotate(90deg) scale(.8)}
+.unit.dead::after{
+  content:'💀';position:absolute;inset:0;display:grid;place-items:center;
+  font-size:20px;opacity:.55;
+}
+
+/* 飘字 */
+.float{
+  position:absolute;left:50%;top:32%;font-size:13px;font-weight:800;
+  pointer-events:none;transform:translateX(-50%);
+  animation:floatUp .95s cubic-bezier(.2,.7,.3,1) forwards;z-index:9;
+  text-shadow:0 2px 8px rgba(0,0,0,.95);white-space:nowrap;
+}
+@keyframes floatUp{
+  0%{opacity:0;transform:translate(-50%,6px) scale(.7)}
+  18%{opacity:1;transform:translate(-50%,-4px) scale(1.18)}
+  100%{opacity:0;transform:translate(-50%,-40px) scale(1)}
+}
+.float.dmg{color:#ff7b7b}
+.float.crit{color:#ffd76b;font-size:16px}
+.float.heal{color:#7dffb0}
+.float.shield{color:#7fd6ff;font-size:11px}
+.float.debuff{color:#c98bff;font-size:11px}
+.float.buff{color:#9dffcc;font-size:11px}
+.float.poison{color:#b9ff5c;font-size:11px}
+.float.elem{color:#fff3b0;font-size:10px}
+
+/* ---------- 中间 VS ---------- */
+.center{display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 2px}
+.round{
+  font-size:10px;letter-spacing:2px;color:var(--muted);
+  padding:2px 9px;border-radius:999px;border:1px solid var(--line);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.vsmark{
+  font-size:20px;font-weight:800;letter-spacing:2px;
+  background:linear-gradient(160deg,#fff,#e8c06a);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 14px rgba(232,192,106,.5));
+}
+.ordernote{font-size:8.5px;color:rgba(255,255,255,.28);text-align:center;line-height:1.5;letter-spacing:.5px}
+
+/* ---------- 出手顺序条 ---------- */
+.orderstrip{
+  display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+  padding:6px 9px;border-radius:11px;background:rgba(0,0,0,.26);
+  border:1px solid rgba(255,255,255,.05);min-height:32px;
+}
+.strip-label{font-size:9.5px;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-right:3px;flex:none}
+.chip{
+  display:inline-flex;align-items:center;gap:3px;font-size:10px;
+  padding:2px 7px;border-radius:999px;border:1px solid transparent;
+  transition:.2s;opacity:.72;
+}
+.chip i{font-style:normal;letter-spacing:.2px}
+.chip.player{background:rgba(127,176,255,.13);color:#aecbff;border-color:rgba(127,176,255,.2)}
+.chip.enemy{background:rgba(255,138,138,.13);color:#ffb3b3;border-color:rgba(255,138,138,.2)}
+.chip.first-of-side{margin-left:6px}
+.chip.active{
+  opacity:1;transform:translateY(-1px) scale(1.06);font-weight:700;
+  box-shadow:0 0 14px currentColor;border-color:currentColor;
+}
+.chip.active.player{background:rgba(127,176,255,.3);color:#fff}
+.chip.active.enemy{background:rgba(255,138,138,.3);color:#fff}
+.chip.gone{opacity:.22;text-decoration:line-through}
+
+/* ---------- 日志 ---------- */
+.logpanel{padding:11px 12px;display:flex;flex-direction:column;gap:7px;min-height:0;overflow:hidden}
+.loghead{display:flex;align-items:center;justify-content:space-between;font-size:11px;letter-spacing:2px;color:var(--muted)}
+.log{
+  flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;
+  font-size:11px;line-height:1.55;padding-right:4px;scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,.16) transparent;
+}
+.log::-webkit-scrollbar{width:5px}
+.log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:3px}
+.log-line{color:#b9b4d4;animation:fadeIn .25s ease;min-width:0;overflow-wrap:anywhere;word-break:break-word}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:none}}
+.log-line.round{color:var(--gold);font-weight:700;margin-top:7px;letter-spacing:1px;font-size:11.5px}
+.log-line.ult{color:#e4c9ff}
+.log-line.die{color:#ff9b9b;opacity:.9}
+.log-line.sys{color:var(--muted);font-style:italic}
+.log-line .player{color:#a8c8ff;font-weight:600}
+.log-line .enemy{color:#ffb0b0;font-weight:600}
+.log-line .num{color:#ffd76b;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---------- 底部操作区 ---------- */
+.dock{display:flex;flex-direction:column;gap:9px}
+.panelrow{display:flex;gap:14px;align-items:stretch;padding:11px 13px}
+.deploy-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.roster{display:flex;align-items:flex-start;gap:7px;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin}
+.roster::-webkit-scrollbar{height:5px}
+.roster::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:3px}
+.rcard{
+  font:inherit;flex:none;width:100px;min-height:102px;text-align:left;cursor:pointer;position:relative;
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);
+  border-radius:11px;padding:8px 9px 7px;transition:.16s;color:var(--ink);
+  display:flex;flex-direction:column;gap:2px;line-height:1.25;
+}
+.rcard:hover{background:rgba(255,255,255,.09);transform:translateY(-2px);border-color:rgba(255,255,255,.24)}
+.rcard.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 18px rgba(232,192,106,.3);background:rgba(232,192,106,.09)}
+.rcard.used{opacity:.42}
+.rcard.used::after{
+  content:'✓';position:absolute;top:4px;right:6px;font-size:11px;
+  color:#7dffb0;font-weight:800;
+}
+.rc-emoji{font-size:20px;line-height:1.1}
+.rc-name{font-size:11px;font-weight:700;letter-spacing:.3px}
+.rc-name span{font-size:8.5px;font-weight:400;color:var(--muted);margin-left:3px}
+.rc-line{display:flex;gap:5px;font-size:8.5px;color:rgba(255,255,255,.55);font-variant-numeric:tabular-nums}
+.rc-role{font-size:8.5px;color:rgba(255,255,255,.34);letter-spacing:.3px}
+.deploy-right{display:flex;flex-direction:column;justify-content:center;gap:8px;flex:none}
+.hintline{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.hintline b{color:var(--gold);font-variant-numeric:tabular-nums}
+.btnrow{display:flex;gap:7px}
+.battle-left{flex:1;display:flex;align-items:center;gap:12px;min-width:0}
+.bstate{font-size:12px;letter-spacing:1px;color:#d6d0ee}
+.bstate b{color:var(--gold)}
+#btnSpeed{width:58px;font-variant-numeric:tabular-nums}
+
+/* ---------- 弹窗 ---------- */
+.mask{
+  position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:20px;
+  background:rgba(4,3,12,.78);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+  animation:fadeIn .25s ease;
+}
+.mask.hidden{display:none}
+.modal{
+  width:min(600px,100%);max-height:88vh;overflow-y:auto;border-radius:20px;padding:22px 24px;
+  background:linear-gradient(170deg,rgba(30,24,62,.98),rgba(14,11,30,.99));
+  border:1px solid rgba(255,255,255,.13);
+  box-shadow:0 30px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.1);
+  animation:popIn .3s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes popIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+.modal h2{
+  font-size:24px;letter-spacing:6px;text-align:center;margin-bottom:2px;
+}
+.modal h2.win{color:#ffd76b;text-shadow:0 0 26px rgba(255,215,107,.6)}
+.modal h2.lose{color:#ff8a8a;text-shadow:0 0 26px rgba(255,138,138,.45)}
+.modal .sub{text-align:center;font-size:11px;color:var(--muted);letter-spacing:2px;margin-bottom:14px}
+.stars{text-align:center;font-size:22px;letter-spacing:5px;margin-bottom:14px}
+.stars span{color:rgba(255,255,255,.14)}
+.stars span.on{color:#ffd76b;text-shadow:0 0 16px rgba(255,215,107,.85);animation:starPop .5s ease backwards}
+@keyframes starPop{from{opacity:0;transform:scale(.3) rotate(-40deg)}to{opacity:1;transform:none}}
+.kv{display:flex;justify-content:center;gap:20px;font-size:11.5px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap}
+.kv b{color:#fff;font-size:13px;font-variant-numeric:tabular-nums}
+table.stats{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px}
+table.stats th{
+  color:var(--muted);font-weight:400;font-size:10px;letter-spacing:1px;
+  padding:6px 5px;border-bottom:1px solid rgba(255,255,255,.1);text-align:right;
+}
+table.stats th:first-child{text-align:left;width:36%}
+table.stats td{padding:6px 5px;text-align:right;border-bottom:1px solid rgba(255,255,255,.045);font-variant-numeric:tabular-nums;color:#cfc9e8}
+table.stats td:first-child{text-align:left;color:#fff}
+table.stats tr.mvp td{background:rgba(255,215,107,.09);color:#ffe9b0}
+table.stats tr.mvp td:first-child::after{content:' ★MVP';font-size:9px;color:#ffd76b}
+table.stats .tname{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+table.stats .tname em{font-style:normal;font-size:13px}
+.modal .btnrow{justify-content:center;flex-wrap:wrap}
+.modal h3{font-size:13px;letter-spacing:2px;color:var(--gold);margin:14px 0 8px}
+.modal ul{list-style:none;display:flex;flex-direction:column;gap:8px;font-size:12px;line-height:1.65;color:#c9c3e2}
+.modal ul b{color:#fff}
+.modal ul li{padding-left:14px;position:relative}
+.modal ul li::before{content:'◆';position:absolute;left:0;color:var(--gold);font-size:8px;top:5px}
+
+/* 全屏闪白 */
+.flash{position:fixed;inset:0;z-index:90;pointer-events:none;opacity:0;background:#fff}
+.flash.on{animation:flashOut .45s ease}
+@keyframes flashOut{0%{opacity:.32}100%{opacity:0}}
+
+/* 提示条 */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+  background:rgba(20,16,40,.96);border:1px solid rgba(255,255,255,.16);
+  padding:9px 18px;border-radius:999px;font-size:12px;z-index:200;
+  opacity:0;transition:.25s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.hidden{display:none!important}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:1180px){
+  .main{grid-template-columns:1fr}
+  .logpanel{height:190px;min-height:150px}
+}
+@media (max-width:860px){
+  .app{padding:10px}
+  .stages{order:3;width:100%;margin-left:0}
+  .side{width:clamp(140px,30vw,220px)}
+  .grid{gap:4px;padding:4px}
+  .colheads{gap:4px;font-size:8px;letter-spacing:1px}
+  .deploy-right{flex-direction:row;align-items:center;flex-wrap:wrap}
+  .panelrow{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="flash" id="flash"></div>
+<div class="toast" id="toast"></div>
+
+<div class="app">
+
+  <!-- ================= 顶栏 ================= -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="sigil">✦</div>
+      <div>
+        <h1>九宫灵契</h1>
+        <p>精灵战记 · 自动出手 · 自动结算</p>
+      </div>
+    </div>
+    <nav class="stages" id="stageChips"></nav>
+    <div class="topbtns">
+      <button class="btn ghost" id="btnRules">玩法</button>
+      <button class="btn ghost" id="btnSound">🔊</button>
+    </div>
+  </header>
+
+  <!-- ================= 主区 ================= -->
+  <div class="main">
+    <section class="panel arena-wrap">
+      <div class="speedbar">
+        <div class="sp-side">我方 <b id="pSpdTxt">—</b></div>
+        <div class="sp-bars" title="总灵速：只用来决定开局谁先出手，开战即锁定">
+          <div class="sp-row"><div class="sp-track"><i class="p" id="pSpdBar"></i></div></div>
+          <div class="sp-row"><div class="sp-track"><i class="e" id="eSpdBar"></i></div></div>
+        </div>
+        <div class="first-tag p" id="firstTag">我方先手</div>
+        <div class="sp-side" style="margin-left:auto">敌方 <b id="eSpdTxt">—</b></div>
+      </div>
+
+      <div class="arena" id="arena">
+        <div class="side player">
+          <div class="side-head"><span class="dot p"></span>我方 · 灵契者</div>
+          <div class="colheads"><span>后阵</span><span>中军</span><span>前线</span></div>
+          <div class="grid" id="gridPlayer"></div>
+        </div>
+
+        <div class="center">
+          <div class="round" id="roundLabel">布阵</div>
+          <div class="vsmark">VS</div>
+          <div class="ordernote">总灵速定先手<br>双方交替出手</div>
+        </div>
+
+        <div class="side enemy">
+          <div class="side-head"><span id="enemyName">敌方</span><span class="dot e"></span></div>
+          <div class="colheads"><span>前线</span><span>中军</span><span>后阵</span></div>
+          <div class="grid" id="gridEnemy"></div>
+        </div>
+      </div>
+
+      <div class="orderstrip" id="orderStrip">
+        <span class="strip-label">出手顺序</span>
+        <span class="chip player" style="opacity:.5">布阵后显示</span>
+      </div>
+    </section>
+
+    <aside class="panel logpanel">
+      <div class="loghead"><span>战斗记录</span><button class="mini" id="btnClearLog">清空</button></div>
+      <div class="log" id="log"></div>
+    </aside>
+  </div>
+
+  <!-- ================= 底部操作 ================= -->
+  <footer class="dock">
+    <div class="panel panelrow" id="deployPanel">
+      <div class="deploy-left">
+        <div class="roster" id="roster"></div>
+      </div>
+      <div class="deploy-right">
+        <div class="hintline">已上阵 <b id="deployCount">0</b> / 6 · 至少 4 只</div>
+        <div class="hintline" id="bonusLine">灵契加成 +0%</div>
+        <div class="btnrow">
+          <button class="btn" id="btnAuto">一键布阵</button>
+          <button class="btn ghost" id="btnClear">清空</button>
+          <button class="btn primary" id="btnFight">开 战</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panelrow hidden" id="battlePanel">
+      <div class="battle-left">
+        <div class="bstate" id="battleState">战斗进行中…</div>
+      </div>
+      <div class="btnrow">
+        <button class="btn" id="btnPause">⏸ 暂停</button>
+        <button class="btn" id="btnSpeed">1x</button>
+        <button class="btn danger ghost" id="btnRetreat">撤退</button>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ================= 结算弹窗 ================= -->
+<div class="mask hidden" id="resultModal">
+  <div class="modal">
+    <h2 id="resultTitle">胜利</h2>
+    <div class="sub" id="resultSub">—</div>
+    <div class="stars" id="resultStars"></div>
+    <div class="kv" id="resultKv"></div>
+    <div id="resultTable"></div>
+    <div class="btnrow">
+      <button class="btn ghost" id="btnAgain">再来一次</button>
+      <button class="btn ghost" id="btnBackDeploy">调整阵容</button>
+      <button class="btn primary" id="btnNext">下一关</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 玩法弹窗 ================= -->
+<div class="mask hidden" id="rulesModal">
+  <div class="modal">
+    <h2 style="font-size:19px;letter-spacing:4px">玩法</h2>
+    <div class="sub">九宫灵契 · 精灵战记</div>
+    <ul>
+      <li><b>布阵</b>：从下方精灵库挑 <b>4~6 只</b>放进左边九宫格。右列是<b>前线</b>，先出手、也最容易被盯上。</li>
+      <li><b>自动出手</b>：开战瞬间比较双方<b>初始总灵速</b>（存活精灵灵速之和），高的一方成为先手并<b>整场锁定</b>。之后每回合双方<b>交替出手</b>：先手 1 号 → 后手 1 号 → 先手 2 号 → 后手 2 号……一方出完则另一方补完。</li>
+      <li><b>谁先动</b>：每方内部按「<b>前线 → 中军 → 后阵</b>，每列从上到下」排序，所以前线三格最先出手。</li>
+      <li><b>能量大招</b>：普攻 +26 能量，挨打 +9 能量，攒满 100 <b>自动释放</b>大招。</li>
+      <li><b>元素克制</b>：炎 → 风 → 土 → 水 → 炎，光 ↔ 暗互克。克制 ×1.5，被克 ×0.75。</li>
+      <li><b>自动结算</b>：一方全灭或打满 20 回合（按剩余血量判定），自动弹出伤害 / 治疗 / 承伤 / MVP 战报。</li>
+      <li><b>观战</b>：战斗中可以暂停、1x / 2x / 4x 调速，也可以随时撤退重来。</li>
+    </ul>
+    <div class="btnrow" style="margin-top:18px">
+      <button class="btn primary" id="btnCloseRules">知道了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================================
+   0. 小工具
+   ========================================================================== */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const chance = p => Math.random() < p;
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const hexA = (hex, a) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+};
+
+/* ============================================================================
+   1. 数据表  ← 想调平衡改这里
+   ========================================================================== */
+const ELEM = {
+  fire:  { name: '炎', emoji: '🔥', color: '#ff7a45', beats: 'wind'  },
+  wind:  { name: '风', emoji: '🌪️', color: '#3fe0a2', beats: 'earth' },
+  earth: { name: '土', emoji: '🪨', color: '#d9a92e', beats: 'water' },
+  water: { name: '水', emoji: '💧', color: '#4aa8ff', beats: 'fire'  },
+  light: { name: '光', emoji: '✨', color: '#ffe07a', beats: 'dark'  },
+  dark:  { name: '暗', emoji: '🌑', color: '#a97bff', beats: 'light' },
+};
+
+const SPIRITS = [
+  { id:'phoenix', name:'菲尼克', title:'炎灵',   emoji:'🔥', element:'fire',  hp:780,  atk:162, spd:114, role:'群攻·爆发',
+    ult:{ name:'焚世之翼', type:'aoe', mult:1.55,
+          desc:'对全体敌人造成 155% 攻击的火焰伤害' } },
+
+  { id:'igris',   name:'伊格',   title:'熔岩兽', emoji:'🦎', element:'fire',  hp:1180, atk:132, spd:88,  role:'近战·坦克',
+    ult:{ name:'熔核爆裂', type:'singleBuff', mult:3.0, selfAtk:1.2, rounds:2,
+          desc:'对目标造成 300% 伤害，自身攻击 +20%（2 回合）' } },
+
+  { id:'aisling', name:'艾希',   title:'霜灵',   emoji:'❄️', element:'water', hp:860,  atk:140, spd:104, role:'控制·削弱',
+    ult:{ name:'极寒之潮', type:'aoeDebuff', mult:1.1, debuff:0.75, rounds:2,
+          desc:'对全体敌人造成 110% 伤害，攻击 -25%（2 回合）' } },
+
+  { id:'nauti',   name:'娜缇',   title:'潮汐使', emoji:'🐚', element:'water', hp:900,  atk:118, spd:96,  role:'治疗·净化',
+    ult:{ name:'潮汐祝福', type:'healAll', mult:1.9, cleanse:true,
+          desc:'治疗全体友方 190% 攻击力，并清除其减益' } },
+
+  { id:'zephyr',  name:'泽菲',   title:'疾风刃', emoji:'🌪️', element:'wind',  hp:740,  atk:148, spd:138, role:'刺客·高速',
+    ult:{ name:'千刃疾风', type:'multi', hits:4, mult:0.95,
+          desc:'随机攻击 4 次，每次 95% 伤害' } },
+
+  { id:'golem',   name:'戈仑',   title:'磐岩卫', emoji:'🪨', element:'earth', hp:1520, atk:92,  spd:72,  role:'护盾·坦克',
+    ult:{ name:'磐石壁垒', type:'shieldAll', mult:2.6, rounds:2,
+          desc:'为全体友方附加 260% 攻击力的护盾（2 回合）' } },
+
+  { id:'moss',    name:'莫斯',   title:'荆棘藤', emoji:'🌿', element:'earth', hp:980,  atk:128, spd:92,  role:'中毒·持续',
+    ult:{ name:'荆棘缠绕', type:'poison', mult:1.35, dot:0.55, dotRounds:3,
+          desc:'对目标造成 135% 伤害，并施加中毒（每回合 55%，3 回合）' } },
+
+  { id:'luna',    name:'露娜',   title:'圣辉使', emoji:'✨', element:'light', hp:880,  atk:120, spd:108, role:'增益·治疗',
+    ult:{ name:'圣辉赞歌', type:'buffAll', mult:1.25, rounds:2, heal:0.9,
+          desc:'全体友方攻击 +25%（2 回合），并治疗 90% 攻击力' } },
+
+  { id:'nox',     name:'诺克斯', title:'影蚀龙', emoji:'🐉', element:'dark',  hp:1060, atk:170, spd:100, role:'吸血·爆发',
+    ult:{ name:'暗蚀龙息', type:'drain', mult:2.5, drain:0.6,
+          desc:'对目标造成 250% 伤害，并回复其中 60% 为生命' } },
+];
+
+/* 关卡：team 里的 slot = 逻辑格子号（r*3+c），c=2 是前线 */
+const STAGES = [
+  { name:'露语林地', desc:'新手灵契者试炼', mult:{hp:.85, atk:.85},
+    team:[ {id:'golem',slot:5}, {id:'moss',slot:2}, {id:'zephyr',slot:1}, {id:'nauti',slot:0} ] },
+
+  { name:'霜蚀峡谷', desc:'寒潮封锁的山谷', mult:{hp:.95, atk:1.05},
+    team:[ {id:'golem',slot:5}, {id:'moss',slot:8}, {id:'zephyr',slot:2}, {id:'aisling',slot:1}, {id:'nauti',slot:0} ] },
+
+  { name:'熔核裂谷', desc:'地火喷涌的裂谷', mult:{hp:1.04, atk:1.16},
+    team:[ {id:'golem',slot:5}, {id:'igris',slot:8}, {id:'phoenix',slot:4}, {id:'aisling',slot:2}, {id:'nauti',slot:0} ] },
+
+  { name:'圣辉回廊', desc:'光与影交错的回廊', mult:{hp:1.15, atk:1.15},
+    team:[ {id:'golem',slot:5}, {id:'nox',slot:8}, {id:'phoenix',slot:4}, {id:'aisling',slot:2}, {id:'luna',slot:1} ] },
+
+  { name:'暗影王座', desc:'影蚀龙王的王座厅 · 首领战', mult:{hp:1.10, atk:1.04}, boss:'nox',
+    team:[ {id:'nox',slot:5}, {id:'igris',slot:8}, {id:'phoenix',slot:4}, {id:'aisling',slot:2}, {id:'nauti',slot:0}, {id:'luna',slot:1} ] },
+];
+
+/* 灵契成长：每通关 1 关，我方全体 +4% 生命与攻击 */
+const PROGRESS_PER_CLEAR = 0.04;
+const playerMult = () => {
+  const b = 1 + PROGRESS_PER_CLEAR * (state.unlocked - 1);
+  return { hp: b, atk: b };
+};
+
+const MAX_ROUNDS = 20;
+
+/* ============================================================================
+   2. 全局状态
+   ========================================================================== */
+const state = {
+  stage: 0,
+  unlocked: 1,
+  phase: 'deploy',            // deploy | battle | result
+  lineup: {},                 // slot -> spiritId  (我方)
+  selected: null,
+  speed: 1,
+  sound: true,
+};
+let B = null;                 // 当前战斗对象
+let uidSeq = 0;
+
+/* 播放时钟：统一控制暂停 / 倍速 / 中断 */
+const clock = { speed: 1, paused: false, aborted: false, token: 0 };
+
+class AbortBattle extends Error {}
+function sleep(ms) {
+  const tk = clock.token;
+  return new Promise(resolve => {
+    let remain = ms;
+    let last = performance.now();
+    function frame(now) {
+      if (tk !== clock.token || clock.aborted) return resolve('abort');
+      const dt = now - last;
+      last = now;
+      if (!clock.paused) remain -= dt * clock.speed;
+      if (remain <= 0) return resolve('ok');
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  });
+}
+async function pace(ms) {
+  const r = await sleep(ms);
+  if (r === 'abort') throw new AbortBattle();
+}
+
+/* ============================================================================
+   3. 音效（WebAudio 合成，无需素材）
+   ========================================================================== */
+let actx = null;
+function audio() {
+  if (!state.sound) return null;
+  if (!actx) {
+    try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+  }
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tone(freq, dur, type = 'sine', gain = .06, slideTo = null) {
+  const ac = audio(); if (!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, ac.currentTime);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, ac.currentTime + dur);
+  g.gain.setValueAtTime(gain, ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(); o.stop(ac.currentTime + dur);
+}
+const sfx = {
+  hit()   { tone(rnd(180, 240), .1, 'square', .05, 90); },
+  crit()  { tone(320, .16, 'square', .07, 120); tone(620, .1, 'triangle', .04); },
+  ult()   { tone(160, .38, 'sawtooth', .045, 700); },
+  heal()  { tone(520, .2, 'sine', .05, 780); },
+  death() { tone(220, .34, 'sawtooth', .05, 60); },
+  win()   { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, .26, 'triangle', .05), i * 110)); },
+  lose()  { [392, 330, 262].forEach((f, i) => setTimeout(() => tone(f, .34, 'sine', .05), i * 150)); },
+  tick()  { tone(880, .05, 'sine', .03); },
+};
+
+/* ============================================================================
+   4. 战斗单位
+   ========================================================================== */
+function makeUnit(spiritId, side, slot, mult, isBoss = false) {
+  const s = SPIRITS.find(x => x.id === spiritId);
+  const hpMul  = mult.hp  * (isBoss ? 1.5 : 1);
+  const atkMul = mult.atk * (isBoss ? 1.12 : 1);
+  const maxHp = Math.round(s.hp * hpMul);
+  return {
+    uid: ++uidSeq, side, slot, spirit: s,
+    row: Math.floor(slot / 3), col: slot % 3,
+    name: s.name, title: s.title, emoji: s.emoji, element: s.element,
+    maxHp, hp: maxHp,
+    atk: Math.round(s.atk * atkMul),
+    spd: s.spd,
+    energy: 0, shield: 0, shieldRounds: 0,
+    effects: [], alive: true, isBoss,
+    stats: { dmg: 0, heal: 0, taken: 0, kills: 0 },
+    el: null,
+  };
+}
+
+const atkMod = u => {
+  let m = 1;
+  for (const e of u.effects) if (e.type === 'atkUp' || e.type === 'atkDown') m *= e.value;
+  return m;
+};
+const aliveUnits = side => B.units.filter(u => u.side === side && u.alive);
+const otherSide = side => (side === 'player' ? 'enemy' : 'player');
+const dist = (a, b) => Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
+
+function eleMult(a, d) {
+  if (ELEM[a].beats === d) return 1.5;
+  if (ELEM[d].beats === a) return 0.75;
+  return 1;
+}
+
+/* 按距离加权选目标：前排更容易挨打 */
+function pickTarget(u, pool) {
+  const cands = pool || aliveUnits(otherSide(u.side));
+  if (!cands.length) return null;
+  const weights = cands.map(t => 1 / (1 + dist(u, t)));
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < cands.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return cands[i];
+  }
+  return cands[cands.length - 1];
+}
+
+/* ============================================================================
+   5. DOM 渲染 —— 单位卡
+   ========================================================================== */
+function cardHTML(u, preview = false) {
+  const el = ELEM[u.element];
+  return `<div class="unit ${preview ? 'preview' : ''} ${u.isBoss ? 'boss' : ''}" data-uid="${u.uid}"
+      style="--el-glow:${hexA(el.color, .40)};--el-border:${hexA(el.color, .55)}">
+      <span class="ebadge" style="color:${el.color}">${el.emoji}</span>
+      <span class="onum">${u.ordText || ''}</span>
+      ${u.isBoss ? '<span class="crown">👑</span>' : ''}
+      <span class="uanim">${u.emoji}</span>
+      <span class="uname">${u.name}</span>
+      <span class="fx"></span>
+      <span class="bars">
+        <span class="bar hp"><i></i></span>
+        <span class="bar en"><i></i></span>
+      </span>
+      <span class="pstats">❤${u.maxHp} ⚔${u.atk} ⚡${u.spd}</span>
+    </div>`;
+}
+
+function syncUnit(u) {
+  if (!u.el) return;
+  const hpPct = clamp(u.hp / u.maxHp * 100, 0, 100);
+  const hpBar = u.el.querySelector('.bar.hp');
+  hpBar.querySelector('i').style.width = hpPct + '%';
+  hpBar.classList.toggle('low', hpPct < 35);
+  u.el.querySelector('.bar.en i').style.width = clamp(u.energy, 0, 100) + '%';
+
+  const fx = u.el.querySelector('.fx');
+  const parts = [];
+  if (u.shield > 0) parts.push(`<b class="sh">🛡${Math.round(u.shield)}</b>`);
+  for (const e of u.effects) {
+    if (e.type === 'atkUp')   parts.push('<b class="up">🔺</b>');
+    if (e.type === 'atkDown') parts.push('<b class="dn">🔻</b>');
+    if (e.type === 'poison')  parts.push('<b class="po">☠</b>');
+  }
+  fx.innerHTML = parts.join('');
+  u.el.classList.toggle('ready', u.energy >= 100);
+
+  const fxs = u.effects.map(e =>
+    e.type === 'poison' ? `中毒 ${Math.round(e.value)}/回合`
+    : e.type === 'atkUp' ? `攻击 ×${e.value}`
+    : `攻击 ×${e.value}`).join('，');
+  u.el.title = `${u.name} · ${u.title} · ${ELEM[u.element].name}系\n`
+    + `HP ${Math.ceil(u.hp)}/${u.maxHp}　攻击 ${u.atk}　灵速 ${u.spd}\n`
+    + `大招【${u.spirit.ult.name}】${u.spirit.ult.desc}`
+    + (fxs ? `\n状态：${fxs}` : '');
+}
+function syncAll() { if (B) B.units.forEach(syncUnit); }
+
+/* ============================================================================
+   6. 日志 / 飘字 / 特效
+   ========================================================================== */
+function log(html, cls = '') {
+  const box = $('#log');
+  const d = document.createElement('div');
+  d.className = 'log-line ' + cls;
+  d.innerHTML = html;
+  box.appendChild(d);
+  while (box.children.length > 260) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+}
+function sideCls(u) { return u.side === 'player' ? 'player' : 'enemy'; }
+function tag(u) { return `<span class="${sideCls(u)}">${u.name}</span>`; }
+
+function floatText(el, text, cls, dx = 0) {
+  if (!el) return;
+  const s = document.createElement('span');
+  s.className = 'float ' + cls;
+  s.textContent = text;
+  s.style.marginLeft = dx + 'px';
+  el.appendChild(s);
+  setTimeout(() => s.remove(), 1000);
+}
+function shakeArena() {
+  const a = $('#arena');
+  a.classList.remove('shake');
+  void a.offsetWidth;
+  a.classList.add('shake');
+}
+function flashScreen(color, opacity) {
+  const f = $('#flash');
+  f.style.background = color;
+  f.classList.remove('on');
+  void f.offsetWidth;
+  f.style.opacity = opacity;
+  f.classList.add('on');
+  setTimeout(() => { f.style.opacity = 0; }, 460);
+}
+let toastTimer = null;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1700);
+}
+
+/* ============================================================================
+   7. 伤害 / 治疗 / 状态
+   ========================================================================== */
+function addEffect(u, type, value, rounds) {
+  const ex = u.effects.find(e => e.type === type);
+  if (ex) {
+    ex.value = type === 'atkDown' ? Math.min(ex.value, value) : Math.max(ex.value, value);
+    ex.rounds = Math.max(ex.rounds, rounds);
+  } else {
+    u.effects.push({ type, value, rounds });
+  }
+  syncUnit(u);
+}
+function addShield(u, amount, rounds) {
+  u.shield += Math.round(amount);
+  u.shieldRounds = Math.max(u.shieldRounds, rounds);
+  floatText(u.el, `🛡+${Math.round(amount)}`, 'shield');
+  syncUnit(u);
+}
+function cleanse(u) {
+  u.effects = u.effects.filter(e => e.type === 'atkUp');
+  syncUnit(u);
+}
+function healUnit(u, amount, src) {
+  if (!u.alive) return 0;
+  const before = u.hp;
+  u.hp = Math.min(u.maxHp, u.hp + amount);
+  const real = Math.round(u.hp - before);
+  if (real > 0) {
+    (src || u).stats.heal += real;   // 治疗量记在施术者头上
+    floatText(u.el, `+${real}`, 'heal');
+    syncUnit(u);
+  }
+  return real;
+}
+function killUnit(u, src) {
+  if (!u.alive) return;
+  u.alive = false;
+  u.hp = 0;
+  if (src) src.stats.kills++;
+  if (u.el) u.el.classList.add('dead');
+  log(`💀 ${tag(u)} 阵亡`, 'die');
+  sfx.death();
+  syncUnit(u);
+}
+
+/* 核心：一次攻击结算 */
+function strike(src, tgt, mult) {
+  if (!tgt || !tgt.alive) return { dmg: 0, crit: false, em: 1, killed: false };
+
+  const em = eleMult(src.element, tgt.element);
+  const crit = chance(0.12);
+  const variance = rnd(0.9, 1.1);
+  let raw = src.atk * atkMod(src) * mult * em * variance * (crit ? 1.55 : 1);
+  raw = Math.max(1, Math.round(raw));
+
+  let absorbed = 0;
+  if (tgt.shield > 0) {
+    absorbed = Math.min(tgt.shield, raw);
+    tgt.shield -= absorbed;
+    raw -= absorbed;
+  }
+  const total = raw + absorbed;
+  tgt.hp = Math.max(0, tgt.hp - raw);
+  tgt.stats.taken += total;
+  src.stats.dmg += total;
+  tgt.energy = Math.min(100, tgt.energy + 9);   // 挨打攒能量
+
+  if (tgt.el) {
+    tgt.el.classList.remove('hit');
+    void tgt.el.offsetWidth;
+    tgt.el.classList.add('hit');
+    setTimeout(() => tgt.el && tgt.el.classList.remove('hit'), 300);
+  }
+  floatText(tgt.el, `-${total}`, crit ? 'crit' : 'dmg', rnd(-6, 6));
+  if (absorbed > 0) floatText(tgt.el, `🛡${absorbed}`, 'shield', rnd(-10, 10));
+  if (em > 1) floatText(src.el, '克制', 'elem', rnd(-8, 8));
+  if (crit) { sfx.crit(); shakeArena(); } else { sfx.hit(); }
+
+  syncUnit(tgt);
+
+  log(`${tag(src)} → ${tag(tgt)} <span class="num">-${total}</span>`
+    + (em > 1 ? ' <span style="color:#ffd76b">克制</span>' : em < 1 ? ' <span style="opacity:.6">被克</span>' : '')
+    + (crit ? ' <span style="color:#ffd76b">暴击</span>' : '')
+    + (absorbed > 0 ? ` <span style="color:#7fd6ff">(盾 ${absorbed})</span>` : ''));
+
+  if (tgt.hp <= 0) killUnit(tgt, src);
+
+  return { dmg: total, crit, em, killed: !tgt.alive };
+}
+
+/* ============================================================================
+   8. 出手：普攻 / 大招
+   ========================================================================== */
+async function basicAttack(u) {
+  const t = pickTarget(u);
+  if (!t) return;
+  u.el.classList.add(u.side === 'player' ? 'lunge-r' : 'lunge-l');
+  await pace(170);
+  strike(u, t, 1.0);
+  u.energy = Math.min(100, u.energy + 26);
+  syncUnit(u);
+  await pace(190);
+  u.el.classList.remove('lunge-r', 'lunge-l');
+  await pace(90);
+}
+
+async function castUlt(u) {
+  const ult = u.spirit.ult;
+  u.energy = 0;
+  syncUnit(u);
+  u.el.classList.add('casting');
+  sfx.ult();
+  flashScreen(ELEM[u.element].color, 0.20);
+  log(`✦ ${tag(u)} 释放【${ult.name}】`, 'ult');
+  await pace(340);
+
+  const foes  = aliveUnits(otherSide(u.side));
+  const mates = aliveUnits(u.side);
+
+  switch (ult.type) {
+    case 'aoe': {
+      for (const t of foes) { strike(u, t, ult.mult); await pace(90); }
+      break;
+    }
+    case 'aoeDebuff': {
+      for (const t of foes) {
+        strike(u, t, ult.mult);
+        if (t.alive) { addEffect(t, 'atkDown', ult.debuff, ult.rounds); floatText(t.el, '攻击↓', 'debuff'); }
+        await pace(90);
+      }
+      break;
+    }
+    case 'singleBuff': {
+      const t = pickTarget(u);
+      if (t) strike(u, t, ult.mult);
+      addEffect(u, 'atkUp', ult.selfAtk, ult.rounds);
+      floatText(u.el, '攻击↑', 'buff');
+      break;
+    }
+    case 'healAll': {
+      for (const t of mates) {
+        healUnit(t, u.atk * ult.mult, u);
+        if (ult.cleanse) cleanse(t);
+        await pace(75);
+      }
+      sfx.heal();
+      break;
+    }
+    case 'shieldAll': {
+      for (const t of mates) { addShield(t, u.atk * ult.mult, ult.rounds); await pace(75); }
+      break;
+    }
+    case 'multi': {
+      for (let i = 0; i < ult.hits; i++) {
+        const alive = aliveUnits(otherSide(u.side));
+        if (!alive.length) break;
+        strike(u, pick(alive), ult.mult);
+        await pace(85);
+      }
+      break;
+    }
+    case 'poison': {
+      const t = pickTarget(u);
+      if (t) {
+        strike(u, t, ult.mult);
+        if (t.alive) {
+          addEffect(t, 'poison', Math.round(u.atk * ult.dot), ult.dotRounds);
+          floatText(t.el, '中毒', 'debuff');
+          log(`${tag(t)} 陷入中毒（${Math.round(u.atk * ult.dot)}/回合，${ult.dotRounds} 回合）`, 'sys');
+        }
+      }
+      break;
+    }
+    case 'buffAll': {
+      for (const t of mates) {
+        addEffect(t, 'atkUp', ult.mult, ult.rounds);
+        floatText(t.el, '攻击↑', 'buff');
+        await pace(60);
+      }
+      for (const t of mates) { healUnit(t, u.atk * ult.heal, u); await pace(60); }
+      sfx.heal();
+      break;
+    }
+    case 'drain': {
+      const t = pickTarget(u);
+      if (t) {
+        const r = strike(u, t, ult.mult);
+        const h = healUnit(u, r.dmg * ult.drain, u);
+        if (h > 0) log(`${tag(u)} 吸取了 ${h} 点生命`, 'sys');
+      }
+      break;
+    }
+  }
+  syncAll();
+  await pace(300);
+  u.el.classList.remove('casting');
+}
+
+/* ============================================================================
+   9. 回合流程
+   ========================================================================== */
+/* 先手判定：比较两边「初始」总灵速；持平比最快单位，再持平我方先手 */
+function decideFirst(pArr, eArr) {
+  const total = a => a.reduce((s, u) => s + u.spd, 0);
+  const pSpd = total(pArr), eSpd = total(eArr);
+  let first;
+  if (pSpd === eSpd) {
+    const pm = Math.max(0, ...pArr.map(u => u.spd));
+    const em = Math.max(0, ...eArr.map(u => u.spd));
+    first = pm >= em ? 'player' : 'enemy';
+  } else {
+    first = pSpd > eSpd ? 'player' : 'enemy';
+  }
+  return { first, pSpd, eSpd };
+}
+
+function computeRoundOrder() {
+  // 先手方在开战时就锁定（按双方初始总灵速），整场不变
+  const p = aliveUnits('player'), e = aliveUnits('enemy');
+
+  // 同一方内部：前线列 → 后阵，每列从上到下
+  const bySide = arr => arr.slice().sort((a, b) => (b.col - a.col) || (a.row - b.row));
+  const lead  = bySide(B.firstSide === 'player' ? p : e);
+  const trail = bySide(B.firstSide === 'player' ? e : p);
+
+  // 交替出手：先手1 → 后手1 → 先手2 → 后手2 …… 一方出完则另一方补完
+  const ordered = [];
+  const n = Math.max(lead.length, trail.length);
+  for (let i = 0; i < n; i++) {
+    if (lead[i])  ordered.push(lead[i]);
+    if (trail[i]) ordered.push(trail[i]);
+  }
+
+  return { first: B.firstSide, pSpd: B.pSpdInit, eSpd: B.eSpdInit, ordered };
+}
+
+function renderSpeed(info) {
+  const p = info.pSpd, e = info.eSpd;
+  const sum = Math.max(1, p + e);
+  $('#pSpdTxt').textContent = p.toFixed(0);
+  $('#eSpdTxt').textContent = e.toFixed(0);
+  $('#pSpdBar').style.width = (p / sum * 100) + '%';
+  $('#eSpdBar').style.width = (e / sum * 100) + '%';
+  const t = $('#firstTag');
+  const locked = state.phase === 'battle' || state.phase === 'result';
+  const tie = Math.abs(p - e) < 0.001;
+  t.className = 'first-tag ' + (info.first === 'player' ? 'p' : 'e');
+  t.textContent = (locked ? '🔒 ' : '')
+    + (info.first === 'player' ? '我方先手' : '敌方先手');
+  t.title = locked ? '开战时已锁定，整场不变' : '按当前阵容的总灵速预判';
+  if (!locked && tie) t.textContent = '总灵速持平 · 我方先手';
+}
+
+function renderStrip() {
+  const box = $('#orderStrip');
+  if (!B || !B.order) return;
+  let prevSide = null;
+  const html = B.order.map(u => {
+    const cls = ['chip', u.side, !u.alive ? 'gone' : '', B.current === u ? 'active' : '',
+                 prevSide && prevSide !== u.side ? 'first-of-side' : ''].filter(Boolean).join(' ');
+    prevSide = u.side;
+    return `<span class="${cls}">${u.emoji}<i>${u.name}</i></span>`;
+  }).join('');
+  box.innerHTML = `<span class="strip-label">出手顺序</span>${html}`;
+}
+
+function setRound(label) { $('#roundLabel').textContent = label; }
+
+function checkEnd() {
+  const p = aliveUnits('player').length;
+  const e = aliveUnits('enemy').length;
+  if (p === 0 && e === 0) return 'lose';
+  if (e === 0) return 'win';
+  if (p === 0) return 'lose';
+  return null;
+}
+
+async function endOfRound() {
+  // 中毒结算
+  for (const u of B.units.slice()) {
+    if (!u.alive) continue;
+    const p = u.effects.find(e => e.type === 'poison');
+    if (!p) continue;
+    const dmg = Math.max(1, Math.round(p.value));
+    u.hp = Math.max(0, u.hp - dmg);
+    u.stats.taken += dmg;
+    floatText(u.el, `-${dmg}`, 'poison');
+    log(`☠ ${tag(u)} 受到中毒伤害 <span class="num">-${dmg}</span>`, '');
+    syncUnit(u);
+    if (u.hp <= 0) killUnit(u, null);
+    await pace(130);
+  }
+  // 状态倒计时
+  for (const u of B.units) {
+    if (!u.alive) continue;
+    u.effects.forEach(e => e.rounds--);
+    u.effects = u.effects.filter(e => e.rounds > 0);
+    if (u.shieldRounds > 0) {
+      u.shieldRounds--;
+      if (u.shieldRounds <= 0) u.shield = 0;
+    }
+    syncUnit(u);
+  }
+  await pace(160);
+}
+
+async function battleLoop() {
+  let result = null;
+  for (B.round = 1; B.round <= MAX_ROUNDS; B.round++) {
+    setRound('第 ' + B.round + ' 回合');
+    const info = computeRoundOrder();
+    renderSpeed(info);
+    B.order = info.ordered;
+    B.current = null;
+    renderStrip();
+    log(`<span class="roundtag">第 ${B.round} 回合</span> · ${info.first === 'player' ? '我方' : '敌方'}先手（总灵速 ${info.pSpd.toFixed(0)} : ${info.eSpd.toFixed(0)}），双方交替出手`, 'round');
+    await pace(360);
+
+    for (const u of info.ordered) {
+      if (!u.alive) { renderStrip(); continue; }
+      B.current = u;
+      renderStrip();
+      if (u.energy >= 100) await castUlt(u);
+      else                 await basicAttack(u);
+      result = checkEnd();
+      if (result) break;
+      await pace(140);
+    }
+    if (result) break;
+
+    B.current = null;
+    renderStrip();
+    await endOfRound();
+    result = checkEnd();
+    if (result) break;
+  }
+  if (!result) result = judgeByHp();
+  finishBattle(result);
+}
+
+/* 20 回合打不完 → 比剩余血量百分比 */
+function judgeByHp() {
+  const ratio = side => {
+    const arr = B.units.filter(u => u.side === side);
+    const cur = arr.reduce((s, u) => s + u.hp, 0);
+    const max = arr.reduce((s, u) => s + u.maxHp, 0);
+    return max ? cur / max : 0;
+  };
+  const pr = ratio('player'), er = ratio('enemy');
+  log(`⏳ 达到 ${MAX_ROUNDS} 回合上限，按剩余血量判定：我方 ${(pr * 100).toFixed(0)}% vs 敌方 ${(er * 100).toFixed(0)}%`, 'round');
+  return pr >= er ? 'win' : 'lose';
+}
+
+/* ============================================================================
+   10. 布阵渲染
+   ========================================================================== */
+/* 玩家网格：正常顺序（col2 在右 = 前线）
+   敌方网格：镜像（col2 在左 = 前线），两军前线相对 */
+const PLAYER_SLOTS  = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+const ENEMY_SLOTS   = [2, 1, 0, 5, 4, 3, 8, 7, 6];
+
+function buildGrids() {
+  const gp = $('#gridPlayer'), ge = $('#gridEnemy');
+  gp.innerHTML = '';
+  ge.innerHTML = '';
+  PLAYER_SLOTS.forEach(slot => {
+    const c = document.createElement('div');
+    c.className = 'cell';
+    c.dataset.slot = slot;
+    c.innerHTML = `<span class="slotno">${slotNumberLabel(slot)}</span>`;
+    gp.appendChild(c);
+  });
+  ENEMY_SLOTS.forEach(slot => {
+    const c = document.createElement('div');
+    c.className = 'cell';
+    c.dataset.slot = slot;
+    c.innerHTML = `<span class="slotno"></span>`;
+    ge.appendChild(c);
+  });
+}
+const slotNumberLabel = slot => {
+  const col = slot % 3;
+  return ['后', '中', '前'][col] + (Math.floor(slot / 3) + 1);
+};
+
+function renderStageChips() {
+  const box = $('#stageChips');
+  box.innerHTML = '';
+  STAGES.forEach((st, i) => {
+    const b = document.createElement('button');
+    b.className = 'stage-chip' + (i === state.stage ? ' active' : '');
+    b.textContent = `${i + 1}. ${st.name}`;
+    b.disabled = i + 1 > state.unlocked;
+    b.title = st.desc + (i + 1 > state.unlocked ? '（未解锁）' : '');
+    b.onclick = () => {
+      if (i + 1 > state.unlocked) return;
+      state.stage = i;
+      renderDeploy();
+      log(`切换到关卡 ${i + 1}「${STAGES[i].name}」`, 'sys');
+    };
+    box.appendChild(b);
+  });
+}
+
+function renderRoster() {
+  const box = $('#roster');
+  box.innerHTML = '';
+  const usedIds = new Set(Object.values(state.lineup));
+  SPIRITS.forEach(s => {
+    const el = ELEM[s.element];
+    const b = document.createElement('button');
+    b.className = 'rcard'
+      + (state.selected === s.id ? ' sel' : '')
+      + (usedIds.has(s.id) ? ' used' : '');
+    b.style.setProperty('--el', el.color);
+    b.title = `${s.name} · ${s.title}\n${s.role}\nHP ${s.hp}　攻击 ${s.atk}　灵速 ${s.spd}\n大招【${s.ult.name}】${s.ult.desc}`;
+    b.innerHTML = `
+      <span class="rc-emoji" style="filter:drop-shadow(0 0 6px ${hexA(el.color, .6)})">${s.emoji}</span>
+      <span class="rc-name">${s.name}<span>${el.emoji}${s.title}</span></span>
+      <span class="rc-line"><span>❤${s.hp}</span><span>⚔${s.atk}</span><span>⚡${s.spd}</span></span>
+      <span class="rc-role">${s.role}</span>`;
+    b.onclick = () => {
+      if (usedIds.has(s.id)) {
+        // 已上阵 → 从棋盘上撤下
+        for (const k in state.lineup) {
+          if (state.lineup[k] === s.id) delete state.lineup[k];
+        }
+        state.selected = null;
+        renderDeploy();
+        return;
+      }
+      state.selected = (state.selected === s.id ? null : s.id);
+      renderDeploy();
+      sfx.tick();
+    };
+    box.appendChild(b);
+  });
+}
+
+/* 布阵阶段：两侧都显示预览卡 */
+function renderDeploy() {
+  if (state.phase !== 'deploy') return;
+  const st = STAGES[state.stage];
+
+  // —— 我方 ——
+  const pUnits = [];
+  for (const slot in state.lineup) {
+    const u = makeUnit(state.lineup[slot], 'player', +slot, playerMult());
+    pUnits.push(u);
+  }
+  const pOrder = pUnits.slice().sort((a, b) => (b.col - a.col) || (a.row - b.row));
+  pOrder.forEach((u, i) => { u.ordText = '#' + (i + 1); });
+
+  // —— 敌方 ——
+  const eUnits = st.team.map(t =>
+    makeUnit(t.id, 'enemy', t.slot, st.mult, st.boss === t.id));
+  const eOrder = eUnits.slice().sort((a, b) => (b.col - a.col) || (a.row - b.row));
+  eOrder.forEach((u, i) => { u.ordText = '#' + (i + 1); });
+
+  const gp = $('#gridPlayer'), ge = $('#gridEnemy');
+  for (const cell of gp.children) {
+    const slot = +cell.dataset.slot;
+    cell.innerHTML = `<span class="slotno">${slotNumberLabel(slot)}</span>`;
+    cell.classList.add('clickable');
+    const u = pUnits.find(x => x.slot === slot);
+    if (u) cell.insertAdjacentHTML('beforeend', cardHTML(u, true));
+  }
+  for (const cell of ge.children) {
+    const slot = +cell.dataset.slot;
+    const u = eUnits.find(x => x.slot === slot);
+    cell.innerHTML = u
+      ? cardHTML(u, true)
+      : `<span class="slotno"></span>`;
+    cell.classList.remove('clickable');
+  }
+
+  // 速度预览（总灵速 + 预判先手）
+  const dPrev = decideFirst(pUnits, eUnits);
+  renderSpeed({ pSpd: dPrev.pSpd, eSpd: dPrev.eSpd, first: dPrev.first });
+
+  $('#enemyName').textContent = `敌方 · ${st.name}`;
+  $('#deployCount').textContent = pUnits.length;
+  const bonusPct = Math.round(PROGRESS_PER_CLEAR * (state.unlocked - 1) * 100);
+  $('#bonusLine').innerHTML = `灵契加成 <b>+${bonusPct}%</b>　已通关 ${state.unlocked - 1} 关`;
+  setRound('布阵');
+  renderRoster();
+
+  // 出手顺序提示条（我方内部顺序）
+  const strip = $('#orderStrip');
+  if (!pUnits.length) {
+    strip.innerHTML = `<span class="strip-label">出手顺序</span><span class="chip player" style="opacity:.5">点下方精灵 → 点左侧格子布阵</span>`;
+  } else {
+    strip.innerHTML = `<span class="strip-label">我方出手序</span>` +
+      pOrder.map(u => `<span class="chip player">${u.emoji}<i>${u.name}</i><b style="opacity:.5;font-size:9px">${u.ordText}</b></span>`).join('');
+  }
+
+  $('#btnFight').disabled = pUnits.length < 4;
+}
+
+function autoLineup() {
+  const preset = [
+    ['golem', 5], ['nox', 8], ['phoenix', 4], ['aisling', 2], ['nauti', 0], ['luna', 1],
+  ];
+  state.lineup = {};
+  preset.forEach(([id, slot]) => { state.lineup[slot] = id; });
+  state.selected = null;
+  renderDeploy();
+}
+
+/* ============================================================================
+   11. 开战 / 结算
+   ========================================================================== */
+function buildBattle() {
+  const st = STAGES[state.stage];
+  const units = [];
+
+  for (const slot in state.lineup) {
+    units.push(makeUnit(state.lineup[slot], 'player', +slot, playerMult()));
+  }
+  st.team.forEach(t => {
+    units.push(makeUnit(t.id, 'enemy', t.slot, st.mult, st.boss === t.id));
+  });
+
+  // 开战瞬间锁定先手方：比较双方「初始」总灵速，之后整场不再改变
+  const d = decideFirst(
+    units.filter(u => u.side === 'player'),
+    units.filter(u => u.side === 'enemy')
+  );
+
+  B = {
+    units, round: 0, order: [], current: null, result: null,
+    firstSide: d.first, pSpdInit: d.pSpd, eSpdInit: d.eSpd,
+  };
+
+  // 渲染 DOM
+  const gp = $('#gridPlayer'), ge = $('#gridEnemy');
+  for (const cell of gp.children) cell.innerHTML = `<span class="slotno"></span>`;
+  for (const cell of ge.children) cell.innerHTML = `<span class="slotno"></span>`;
+
+  for (const u of units) {
+    const grid = u.side === 'player' ? gp : ge;
+    const cell = Array.from(grid.children).find(c => +c.dataset.slot === u.slot);
+    if (!cell) continue;
+    cell.innerHTML = cardHTML(u, false);
+    u.el = cell.querySelector('.unit');
+    syncUnit(u);
+  }
+}
+
+async function startBattle() {
+  if (state.phase !== 'deploy') return;
+  if (Object.keys(state.lineup).length < 4) { toast('至少上阵 4 只精灵'); return; }
+
+  // 重置播放时钟
+  clock.token++;
+  clock.aborted = false;
+  clock.paused = false;
+  clock.speed = state.speed;
+  state.paused = false;
+
+  buildBattle();
+  state.phase = 'battle';
+  setRound('第 1 回合');
+  $('#deployPanel').classList.add('hidden');
+  $('#battlePanel').classList.remove('hidden');
+  $('#log').innerHTML = '';
+  $('#btnPause').textContent = '⏸ 暂停';
+  $('#battleState').innerHTML = '<b>战斗进行中…</b>';
+  $('#stageChips').querySelectorAll('button').forEach(b => b.disabled = true);
+
+  log(`⚔ 关卡 ${state.stage + 1}「${STAGES[state.stage].name}」开战！`, 'round');
+  sfx.tick();
+
+  try {
+    await battleLoop();
+  } catch (err) {
+    if (!(err instanceof AbortBattle)) {
+      console.error(err);
+      toast('战斗出错：' + err.message);
+      backToDeploy();
+    }
+  }
+}
+
+const sideStats = side => B.units.filter(u => u.side === side);
+
+function finishBattle(result) {
+  B.result = result;
+  state.phase = 'result';
+  clock.paused = true;
+
+  const win = result === 'win';
+  const mine = sideStats('player');
+  const aliveMine = mine.filter(u => u.alive).length;
+
+  // 星级
+  let stars = 0;
+  if (win) {
+    if (aliveMine >= 3 && B.round <= 10) stars = 3;
+    else if (aliveMine >= 1) stars = 2;
+    else stars = 1;
+  }
+
+  // 解锁
+  if (win) {
+    const next = Math.min(STAGES.length, state.stage + 2);
+    if (next > state.unlocked) { state.unlocked = next; saveProgress(); }
+  }
+
+  // —— 标题 ——
+  const title = $('#resultTitle');
+  title.textContent = win ? '胜 利' : '战 败';
+  title.className = win ? 'win' : 'lose';
+  $('#resultSub').textContent = win
+    ? (state.stage === STAGES.length - 1 ? '全部关卡通关 · 灵契者之名传遍九域' : `第 ${state.stage + 1} 关「${STAGES[state.stage].name}」突破`)
+    : `第 ${state.stage + 1} 关「${STAGES[state.stage].name}」失利，调整阵容再试`;
+
+  // —— 星级 ——
+  const starBox = $('#resultStars');
+  starBox.innerHTML = [0, 1, 2].map(i =>
+    `<span class="${i < stars ? 'on' : ''}" style="animation-delay:${i * .13}s">★</span>`).join('');
+
+  // —— 关键数据 ——
+  const remainP = Math.round(mine.reduce((s, u) => s + u.hp, 0));
+  const remainE = Math.round(sideStats('enemy').reduce((s, u) => s + u.hp, 0));
+  $('#resultKv').innerHTML = `
+    <span>回合 <b>${B.round}</b></span>
+    <span>我方存活 <b>${aliveMine}/${mine.length}</b></span>
+    <span>我方剩余生命 <b>${remainP}</b></span>
+    <span>敌方剩余生命 <b>${remainE}</b></span>`;
+
+  // —— 统计表（MVP = 伤害 + 治疗*0.6） ——
+  const sorted = mine.slice().sort((a, b) =>
+    (b.stats.dmg + b.stats.heal * .6) - (a.stats.dmg + a.stats.heal * .6));
+  const mvp = sorted[0];
+  const rows = sorted.map(u => {
+    const el = ELEM[u.element];
+    return `<tr class="${u === mvp && u.stats.dmg > 0 ? 'mvp' : ''}">
+      <td><span class="tname"><em style="filter:drop-shadow(0 0 5px ${hexA(el.color, .8)})">${u.emoji}</em>${u.name}</span></td>
+      <td>${Math.round(u.stats.dmg)}</td>
+      <td>${Math.round(u.stats.heal)}</td>
+      <td>${Math.round(u.stats.taken)}</td>
+      <td>${u.stats.kills}</td>
+    </tr>`;
+  }).join('');
+
+  $('#resultTable').innerHTML = `
+    <table class="stats">
+      <thead><tr><th>精灵</th><th>伤害</th><th>治疗</th><th>承伤</th><th>击杀</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+  // 按钮
+  const last = state.stage === STAGES.length - 1;
+  $('#btnNext').classList.toggle('hidden', !win || last);
+  $('#btnAgain').classList.toggle('hidden', win && last);
+
+  $('#resultModal').classList.remove('hidden');
+  if (win) sfx.win(); else sfx.lose();
+  syncAll();
+}
+
+function backToDeploy() {
+  clock.token++;
+  clock.aborted = true;
+  clock.paused = false;
+  state.phase = 'deploy';
+  state.paused = false;
+  B = null;
+  $('#resultModal').classList.add('hidden');
+  $('#battlePanel').classList.add('hidden');
+  $('#deployPanel').classList.remove('hidden');
+  $('#btnPause').textContent = '⏸ 暂停';
+  $('#stageChips').querySelectorAll('button').forEach(b => { b.disabled = false; });
+  renderStageChips();
+  renderDeploy();
+  setRound('布阵');
+  $('#battleState').innerHTML = '';
+}
+
+/* ============================================================================
+   12. 进度存档
+   ========================================================================== */
+function saveProgress() {
+  try { localStorage.setItem('jiugong_unlocked', String(state.unlocked)); } catch (e) {}
+}
+function loadProgress() {
+  try {
+    const v = parseInt(localStorage.getItem('jiugong_unlocked') || '1', 10);
+    if (v >= 1 && v <= STAGES.length) state.unlocked = v;
+  } catch (e) {}
+}
+
+/* ============================================================================
+   13. 事件绑定 / 启动
+   ========================================================================== */
+function bindEvents() {
+  // 布阵：点格子
+  $('#gridPlayer').addEventListener('click', e => {
+    if (state.phase !== 'deploy') return;
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+    const slot = +cell.dataset.slot;
+    const occupied = state.lineup[slot];
+
+    if (occupied) {                       // 有单位 → 撤下
+      delete state.lineup[slot];
+      state.selected = null;
+      renderDeploy();
+      return;
+    }
+    if (!state.selected) { toast('先在下方选一只精灵'); return; }
+    if (Object.keys(state.lineup).length >= 6) { toast('最多上阵 6 只'); return; }
+    state.lineup[slot] = state.selected;
+    state.selected = null;
+    renderDeploy();
+    sfx.tick();
+  });
+
+  $('#btnAuto').onclick = () => { autoLineup(); sfx.tick(); };
+  $('#btnClear').onclick = () => { state.lineup = {}; state.selected = null; renderDeploy(); };
+  $('#btnFight').onclick = () => startBattle();
+
+  // 暂停 / 倍速 / 撤退
+  $('#btnPause').onclick = () => {
+    if (state.phase !== 'battle') return;
+    clock.paused = !clock.paused;
+    state.paused = clock.paused;
+    $('#btnPause').textContent = clock.paused ? '▶ 继续' : '⏸ 暂停';
+    $('#battleState').innerHTML = clock.paused
+      ? '<b>已暂停</b>　点击继续'
+      : '<b>战斗进行中…</b>';
+  };
+  $('#btnSpeed').onclick = () => {
+    const seq = [1, 2, 4];
+    state.speed = seq[(seq.indexOf(state.speed) + 1) % seq.length];
+    clock.speed = state.speed;
+    $('#btnSpeed').textContent = state.speed + 'x';
+  };
+  $('#btnRetreat').onclick = () => {
+    if (state.phase !== 'battle') return;
+    backToDeploy();
+    log('已撤退，返回布阵。', 'sys');
+  };
+
+  // 结算弹窗
+  $('#btnAgain').onclick = () => {
+    $('#resultModal').classList.add('hidden');
+    backToDeploy();
+    setTimeout(() => startBattle(), 60);
+  };
+  $('#btnBackDeploy').onclick = () => backToDeploy();
+  $('#btnNext').onclick = () => {
+    $('#resultModal').classList.add('hidden');
+    backToDeploy();
+    state.stage = Math.min(STAGES.length - 1, state.stage + 1);
+    renderStageChips();
+    renderDeploy();
+  };
+
+  // 规则
+  $('#btnRules').onclick = () => $('#rulesModal').classList.remove('hidden');
+  $('#btnCloseRules').onclick = () => $('#rulesModal').classList.add('hidden');
+  $('#rulesModal').addEventListener('click', e => {
+    if (e.target.id === 'rulesModal') $('#rulesModal').classList.add('hidden');
+  });
+
+  // 音效开关
+  $('#btnSound').onclick = () => {
+    state.sound = !state.sound;
+    $('#btnSound').textContent = state.sound ? '🔊' : '🔇';
+    if (state.sound) sfx.tick();
+  };
+
+  $('#btnClearLog').onclick = () => { $('#log').innerHTML = ''; };
+
+  // 快捷键
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && state.phase === 'battle') {
+      e.preventDefault();
+      $('#btnPause').click();
+    }
+  });
+}
+
+function init() {
+  loadProgress();
+  buildGrids();
+  bindEvents();
+  autoLineup();
+  renderStageChips();
+  log('欢迎，灵契者。选择关卡与阵容，然后开战。', 'sys');
+  log('提示：右列是前线，先出手、也最容易被集火。', 'sys');
+}
+
+init();
+</script>
+</body>
+</html>
