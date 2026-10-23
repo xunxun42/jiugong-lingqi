@@ -236,6 +236,12 @@ body.is-fs #btnFull .ic-compress{display:block}
 .unit .fx .dn{color:#ff9b9b}
 .unit .fx .po{color:#b9ff5c}
 .unit .fx .ta{color:#ffcf6b;font-weight:800}
+.unit .fx .sl{color:#c98bff;font-weight:800}
+.unit.sealed-card{filter:saturate(.5)}
+.unit.sealed-card::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:repeating-linear-gradient(45deg,rgba(201,139,255,.18) 0 6px,transparent 6px 12px);
+}
 .unit .fx .ov{color:#ffd76b;font-weight:800}
 /* 立绘：只有设了 art 字段才会出现，没设就是原来的 emoji */
 .unit .uanim{display:flex;align-items:center;justify-content:center}
@@ -892,7 +898,14 @@ table.stats .tname em{font-style:normal;font-size:13px}
 .hall-ban.got em{color:#7dffb0}
 
 /* ---------- 蚀界深渊 ---------- */
-#raidModal .modal{width:min(520px,100%)}
+#raidModal .modal{width:min(560px,100%)}
+.raid-tabs{display:flex;gap:6px;margin-bottom:10px}
+.raid-tab{
+  flex:1;padding:8px 10px;border-radius:10px;cursor:pointer;font:inherit;font-size:11.5px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--muted);transition:.15s;
+}
+.raid-tab.on{background:rgba(232,192,106,.13);border-color:rgba(232,192,106,.55);color:#fff;font-weight:700}
+.raid-tab.done em{color:#7dffb0;font-style:normal;font-size:9px;margin-left:4px}
 .raid-hero{
   display:flex;gap:14px;align-items:center;padding:14px;border-radius:14px;margin-bottom:12px;
   border:1px solid rgba(169,123,255,.32);
@@ -1249,19 +1262,12 @@ table.stats .tname em{font-style:normal;font-size:13px}
   <div class="modal">
     <h2 class="h2sm">蚀界深渊</h2>
     <div class="sub">虚魔罗盘踞的裂隙 · 可重复挑战</div>
+    <div class="raid-tabs" id="raidTabs"></div>
     <div class="raid-hero">
-      <span class="raid-face">👁️</span>
-      <span class="raid-meta">
-        <b>虚魔罗 · 虚空魔罗</b>
-        <span>🌑 暗属性 · 生命 65100 · 攻击 206</span>
-        <span><b style="color:#ffcf6b">常驻嘲讽</b>：你的所有单体攻击都会打在它身上</span>
-        <span>每次出手召唤一只 500 血虚影（上限 6 只），虚影会攻击，但很弱</span>
-        <span>范围技能被嘲讽时，倍率 × 敌方人数 —— <b style="color:#7fd6ff">召唤物越多，AoE 越猛</b></span>
-        <span class="raid-tip">打法：拖住，等它召满 6 只，再用 AoE 一次灌进去</span>
-        <span class="raid-owned" id="raidOwned">首通解锁虚魔罗</span>
-      </span>
+      <span class="raid-face" id="raidFace">👁️</span>
+      <span class="raid-meta" id="raidMeta"></span>
     </div>
-    <div class="raid-reward">通关奖励 <b>💎 1000</b> 灵晶</div>
+    <div class="raid-reward" id="raidReward">通关奖励 <b>💎 1000</b> 灵晶</div>
     <div class="btnrow">
       <button class="btn primary" id="btnRaidGo">挑战</button>
       <button class="btn ghost" id="btnCloseRaid">关闭</button>
@@ -1471,16 +1477,52 @@ const SPIRITS = [
     element:'dark', hp:500, atk:55, spd:70, role:'召唤物', hidden:true, isAdd:true,
     basic:{ name:'虚触', mult:1.0 },
     ult:{ name:'虚触', type:'single', mult:1.2, desc:'对单体造成 120% 攻击伤害' } },
+
+  /* ===== 蚀界深渊 · 雷塞娅（首通解锁） ===== */
+  { id:'leizeya', art:'assets/spirits/leizeya.webp', name:'雷塞娅', title:'神隐之光', emoji:'⚡',
+    element:'light', hp:1080, atk:158, spd:126, role:'光·神隐', gacha:true,
+    basic:{ name:'雷光斩', mult:1.33 },
+    ult:{ name:'神隐之缚', type:'sealStrike', mult:2.0,
+          desc:'对目标造成 200% 攻击伤害，并使目标进入神隐（1 回合无法行动、无法被选中）' },
+    /* —— 以下只在作为 Boss 时生效 —— */
+    bossBasic:{ name:'雷光斩', mult:1.0 },
+    bossUlt:{ name:'万雷神隐', type:'sealThree', targets:3, gain:0.05,
+              desc:'随机束缚 3 个敌人进入神隐；每束缚到一个新目标，自身全属性 +5%' } },
 ];
 
 /* 蚀界深渊：可重复挑战的首领战（不推进关卡进度） */
 const RAID = {
   name: '蚀界深渊',
-  desc: '虚魔罗盘踞的裂隙 · 可重复挑战',
-  mult: { hp: 31, atk: 1.05 },
-  boss: 'xumoluo',
-  team: [ { id:'xumoluo', slot:4 } ],
+  desc: '深渊尽头的两位守门者 · 可重复挑战',
   reward: 1000,
+  bosses: [
+    { id:'xumoluo', slot:4, mult:{ hp:31, atk:1.05 } },
+    { id:'leizeya', slot:4, mult:{ hp:33, atk:1.10 } },
+  ],
+};
+let raidSel = RAID.bosses[0].id;
+const raidConf = () => RAID.bosses.find(b => b.id === raidSel) || RAID.bosses[0];
+const RAID_INFO = {
+  xumoluo: {
+    name: '虚魔罗 · 虚空魔罗', face: '👁️', color: '169,123,255',
+    lines: [
+      '🌑 暗属性 · 生命 65100 · 攻击 206',
+      '<b style="color:#ffcf6b">常驻嘲讽</b>：你的所有单体攻击都会打在它身上',
+      '每次出手召唤一只 500 血虚影（上限 6 只），虚影会攻击，但很弱',
+      '范围技能被嘲讽时，倍率 × 敌方人数 —— <b style="color:#7fd6ff">召唤物越多，AoE 越猛</b>',
+      '打法：拖住，等它召满 6 只，再用 AoE 一次灌进去',
+    ],
+  },
+  leizeya: {
+    name: '雷塞娅 · 神隐之光', face: '⚡', color: '255,224,122',
+    lines: [
+      '☀️ 光属性 · 生命 53460 · 攻击 194',
+      '大招随机束缚 3 人进入神隐：<b style="color:#ffcf6b">1 回合无法行动、无法被选中</b>',
+      '每束缚到一个「新」目标，自身全属性 <b style="color:#ff9b9b">+5%，永久叠加</b>',
+      '束缚<b style="color:#7fd6ff">不可叠加</b>，可被净化解除',
+      '打法：嘲讽盾吸引火力 + 净化奶解缚，别让队伍被集体锁死',
+    ],
+  },
 };
 
 /* 关卡：team 里的 slot = 逻辑格子号（r*3+c），c=2 是前线 */
@@ -1725,7 +1767,14 @@ const sfx = {
    4. 战斗单位
    ========================================================================== */
 function makeUnit(spiritId, side, slot, mult, isBoss = false) {
-  const s = SPIRITS.find(x => x.id === spiritId);
+  const base = SPIRITS.find(x => x.id === spiritId);
+  /* Boss 版可能换一套技能 */
+  const s = (isBoss && (base.bossUlt || base.bossBasic))
+    ? Object.assign({}, base, {
+        basic: base.bossBasic || base.basic,
+        ult: base.bossUlt || base.ult,
+      })
+    : base;
   let hpMul  = mult.hp  * (isBoss ? 1.5 : 1);
   let atkMul = mult.atk * (isBoss ? 1.12 : 1);
   let soul = {};
@@ -1814,11 +1863,11 @@ function rowPriority(u) {
 
 /* 对面有嘲讽单位（护盾还在）时返回它 */
 function tauntTarget(side) {
-  return aliveUnits(side).find(t => t.alwaysTaunt || (t.taunt && t.shield > 0)) || null;
+  return aliveUnits(side).find(t => !(t.sealed > 0) && (t.alwaysTaunt || (t.taunt && t.shield > 0))) || null;
 }
 
 function pickTarget(u, pool) {
-  const cands = (pool || aliveUnits(otherSide(u.side))).filter(t => t && t.alive !== false);
+  const cands = (pool || aliveUnits(otherSide(u.side))).filter(t => t && t.alive !== false && !(t.sealed > 0));
   if (!cands.length) return null;
   /* 嘲讽：护盾还在时，所有攻击强制指向嘲讽者；常驻嘲讽则无条件生效 */
   const taunter = cands.find(t => t.alwaysTaunt || (t.taunt && t.shield > 0));
@@ -1890,6 +1939,7 @@ function syncUnit(u) {
   const parts = [];
   if (u.shield > 0) parts.push(`<b class="sh">🛡${Math.round(u.shield)}</b>`);
   if (u.alwaysTaunt || (u.taunt && u.shield > 0)) parts.push('<b class="ta">嘲</b>');
+  if (u.sealed > 0) parts.push('<b class="sl">缚</b>');
   const ovSteps = overflowSteps(u);
   if (ovSteps > 0) parts.push(`<b class="ov">⚡+${ovSteps * 5}%</b>`);
   for (const e of u.effects) {
@@ -1911,6 +1961,7 @@ function syncUnit(u) {
     + (u.overflow > 0 ? `（溢出 ${u.overflow}，大招 +${ovSteps * 5}%）` : '') + `\n`
     + `大招【${u.spirit.ult.name}】${u.spirit.ult.desc}`
     + (fxs ? `\n状态：${fxs}` : '');
+  if (u.el) u.el.classList.toggle('sealed-card', u.sealed > 0);
 }
 function syncAll() { if (B) B.units.forEach(syncUnit); }
 
@@ -2024,7 +2075,10 @@ function addShield(u, amount, rounds) {
 }
 function cleanse(u) {
   u.effects = u.effects.filter(e => e.type === 'atkUp');
+  const wasSealed = u.sealed > 0;
+  u.sealed = 0;
   syncUnit(u);
+  if (wasSealed && u.el) floatText(u.el, '解缚', 'buff', 6);
 }
 function healUnit(u, amount, src) {
   if (!u.alive) return 0;
@@ -2040,7 +2094,7 @@ function healUnit(u, amount, src) {
 }
 /* 按标准优先级排出所有可选目标（队首 = 原本的单体首选） */
 function orderedFoes(u) {
-  const cands = aliveUnits(otherSide(u.side));
+  const cands = aliveUnits(otherSide(u.side)).filter(t => !(t.sealed > 0));
   const out = [];
   for (const r of rowPriority(u)) {
     for (const c of COL_SWEEP) {
@@ -2376,6 +2430,44 @@ async function castUlt(u) {
       if (t) strike(u, t, ult.mult);
       break;
     }
+    /* 单体伤害 + 神隐（玩家版） */
+    case 'sealStrike': {
+      const t = pickTarget(u);
+      if (!t) break;
+      strike(u, t, ult.mult);
+      if (t.alive) {
+        t.sealed = 1;
+        if (t.el) floatText(t.el, '神隐', 'dodge');
+        log(`⛓ ${tag(t)} 被神隐束缚：1 回合无法行动、无法被选中`, 'sys');
+        syncUnit(t);
+      }
+      break;
+    }
+    /* 随机束缚 N 人，每束缚到新目标就 +5% 全属性（Boss 版） */
+    case 'sealThree': {
+      const bag = aliveUnits(otherSide(u.side)).filter(t => !(t.sealed > 0));
+      if (!bag.length) { log(`${tag(u)} 找不到可束缚的目标`, 'sys'); break; }
+      const picks = [];
+      while (picks.length < (ult.targets || 3) && bag.length) {
+        picks.push(bag.splice(Math.floor(Math.random() * bag.length), 1)[0]);
+      }
+      for (const t of picks) {
+        t.sealed = 1;
+        if (t.el) floatText(t.el, '神隐', 'dodge');
+        log(`⛓ ${tag(t)} 被神隐束缚`, 'sys');
+        syncUnit(t);
+        await pace(110);
+      }
+      const step = ult.gain || 0.05;
+      const gain = step * picks.length;
+      u.atk = Math.round(u.atk * (1 + gain));
+      u.maxHp = Math.round(u.maxHp * (1 + gain));
+      u.hp = Math.round(u.hp * (1 + gain));
+      u.sealPower = (u.sealPower || 1) * (1 + gain);   // 仅用于日志展示
+      syncUnit(u);
+      log(`▲ ${tag(u)} 束缚 ${picks.length} 个目标，全属性 +${Math.round(gain * 100)}%（累计 +${Math.round((u.sealPower - 1) * 100)}%）`, 'sys');
+      break;
+    }
     /* 全体必克 + 按总伤害转化护盾 */
     case 'aoeShield': {
       let total = 0;
@@ -2592,6 +2684,14 @@ async function battleLoop() {
     for (B.orderIdx = 0; B.orderIdx < B.order.length; B.orderIdx++) {
       const u = B.order[B.orderIdx];
       if (!u.alive) { renderStrip(); continue; }
+      if (u.sealed > 0) {                       // 神隐：整回合无法行动
+        u.sealed--;
+        log(`⛓ ${tag(u)} 处于神隐，本回合无法行动`, 'sys');
+        if (u.el) floatText(u.el, '神隐', 'dodge');
+        syncUnit(u);
+        await pace(220);
+        continue;
+      }
       B.current = u;
       renderStrip();
       if (u.energy >= 100) await castUlt(u);
@@ -2687,6 +2787,8 @@ const ULT_TAG = {
   poison: '单体 · 中毒', buffAll: '全体增益 · 治疗', drain: '单体 · 吸血',
   multiTarget: '多目标定点',
   single: '单体',
+  sealStrike: '单体伤害 · 神隐',
+  sealThree: '随机束缚 · 全属性成长',
   aoeShield: '全体伤害 · 转护盾',
   selfWard: '自身壁垒 · 嘲讽 · 弹伤',
   giftTurn: '授气势 · 立刻额外行动',
@@ -2703,6 +2805,8 @@ function ultDetail(ult) {
     case 'buffAll':   bits.push(`攻击 +${Math.round((ult.mult - 1) * 100)}%`); break;
     case 'multiTarget': bits.push(`${ult.targets} 个目标 × ${pct(ult.mult)}`); break;
     case 'single':    bits.push(`单体 ${pct(ult.mult)}`); break;
+    case 'sealStrike': bits.push(`单体 ${pct(ult.mult)}`); bits.push('附加神隐'); break;
+    case 'sealThree': bits.push(`随机束缚 ${ult.targets} 人`); bits.push(`自身全属性 +${pct(ult.gain || 0.05)}/人`); break;
     case 'aoeShield': bits.push(`全体伤害 ${pct(ult.mult)}`); if (ult.shieldPct) bits.push(`护盾 ${pct(ult.shieldPct)} 伤害量`); break;
     case 'healShield': bits.push(`治疗 ${pct(ult.mult)} 攻击力`); if (ult.shield) bits.push(`护盾 ${pct(ult.shield)} 攻击力`); break;
     case 'selfWard':  bits.push(`护盾 ${pct(ult.shieldPct)} 最大生命`); bits.push('嘲讽全体'); if (ult.reflect) bits.push(`弹伤 ${pct(ult.reflect)}`); break;
@@ -2871,7 +2975,10 @@ function autoLineup() {
    11. 开战 / 结算
    ========================================================================== */
 function buildBattle() {
-  const st = state.mode === 'raid' ? RAID : STAGES[state.stage];
+  const rc = raidConf();
+  const st = state.mode === 'raid'
+    ? { name: RAID.name, mult: rc.mult, boss: rc.id, team: [{ id: rc.id, slot: rc.slot }] }
+    : STAGES[state.stage];
   const units = [];
 
   for (const slot in state.lineup) {
@@ -2975,12 +3082,13 @@ function finishBattle(result) {
   // 解锁 + 灵晶掉落
   if (win) {
     if (state.mode === 'raid') {
-      const first = !(saveData().owned || {}).xumoluo;
+      const bossId = raidConf().id;
+      const first = !(saveData().owned || {})[bossId];
       saveData().crystal += RAID.reward;
       saveData().owned = saveData().owned || {};
-      saveData().owned.xumoluo = true;
+      saveData().owned[bossId] = true;
       log(`💎 深渊讨伐奖励 ${RAID.reward} 灵晶（当前 ${saveData().crystal}）`, 'sys');
-      if (first) log(`✦ 虚魔罗被收入灵契`, 'sys');
+      if (first) log(`✦ ${SPIRITS.find(s => s.id === bossId)?.name || bossId} 被收入灵契`, 'sys');
       saveProgress();
     } else {
       const next = Math.min(STAGES.length, state.stage + 2);
@@ -3618,6 +3726,13 @@ function bindGrow() {
 
   /* 蚀界深渊 */
   $('#btnRaid').onclick = () => { openRaid(); sfx.tick(); };
+  $('#raidTabs').addEventListener('click', e => {
+    const b = e.target.closest('[data-raid]');
+    if (!b) return;
+    raidSel = b.dataset.raid;
+    renderRaid();
+    sfx.tick();
+  });
   $('#btnCloseRaid').onclick = () => $('#raidModal').classList.add('hidden');
   $('#raidModal').addEventListener('click', e => {
     if (e.target.id === 'raidModal') $('#raidModal').classList.add('hidden');
@@ -3696,9 +3811,35 @@ function hallPull(n) {
 }
 
 let hallBusy = false;
+function renderRaid() {
+  const rc = raidConf();
+  const info = RAID_INFO[rc.id] || { name: rc.id, face: '❓', color: '232,192,106', lines: [] };
+  const sp = SPIRITS.find(s => s.id === rc.id);
+  const owned = !!(saveData().owned || {})[rc.id];
+
+  $('#raidTabs').innerHTML = RAID.bosses.map(b => {
+    const s = SPIRITS.find(x => x.id === b.id);
+    const own = !!(saveData().owned || {})[b.id];
+    return `<button class="raid-tab ${b.id === rc.id ? 'on' : ''} ${own ? 'done' : ''}" data-raid="${b.id}">
+      ${s.emoji} ${s.name}${own ? '<em>已获</em>' : ''}
+    </button>`;
+  }).join('');
+
+  const face = $('#raidFace');
+  face.textContent = info.face;
+  face.style.borderColor = `rgba(${info.color},.55)`;
+  face.style.boxShadow = `0 0 24px rgba(${info.color},.35)`;
+
+  $('#raidMeta').innerHTML =
+    `<b>${info.name}</b>` +
+    info.lines.map(l => `<span>${l}</span>`).join('') +
+    `<span class="raid-owned">${owned ? '已收入灵契 · 可在阵容中上阵' : `首通解锁${sp ? sp.name : ''}`}</span>`;
+
+  $('#raidReward').innerHTML = `通关奖励 <b>💎 ${RAID.reward}</b> 灵晶`;
+  $('#btnRaidGo').textContent = owned ? '再次挑战' : '挑战';
+}
 function openRaid() {
-  const owned = !!(saveData().owned || {}).xumoluo;
-  $('#raidOwned').textContent = owned ? '已收入灵契 · 可在阵容中上阵' : '首通解锁虚魔罗';
+  renderRaid();
   $('#raidModal').classList.remove('hidden');
 }
 function openHall() { renderHall(); $('#hallModal').classList.remove('hidden'); }
