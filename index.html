@@ -3580,8 +3580,8 @@ function bindContract() {
     saveData().contract = sel.dataset.ct;
     const cid = sel.dataset.ct;
     if (!Object.values(state.lineup).includes(cid)) {
-      if (Object.keys(state.lineup).length >= 6) toast('契约已记录 · 场上已满 6 只，先撤下一只');
-      else { let f = 0; while (f < 9 && state.lineup[f]) f++; if (f < 9) state.lineup[f] = cid; }
+      let f = 0; while (f < 9 && state.lineup[f]) f++;
+      if (f < 9) state.lineup[f] = cid; else toast('场上没有空位了，先撤下一只');
     }
     saveProgress();
     const s = SPIRITS.find(x => x.id === sel.dataset.ct);
