@@ -4383,7 +4383,7 @@ function saveProgress() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       v: 2, unlocked: state.unlocked, crystal: d.crystal,
       spirits: d.spirits, pack: d.pack, uid: d.uid,
-      owned: d.owned, pity: d.pity, divine: d.divine,
+      owned: d.owned, pity: d.pity, divine: d.divine, kyShards: d.kyShards, contract: d.contract,
     }));
     localStorage.setItem('jiugong_unlocked', String(state.unlocked));
   } catch (e) {}
@@ -4399,6 +4399,7 @@ function loadProgress() {
         crystal: o.crystal || 0, spirits: o.spirits || {},
         pack: o.pack || [], uid: o.uid || 1,
         owned: o.owned || {}, pity: o.pity || 0, divine: o.divine || null,
+        kyShards: o.kyShards || 0, contract: o.contract || null,
       };
       return;
     }
