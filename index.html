@@ -608,6 +608,57 @@ body.is-fs #btnFull .ic-compress{display:block}
 .autoline.hidden{display:none}
 .autoline b{color:var(--gold);font-weight:900}
 
+/* ===== 王权技专属 UI ===== */
+.royal-intro{
+  position:fixed;inset:0;z-index:79;display:grid;place-items:center;pointer-events:none;overflow:hidden;
+  background:radial-gradient(circle at 50% 46%, rgba(255,215,107,.16), rgba(4,3,12,.9) 62%);
+  animation:riFade .3s ease;
+}
+.royal-intro.hidden{display:none}
+.ri-rays{
+  position:absolute;width:170vmax;height:170vmax;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg, rgba(255,215,107,.26) 0deg 2.2deg, transparent 2.2deg 13deg);
+  -webkit-mask-image:radial-gradient(circle, #000 10%, transparent 58%);
+  mask-image:radial-gradient(circle, #000 10%, transparent 58%);
+  animation:riSpin 11s linear infinite;opacity:.6;
+}
+.ri-ring{
+  position:absolute;width:430px;height:430px;border-radius:50%;
+  border:2px solid rgba(255,215,107,.75);
+  box-shadow:0 0 70px rgba(255,215,107,.5), inset 0 0 70px rgba(255,215,107,.22);
+  animation:riRing 1.1s cubic-bezier(.2,.8,.3,1) both;
+}
+.ri-inner{position:relative;text-align:center;display:flex;flex-direction:column;gap:7px;
+  animation:riText .55s cubic-bezier(.2,.9,.3,1) both}
+.ri-tag{font-size:11px;letter-spacing:14px;color:rgba(255,215,107,.9);text-indent:14px}
+.ri-name{
+  font-size:clamp(28px,5vw,44px);font-weight:900;letter-spacing:10px;color:#fff;text-indent:10px;
+  text-shadow:0 0 34px rgba(255,215,107,.95),0 4px 20px rgba(0,0,0,.9);
+}
+.ri-owner{font-size:13px;letter-spacing:4px;color:#ffe9b0}
+.ri-desc{font-size:11px;letter-spacing:1px;color:rgba(255,255,255,.72);max-width:80vw}
+@keyframes riFade{from{opacity:0}to{opacity:1}}
+@keyframes riSpin{to{transform:rotate(360deg)}}
+@keyframes riRing{0%{transform:scale(.35);opacity:0}35%{opacity:1}100%{transform:scale(1.55);opacity:0}}
+@keyframes riText{0%{opacity:0;transform:translateY(14px) scale(.94)}100%{opacity:1;transform:none}}
+
+/* 王权状态：整个战场染金 */
+body.royal-on .arena-wrap{
+  box-shadow:inset 0 0 110px rgba(255,215,107,.10), 0 0 0 1px rgba(255,215,107,.22) !important;
+}
+body.royal-on .royal-strip{
+  border-color:rgba(255,215,107,.55);
+  background:linear-gradient(90deg,rgba(255,215,107,.18),rgba(255,255,255,.03));
+  animation:royalBreath 3.4s ease-in-out infinite;
+}
+@keyframes royalBreath{0%,100%{box-shadow:0 0 18px rgba(255,215,107,.18)}50%{box-shadow:0 0 34px rgba(255,215,107,.42)}}
+.royal-wrap-pulse{animation:royalPulse .75s ease}
+@keyframes royalPulse{
+  0%{box-shadow:inset 0 0 0 rgba(255,215,107,0)}
+  35%{box-shadow:inset 0 0 150px rgba(255,215,107,.32)}
+  100%{box-shadow:inset 0 0 0 rgba(255,215,107,0)}
+}
+
 /* 存档备份 */
 .savebox{
   width:100%;height:150px;resize:vertical;font:inherit;font-size:10.5px;line-height:1.6;
@@ -1380,6 +1431,18 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="btnrow" style="margin-top:16px">
       <button class="btn primary" id="btnCloseCodex">知道了</button>
     </div>
+  </div>
+</div>
+
+<!-- 王权技入局演出 -->
+<div class="royal-intro hidden" id="royalIntro">
+  <div class="ri-rays"></div>
+  <div class="ri-ring"></div>
+  <div class="ri-inner">
+    <span class="ri-tag">王 权 技</span>
+    <b class="ri-name" id="riName">星权裁决</b>
+    <span class="ri-owner" id="riOwner">天权座</span>
+    <span class="ri-desc" id="riDesc"></span>
   </div>
 </div>
 
@@ -3002,8 +3065,33 @@ function applyRoyal() {
     .map(h => `${h.name}「${h.spirit.royal.name}」`).join('、');
   const rNames = holders.filter(h => h.spirit.royal.type === 'regen')
     .map(h => `${h.name}「${h.spirit.royal.name}」`).join('、');
-  if (total && eNames) log(`👑 <b style="color:#ffd76b">王权技</b> · ${eNames} 发动：己方全体气势 +${total}`, 'sys');
+  if (total && eNames) {
+    log(`👑 <b style="color:#ffd76b">王权技</b> · ${eNames} 发动：己方全体气势 +${total}`, 'sys');
+    royalWrapPulse();
+  }
   if (healed && rNames) log(`🌿 <b style="color:#7dffb0">神佑</b> · ${rNames} 发动：己方全体回复 ${healed} 生命`, 'sys');
+}
+
+/* 王权技入局演出 */
+function showRoyalIntro(holders) {
+  const el = $('#royalIntro');
+  if (!el || !holders || !holders.length) return;
+  const h = holders[0];
+  $('#riName').textContent = h.spirit.royal.name;
+  $('#riOwner').textContent = `${h.emoji} ${h.name}`;
+  $('#riDesc').textContent = h.spirit.royal.desc;
+  el.classList.remove('hidden');
+  sfx.win();
+  clearTimeout(showRoyalIntro._t);
+  showRoyalIntro._t = setTimeout(() => el.classList.add('hidden'), 1700);
+}
+function royalWrapPulse() {
+  const aw = $('.arena-wrap');
+  if (!aw) return;
+  aw.classList.remove('royal-wrap-pulse');
+  void aw.offsetWidth;
+  aw.classList.add('royal-wrap-pulse');
+  setTimeout(() => aw.classList.remove('royal-wrap-pulse'), 800);
 }
 
 /* 在排队中插入一次额外行动（紧接着当前行动者，不挤占目标原本的回合） */
@@ -3452,6 +3540,10 @@ async function startBattle() {
 
   buildBattle();
   renderRoyal(B.units.filter(u => u.side === 'player'));
+  /* 王权技：入局演出 + 战场染金 */
+  const royalHolders = B.units.filter(u => u.side === 'player' && u.spirit.royal);
+  document.body.classList.toggle('royal-on', royalHolders.length > 0);
+  if (royalHolders.length) setTimeout(() => showRoyalIntro(royalHolders), 320);
   state.phase = 'battle';
   setRound('第 1 回合');
   $('#deployPanel').classList.add('hidden');
@@ -3623,6 +3715,9 @@ function scheduleAutoFarm() {
 
 function backToDeploy() {
   clearAutoFarm();
+  document.body.classList.remove('royal-on');
+  const ri = $('#royalIntro');
+  if (ri) ri.classList.add('hidden');
   clock.token++;
   clock.aborted = true;
   clock.paused = false;
