@@ -3586,6 +3586,7 @@ function bindContract() {
     saveProgress();
     const s = SPIRITS.find(x => x.id === sel.dataset.ct);
     toast('已契约 ' + (s ? s.name : '') + ' · 已放入阵中');
+    renderDeploy();
     $('#contractModal').classList.add('hidden');
     renderRoster();
   };
