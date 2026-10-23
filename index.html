@@ -534,11 +534,54 @@ body.is-fs #btnFull .ic-compress{display:block}
 .dock{display:flex;flex-direction:column;gap:9px}
 .panelrow{display:flex;gap:14px;align-items:stretch;padding:11px 13px}
 .deploy-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
-.roster{display:flex;align-items:flex-start;gap:7px;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin}
-.roster::-webkit-scrollbar{height:5px}
-.roster::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:3px}
+.roster{display:grid;grid-template-columns:repeat(auto-fill,100px);gap:7px;justify-content:start;align-items:start}
+/* 关卡按钮（顶部） */
+.stagebtn{
+  font:inherit;font-size:12px;padding:8px 14px;border-radius:11px;cursor:pointer;flex:none;
+  background:linear-gradient(140deg,rgba(232,192,106,.16),rgba(232,192,106,.05));
+  border:1px solid rgba(232,192,106,.5);color:#ffe9b0;font-weight:700;letter-spacing:.5px;
+  display:flex;align-items:center;gap:6px;transition:.15s;
+}
+.stagebtn:hover{background:rgba(232,192,106,.22)}
+.stagebtn i{font-style:normal;font-size:9px;opacity:.75}
+.stages{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px}
+
+.cdx.locked{opacity:.72;border-style:dashed}
+.cdx.locked b{color:#6f6a8c;letter-spacing:2px}
+
+/* 存档备份 */
+.savebox{
+  width:100%;height:150px;resize:vertical;font:inherit;font-size:10.5px;line-height:1.6;
+  padding:10px 12px;border-radius:11px;background:rgba(0,0,0,.35);color:#cfc9e8;
+  border:1px solid var(--line);outline:none;word-break:break-all;font-family:ui-monospace,Consolas,monospace;
+}
+.savebox:focus{border-color:rgba(232,192,106,.5)}
+.savewarn{font-size:10px;color:#ff9b9b;text-align:center;margin-top:9px;letter-spacing:.3px}
+
+/* 卡组工具条：搜索 / 筛选 / 翻页 */
+.dock-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:8px}
+.rsearch{
+  font:inherit;font-size:11px;padding:6px 10px;border-radius:9px;min-width:130px;flex:1;max-width:220px;
+  background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--ink);outline:none;
+}
+.rsearch:focus{border-color:rgba(232,192,106,.55);background:rgba(232,192,106,.06)}
+.rsearch::placeholder{color:rgba(255,255,255,.32)}
+.rfilters{display:flex;gap:5px;flex-wrap:wrap}
+.rf{
+  font:inherit;font-size:10.5px;padding:5px 9px;border-radius:8px;cursor:pointer;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--muted);transition:.15s;
+}
+.rf:hover{background:rgba(255,255,255,.09)}
+.rf.on{background:rgba(232,192,106,.15);border-color:rgba(232,192,106,.6);color:#fff;font-weight:700}
+.rpager{display:flex;align-items:center;gap:6px;margin-left:auto}
+.rpager button{
+  font:inherit;font-size:12px;width:26px;height:26px;border-radius:8px;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--ink);
+}
+.rpager button:disabled{opacity:.3;cursor:not-allowed}
+.rpager span{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:38px;text-align:center}
 .rcard{
-  font:inherit;flex:none;width:100px;min-height:102px;text-align:left;cursor:pointer;position:relative;
+  font:inherit;width:100%;min-width:0;min-height:102px;text-align:left;cursor:pointer;position:relative;
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);
   border-radius:11px;padding:8px 9px 7px;transition:.16s;color:var(--ink);
   display:flex;flex-direction:column;gap:2px;line-height:1.25;
@@ -635,6 +678,13 @@ table.stats .tname em{font-style:normal;font-size:13px}
   .arena{flex:0 0 auto}
 }
 @media (max-width:860px){
+  /* 卡组：固定列宽，只排列数变化 */
+  .roster{grid-template-columns:repeat(auto-fill,92px);gap:6px}
+  .rcard{min-height:96px;padding:6px 7px 6px}
+  .dock-tools{gap:6px}
+  .rsearch{max-width:none;flex:1 1 100%;order:-1}
+  .rpager{margin-left:0;width:100%;justify-content:flex-end}
+  .stagebtn{font-size:11px;padding:7px 12px}
   /* 基础触屏优化 */
   html{-webkit-text-size-adjust:100%}
   body{overscroll-behavior-y:contain}
@@ -1111,7 +1161,9 @@ table.stats .tname em{font-style:normal;font-size:13px}
         <p>精灵战记 · 自动出手 · 自动结算</p>
       </div>
     </div>
-    <nav class="stages" id="stageChips"></nav>
+    <button class="stagebtn" id="btnStages" title="切换关卡">
+      <span id="curStageName">关卡</span><i>▾</i>
+    </button>
     <div class="topbtns">
       <button class="btn ghost" id="btnGrow">养成</button>
       <button class="btn ghost" id="btnCodex">图鉴</button>
@@ -1179,6 +1231,15 @@ table.stats .tname em{font-style:normal;font-size:13px}
   <footer class="dock">
     <div class="panel panelrow" id="deployPanel">
       <div class="deploy-left">
+        <div class="dock-tools">
+          <input class="rsearch" id="rosterSearch" placeholder="搜索名字 / 称号…" autocomplete="off">
+          <div class="rfilters" id="rosterFilters"></div>
+          <div class="rpager">
+            <button id="rosterPrev" title="上一页">◀</button>
+            <span id="rosterPage">1/1</span>
+            <button id="rosterNext" title="下一页">▶</button>
+          </div>
+        </div>
         <div class="roster" id="roster"></div>
       </div>
       <div class="deploy-right">
@@ -1234,12 +1295,14 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <li><b>气势溢出</b>：满 100 后多出的部分<b>不清空</b>，每 <b>10 点</b>让下一次大招效果 <b>+5%</b>（溢出 30 → +15%），释放后清零。</li>
       <li><b>受击优先级</b>：先打与自己<b>同一排</b>的敌人，排内按 <b>前线 → 中军 → 后阵</b>；同排清空后<b>从下往上</b>（第3排 → 第2排 → 第1排）。</li>
       <li><b>元素克制</b>：炎 → 风 → 土 → 水 → 炎，光 ↔ 暗互克。克制 ×1.5，被克 ×0.75。</li>
-      <li><b>灵晶与等级</b>：通关掉落 <b>200 + 5×关卡</b> 灵晶，<b>1 灵晶 = 20 经验</b>。角色最高 <b>Lv 100</b>，每级 <b>+2% 生命与攻击</b>（满级 ×2.98）。</li>
-      <li><b>灵念</b>：花 <b>120 灵晶</b>抽一个，9 种属性（格挡 / 暴击 / 防暴 / 破击 / 命中 / 闪避 / 固伤 / 伤害 / 全属性），分凡·珍·绝三档。每个角色最多装 <b>3 个</b>。</li>
-      <li><b>自动结算</b>：一方全灭或打满 20 回合（按剩余血量判定），自动弹出伤害 / 治疗 / 承伤 / MVP 战报。</li>
+      <li><b>灵晶与等级</b>：通关掉落 <b>150 + 60×关卡</b> 灵晶，<b>1 灵晶 = 20 经验</b>。角色最高 <b>Lv 100</b>，每级 <b>+2% 生命与攻击</b>（满级 ×2.98）。</li>
+      <li><b>灵念</b>：花 <b>600 灵晶</b>抽一个，9 种属性，分凡·珍·绝三档。<b>5 颗同品质可合成 1 颗更高品质</b>（200 + 200×品质系数）。每个角色最多装 <b>3 个</b>。</li>
+      <li><b>深渊</b>：虚魔罗 / 雷塞娅 两位首领，可重复挑战，<b>必须在 20 回合内击杀</b>，超时判负。首通解锁该角色。</li>
+      <li><b>自动结算</b>：一方全灭或打满 20 回合（普通关按剩余血量判定），自动弹出伤害 / 治疗 / 承伤 / MVP 战报。</li>
       <li><b>观战</b>：战斗中可以暂停、1x / 2x / 4x 调速，也可以随时撤退重来。</li>
     </ul>
     <div class="btnrow" style="margin-top:18px">
+      <button class="btn" id="btnOpenSave">存档备份</button>
       <button class="btn primary" id="btnCloseRules">知道了</button>
     </div>
   </div>
@@ -1254,6 +1317,34 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="btnrow" style="margin-top:16px">
       <button class="btn primary" id="btnCloseCodex">知道了</button>
     </div>
+  </div>
+</div>
+
+<!-- ================= 关卡选择 ================= -->
+<div class="mask hidden" id="stageModal">
+  <div class="modal" style="width:min(680px,100%)">
+    <h2 class="h2sm">选择关卡</h2>
+    <div class="sub">通关解锁下一关 · 深渊另有入口</div>
+    <nav class="stages" id="stageChips"></nav>
+    <div class="btnrow" style="margin-top:16px">
+      <button class="btn primary" id="btnCloseStages">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 存档备份 ================= -->
+<div class="mask hidden" id="saveModal">
+  <div class="modal" style="width:min(540px,100%)">
+    <h2 class="h2sm">存档备份</h2>
+    <div class="sub">复制文本保存好；换设备时粘贴回来点「导入」</div>
+    <textarea class="savebox" id="saveBox" spellcheck="false" placeholder="点「导出」生成备份，或把备份文本粘贴到这里再点「导入」"></textarea>
+    <div class="btnrow">
+      <button class="btn" id="btnExport">导出</button>
+      <button class="btn" id="btnCopySave">复制</button>
+      <button class="btn primary" id="btnImport">导入</button>
+      <button class="btn ghost" id="btnCloseSave">关闭</button>
+    </div>
+    <div class="savewarn">⚠ 导入会覆盖当前进度，请先把现在的存档导出备份</div>
   </div>
 </div>
 
@@ -2792,6 +2883,12 @@ const slotNumberLabel = slot => {
 };
 
 function renderStageChips() {
+  const cur = $('#curStageName');
+  if (cur) {
+    cur.textContent = state.mode === 'raid'
+      ? '深渊 · ' + (SPIRITS.find(s => s.id === raidSel)?.name || '')
+      : `${state.stage + 1}. ${STAGES[state.stage] ? STAGES[state.stage].name : ''}`;
+  }
   const box = $('#stageChips');
   box.innerHTML = '';
   STAGES.forEach((st, i) => {
@@ -2805,6 +2902,8 @@ function renderStageChips() {
       state.mode = 'stage';
       state.stage = i;
       renderDeploy();
+      renderStageChips();
+      $('#stageModal').classList.add('hidden');
       log(`切换到关卡 ${i + 1}「${STAGES[i].name}」`, 'sys');
     };
     box.appendChild(b);
@@ -2862,6 +2961,21 @@ function renderCodex(focusId) {
   if (!box) return;
   box.innerHTML = SPIRITS.filter(s => !s.hidden).map(s => {
     const el = ELEM[s.element];
+    /* 未获得：只显示问号，不剧透 */
+    if (!ownedIds().has(s.id)) {
+      return `<div class="cdx locked" data-sid="${s.id}">
+        <div class="cdx-top">
+          <span class="cdx-emoji">❓</span><b>？？？</b>
+          <span style="color:#5c5877;font-size:10.5px">属性未知</span>
+          <span class="cdx-meta">未获得</span>
+        </div>
+        <div class="cdx-stats">HP — · 攻击 — · 灵速 —</div>
+        <div class="cdx-row"><i>普攻</i><span style="color:#5c5877">？？？</span></div>
+        <div class="cdx-row"><i>王权技</i><span style="color:#5c5877">？？？</span></div>
+        <div class="cdx-row"><i>大招</i><span style="color:#5c5877">？？？</span></div>
+        <div class="cdx-row"><i>线索</i><span style="color:#8f89ad">${s.gacha ? '在「群星圣堂」或深渊中等待被唤醒' : '尚未收入灵契'}</span></div>
+      </div>`;
+    }
     return `<div class="cdx${s.id === focusId ? ' hl' : ''}" data-sid="${s.id}">
       <div class="cdx-top">
         <span class="cdx-emoji">${faceHTML(s)}</span><b>${s.name}</b>
@@ -2895,11 +3009,51 @@ function openCodex(focusId) {
   $('#codexModal').classList.remove('hidden');
 }
 
+let rosterPage = 0, rosterFilter = 'all', rosterQuery = '';
+/* 每页 = 实际列数 × 2 行 */
+function rosterPageSize() {
+  const box = $('#roster');
+  const w = (box && box.clientWidth) ? box.clientWidth : 720;
+  const cw = window.innerWidth < 860 ? 92 : 100;
+  const cols = Math.max(2, Math.floor((w + 7) / (cw + 7)));
+  return cols * 2;
+}
+
 function renderRoster() {
   const box = $('#roster');
+
+  /* 筛选条 */
+  const fbox = $('#rosterFilters');
+  if (fbox) {
+    const els = [['all', '全部'], ...Object.keys(ELEM).map(k => [k, `${ELEM[k].emoji}${ELEM[k].name}`])];
+    fbox.innerHTML = els.map(([k, label]) =>
+      `<button class="rf ${rosterFilter === k ? 'on' : ''}" data-rf="${k}">${label}</button>`).join('');
+  }
+
+  /* 过滤：元素 + 名字搜索 */
+  const q = rosterQuery.trim().toLowerCase();
+  const list = ownedSpirits().filter(s => {
+    if (rosterFilter !== 'all' && s.element !== rosterFilter) return false;
+    if (!q) return true;
+    return `${s.name}${s.title}${s.role}`.toLowerCase().includes(q);
+  });
+
+  /* 分页：桌面 6列×2行=12，手机 4列×2行=8 */
+  const size = rosterPageSize();
+  const pages = Math.max(1, Math.ceil(list.length / size));
+  rosterPage = Math.max(0, Math.min(rosterPage, pages - 1));
+  const slice = list.slice(rosterPage * size, rosterPage * size + size);
+  if ($('#rosterPage')) $('#rosterPage').textContent = `${rosterPage + 1}/${pages}`;
+  if ($('#rosterPrev')) $('#rosterPrev').disabled = rosterPage <= 0;
+  if ($('#rosterNext')) $('#rosterNext').disabled = rosterPage >= pages - 1;
+
   box.innerHTML = '';
+  if (!slice.length) {
+    box.innerHTML = '<div class="hintline" style="grid-column:1/-1;padding:14px 0;text-align:center">没有符合条件的精灵</div>';
+    return;
+  }
   const usedIds = new Set(Object.values(state.lineup));
-  ownedSpirits().forEach(s => {
+  slice.forEach(s => {
     const el = ELEM[s.element];
     const b = document.createElement('button');
     b.className = 'rcard'
@@ -3228,7 +3382,7 @@ function ownedIds() {
 }
 function ownedSpirits() {
   const own = ownedIds();
-  return SPIRITS.filter(s => own.has(s.id));
+  return SPIRITS.filter(s => !s.hidden && own.has(s.id));
 }
 function saveProgress() {
   try {
@@ -4146,6 +4300,65 @@ function bindEvents() {
 
   // 规则
   $('#btnRules').onclick = () => $('#rulesModal').classList.remove('hidden');
+
+  /* 关卡选择面板 */
+  $('#btnStages').onclick = () => { renderStageChips(); $('#stageModal').classList.remove('hidden'); sfx.tick(); };
+  $('#btnCloseStages').onclick = () => $('#stageModal').classList.add('hidden');
+  $('#stageModal').addEventListener('click', e => {
+    if (e.target.id === 'stageModal') $('#stageModal').classList.add('hidden');
+  });
+
+  /* 卡组：搜索 / 筛选 / 翻页 */
+  $('#rosterSearch').addEventListener('input', e => {
+    rosterQuery = e.target.value;
+    rosterPage = 0;
+    renderRoster();
+  });
+  $('#rosterFilters').addEventListener('click', e => {
+    const b = e.target.closest('[data-rf]');
+    if (!b) return;
+    rosterFilter = b.dataset.rf;
+    rosterPage = 0;
+    renderRoster();
+    sfx.tick();
+  });
+  $('#rosterPrev').onclick = () => { if (rosterPage > 0) { rosterPage--; renderRoster(); sfx.tick(); } };
+  $('#rosterNext').onclick = () => { rosterPage++; renderRoster(); sfx.tick(); };
+
+  /* 存档备份 */
+  $('#btnOpenSave').onclick = () => {
+    $('#saveBox').value = '';
+    $('#saveModal').classList.remove('hidden');
+  };
+  $('#btnCloseSave').onclick = () => $('#saveModal').classList.add('hidden');
+  $('#btnExport').onclick = () => {
+    const raw = localStorage.getItem('jiugong_save_v2') || '{}';
+    $('#saveBox').value = btoa(unescape(encodeURIComponent(raw)));
+    toast('已生成备份文本，点「复制」保存好');
+  };
+  $('#btnCopySave').onclick = async () => {
+    const v = $('#saveBox').value.trim();
+    if (!v) { toast('先点「导出」'); return; }
+    try {
+      await navigator.clipboard.writeText(v);
+      toast('已复制到剪贴板');
+    } catch (e) {
+      $('#saveBox').select();
+      try { document.execCommand('copy'); toast('已复制'); } catch (_) { toast('请手动全选复制'); }
+    }
+  };
+  $('#btnImport').onclick = () => {
+    const v = $('#saveBox').value.trim();
+    if (!v) { toast('请先粘贴备份文本'); return; }
+    let raw;
+    try {
+      raw = decodeURIComponent(escape(atob(v)));
+      JSON.parse(raw);
+    } catch (e) { toast('备份文本无效'); return; }
+    localStorage.setItem('jiugong_save_v2', raw);
+    toast('导入成功，正在刷新…');
+    setTimeout(() => location.reload(), 700);
+  };
   $('#btnCloseRules').onclick = () => $('#rulesModal').classList.add('hidden');
   $('#rulesModal').addEventListener('click', e => {
     if (e.target.id === 'rulesModal') $('#rulesModal').classList.add('hidden');
