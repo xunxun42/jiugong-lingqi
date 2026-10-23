@@ -1713,8 +1713,8 @@ const RAID = {
   desc: '深渊尽头的两位守门者 · 可重复挑战',
   reward: 1000,
   bosses: [
-    { id:'xumoluo', slot:4, mult:{ hp:31, atk:1.05 } },
-    { id:'leizeya', slot:4, mult:{ hp:12, atk:1.10 } },
+    { id:'xumoluo', slot:4, mult:{ hp:90, atk:1.62 } },
+    { id:'leizeya', slot:4, mult:{ hp:21, atk:1.75 } },
   ],
 };
 let raidSel = RAID.bosses[0].id;
@@ -1723,7 +1723,7 @@ const RAID_INFO = {
   xumoluo: {
     name: '虚魔罗 · 虚空魔罗', face: '👁️', color: '169,123,255',
     lines: [
-      '🌑 暗属性 · 生命 65100 · 攻击 206',
+      '🌑 暗属性 · 生命 189000 · 攻击 318',
       '<b style="color:#ffcf6b">常驻嘲讽</b>：你的所有单体攻击都会打在它身上',
       '每次出手召唤一只 500 血虚影（上限 6 只），虚影会攻击，但很弱',
       '范围技能被嘲讽时，倍率 × 敌方人数 —— <b style="color:#7fd6ff">召唤物越多，AoE 越猛</b>',
@@ -1733,7 +1733,7 @@ const RAID_INFO = {
   leizeya: {
     name: '雷塞娅 · 神隐之光', face: '⚡', color: '255,224,122',
     lines: [
-      '☀️ 光属性 · 生命 19440 · 攻击 194',
+      '☀️ 光属性 · 生命 51030 · 攻击 310',
       '大招随机束缚 3 人进入神隐：<b style="color:#ffcf6b">1 回合无法行动、无法被选中</b>',
       '每束缚到一个「新」目标，自身全属性 <b style="color:#ff9b9b">+5%（最多 +50%）</b>',
       '被动「神隐追击」：每次行动后，对<b style="color:#ff9b9b">所有被束缚的敌人</b>各追加 50% 攻击伤害',
