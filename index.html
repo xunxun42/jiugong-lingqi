@@ -871,6 +871,25 @@ table.stats .tname em{font-style:normal;font-size:13px}
   100%{box-shadow:0 0 0 16px rgba(255,215,107,0),inset 0 0 0 rgba(255,215,107,0)}
 }
 
+/* 卡池切换 */
+.hall-banners{display:flex;gap:7px;margin-bottom:10px}
+.hall-ban{
+  flex:1;display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:11px;cursor:pointer;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--ink);
+  font:inherit;font-size:11px;transition:.15s;min-width:0;
+}
+.hall-ban:hover{background:rgba(255,255,255,.09)}
+.hall-ban img{width:32px;height:32px;border-radius:8px;object-fit:cover;flex:none;
+  border:1px solid rgba(255,255,255,.15)}
+.hall-ban span{font-weight:700;flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hall-ban em{font-style:normal;font-size:9px;color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+.hall-ban.on{
+  border-color:rgba(232,192,106,.8);background:rgba(232,192,106,.10);
+  box-shadow:0 0 0 1px rgba(232,192,106,.35);
+}
+.hall-ban.got{opacity:.62}
+.hall-ban.got em{color:#7dffb0}
+
 /* ---------- 群星圣堂 ---------- */
 #hallModal .modal{width:min(520px,100%)}
 .hall-head{
@@ -923,50 +942,6 @@ table.stats .tname em{font-style:normal;font-size:13px}
 .hall-tip b{color:var(--gold)}
 .float.dodge{color:#c98bff;font-size:12px}
 .float.block{color:#7fd6ff;font-size:11px}
-
-/* ---------- 每日签到 ---------- */
-.rewline{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:2px 0 10px}
-.rewchip{font-size:10.5px;padding:3px 9px;border-radius:999px;border:1px solid rgba(232,192,106,.45);background:rgba(232,192,106,.12);color:#ffd76b;font-variant-numeric:tabular-nums}
-.rewchip.exp{border-color:rgba(127,214,255,.45);background:rgba(127,214,255,.12);color:#7fd6ff}
-.daily-streak{text-align:center;font-size:11px;color:var(--muted);margin-bottom:10px}
-.daily-streak b{color:var(--gold);font-size:14px}
-.daily-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-.daily-cell{padding:9px 3px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.03);text-align:center;font-size:9.5px;color:var(--muted);transition:.2s}
-.daily-cell b{display:block;font-size:11.5px;color:#fff;margin-top:3px;font-variant-numeric:tabular-nums}
-.daily-cell.done{border-color:rgba(127,214,255,.5);background:rgba(127,214,255,.10)}
-.daily-cell.done b{color:#7fd6ff}
-.daily-cell.today{border-color:rgba(232,192,106,.9);background:rgba(232,192,106,.14);box-shadow:0 0 16px rgba(232,192,106,.28)}
-.daily-cell.today b{color:#ffd76b}
-
-/* ---------- 技能速览（点精灵弹出） ---------- */
-.skill-peek{
-  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 188px);
-  width:min(340px,calc(100vw - 28px));z-index:92;padding:10px 12px 12px;
-  background:linear-gradient(180deg,rgba(28,22,46,.98),rgba(14,11,26,.99));
-  border:1px solid rgba(255,255,255,.14);border-radius:14px;
-  box-shadow:0 14px 38px rgba(0,0,0,.65),0 0 0 1px rgba(232,192,106,.10) inset;
-  opacity:0;transform:translate(-50%,14px);pointer-events:none;
-  transition:opacity .2s ease,transform .22s cubic-bezier(.2,.7,.3,1);
-}
-.skill-peek.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
-.pk-head{display:flex;align-items:center;gap:8px}
-.pk-face{width:38px;height:38px;border-radius:9px;overflow:hidden;flex:none;background:#191227;display:grid;place-items:center;font-size:18px}
-.pk-face img{width:100%;height:100%;object-fit:cover;display:block}
-.pk-name{font-size:12.5px;font-weight:800;color:#fff;letter-spacing:.3px}
-.pk-name em{font-style:normal;color:var(--gold);font-size:10.5px;margin-left:5px}
-.pk-name i{font-style:normal;font-size:9.5px;margin-left:5px;opacity:.9}
-.pk-role{margin-left:auto;font-size:9.5px;color:var(--muted);white-space:nowrap}
-.pk-line{display:flex;gap:7px;margin-top:6px;font-size:10.5px;line-height:1.55;color:#c9c3e2}
-.pk-line > b{
-  flex:none;font-weight:400;font-size:9px;color:var(--gold);
-  border:1px solid rgba(232,192,106,.35);border-radius:5px;padding:0 5px;line-height:15px;height:16px;margin-top:2px;
-}
-.pk-line em{font-style:normal;color:#fff;font-weight:700}
-.pk-stats{margin-top:7px;display:flex;gap:10px;font-size:9.5px;color:#8f88b0;font-variant-numeric:tabular-nums}
-.pk-souls{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
-.pk-soul{font-size:8.5px;padding:1px 5px;border-radius:4px;border:1px solid rgba(255,255,255,.16)}
-.pk-more{position:absolute;right:11px;bottom:9px;font-size:9.5px;color:var(--gold);opacity:.85;cursor:pointer}
-.pk-more:hover{opacity:1;text-decoration:underline}
 </style>
 </head>
 <body>
@@ -1084,7 +1059,6 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <h2 id="resultTitle">胜利</h2>
     <div class="sub" id="resultSub">—</div>
     <div class="stars" id="resultStars"></div>
-    <div class="rewline" id="resultReward"></div>
     <div class="kv" id="resultKv"></div>
     <div id="resultTable"></div>
     <div class="btnrow">
@@ -1135,16 +1109,17 @@ table.stats .tname em{font-style:normal;font-size:13px}
 <div class="mask hidden" id="hallModal">
   <div class="modal">
     <h2 class="h2sm">群星圣堂</h2>
-    <div class="sub">天权座 · 神源龙女</div>
+    <div class="sub" id="hallTitle">天权座 · 神源龙女</div>
     <div class="hall-head">
       <span class="crystal">💎 灵晶 <b id="hallCrystal">0</b></span>
       <span class="hall-pity" id="hallPity">距离必中还差 100 抽</span>
     </div>
+    <div class="hall-banners" id="hallBanners"></div>
     <div class="hall-hero">
       <span class="hall-face"><img src="assets/spirits/tianquan.webp" alt="" id="hallArt"></span>
       <span class="hall-meta">
-        <b>天权座 · 神源龙女</b>
-        <span>👑 王属性 · 技能必克 · 全体护盾</span>
+        <b id="hallName">天权座 · 神源龙女</b>
+        <span id="hallDesc">👑 王属性 · 技能必克 · 全体护盾</span>
         <span class="hall-rate" id="hallRate">出率 2% · 第 100 抽必得</span>
         <span style="font-size:9.5px;color:#8d87aa">未抽中补偿：己方全体 +200 经验 · 35% 掉落灵念</span>
       </span>
@@ -1168,7 +1143,6 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="grow-head">
       <span class="crystal">💎 灵晶 <b id="growCrystal">0</b><span class="grow-tip">通关关卡获得</span></span>
       <span style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn" id="btnOpenDaily">每日签到</button>
         <button class="btn" id="btnGrowAll" title="把灵晶全部投入当前选中的精灵">一键满投</button>
         <button class="btn primary" id="btnDrawSoul">抽灵念 · 120</button>
       </span>
@@ -1192,22 +1166,6 @@ table.stats .tname em{font-style:normal;font-size:13px}
     </div>
   </div>
 </div>
-
-<!-- ================= 每日签到 ================= -->
-<div class="mask hidden" id="dailyModal">
-  <div class="modal">
-    <h2 class="h2sm">每日签到</h2>
-    <div class="sub">连签 7 天，奖励递增</div>
-    <div class="daily-streak">已连签 <b id="dailyStreak">0</b> 天 · 当前灵晶 <b id="dailyCrystal">0</b></div>
-    <div class="daily-grid" id="dailyGrid"></div>
-    <div class="btnrow" style="margin-top:14px">
-      <button class="btn primary" id="btnDailyClaim">领取今日奖励</button>
-      <button class="btn ghost" id="btnDailyClose">稍后</button>
-    </div>
-  </div>
-</div>
-
-<div class="skill-peek" id="skillPeek"></div>
 
 <script>
 "use strict";
@@ -1283,6 +1241,13 @@ const SPIRITS = [
     royal:{ name:'星权裁决', energy:50, desc:'在场时，己方全体每回合开始 +50 气势' },
     ult:{ name:'星渊龙灭', type:'aoeShield', mult:1.0, shieldPct:0.3,
           desc:'对全体敌人造成 100% 攻击的必克伤害，并获得伤害量 30% 的护盾' } },
+
+  { id:'tianji', art:'assets/spirits/tianji.webp', name:'天玑座', title:'神佑龙女', emoji:'🌿',
+    element:'king', hp:1080, atk:128, spd:122, role:'神佑·守护', gacha:true, mustCounter:true,
+    basic:{ name:'玑衡垂佑', mult:1.0 },
+    royal:{ name:'禄存厚泽', type:'regen', pct:0.06, desc:'在场时，己方全体每回合开始回复 6% 最大生命' },
+    ult:{ name:'神佑归元', type:'healShield', mult:2.0, shield:1.2, rounds:2,
+          desc:'治疗全体友方 200% 攻击力，并附加 120% 攻击力的护盾（2 回合）' } },
 ];
 
 /* 关卡：team 里的 slot = 逻辑格子号（r*3+c），c=2 是前线 */
@@ -1991,6 +1956,13 @@ async function castUlt(u) {
       }
       break;
     }
+    /* 全体治疗 + 全体护盾（神佑） */
+    case 'healShield': {
+      for (const t of mates) { healUnit(t, u.atk * ult.mult, u); await pace(65); }
+      for (const t of mates) { addShield(t, u.atk * (ult.shield || 0), ult.rounds || 2); await pace(55); }
+      sfx.heal();
+      break;
+    }
     /* 全体必克 + 按总伤害转化护盾 */
     case 'aoeShield': {
       let total = 0;
@@ -2140,15 +2112,25 @@ function applyRoyal() {
   const holders = B.units.filter(u => u.side === 'player' && u.alive && u.spirit && u.spirit.royal);
   if (!holders.length) return;
   const mates = aliveUnits('player');
-  let total = 0;
+  let total = 0, healed = 0;
   for (const h of holders) {
-    const amt = h.spirit.royal.energy || 0;
-    total += amt;
-    for (const m of mates) {
-      const before = m.energy;
-      gainEnergy(m, amt);
-      if (m.el) floatText(m.el, `⚡+${amt}`, 'buff', rnd(-8, 8));
-      if (before < 100 && m.energy >= 100 && m.el) m.el.classList.add('ready');
+    const royal = h.spirit.royal;
+    if (royal.type === 'regen') {
+      /* 神佑型：每回合回复最大生命百分比 */
+      for (const m of mates) {
+        const amt = Math.round(m.maxHp * (royal.pct || 0));
+        healed += healUnit(m, amt, h);
+      }
+    } else {
+      /* 王权型：每回合加气势 */
+      const amt = royal.energy || 0;
+      total += amt;
+      for (const m of mates) {
+        const before = m.energy;
+        gainEnergy(m, amt);
+        if (m.el) floatText(m.el, `⚡+${amt}`, 'buff', rnd(-8, 8));
+        if (before < 100 && m.energy >= 100 && m.el) m.el.classList.add('ready');
+      }
     }
     if (h.el) {
       h.el.classList.remove('royalcast');
@@ -2158,7 +2140,12 @@ function applyRoyal() {
     }
   }
   syncAll();
-  log(`👑 <b style="color:#ffd76b">王权技</b> · ${holders.map(h => `${h.name}「${h.spirit.royal.name}」`).join('、')} 发动：己方全体气势 +${total}`, 'sys');
+  const eNames = holders.filter(h => h.spirit.royal.type !== 'regen')
+    .map(h => `${h.name}「${h.spirit.royal.name}」`).join('、');
+  const rNames = holders.filter(h => h.spirit.royal.type === 'regen')
+    .map(h => `${h.name}「${h.spirit.royal.name}」`).join('、');
+  if (total && eNames) log(`👑 <b style="color:#ffd76b">王权技</b> · ${eNames} 发动：己方全体气势 +${total}`, 'sys');
+  if (healed && rNames) log(`🌿 <b style="color:#7dffb0">神佑</b> · ${rNames} 发动：己方全体回复 ${healed} 生命`, 'sys');
 }
 
 async function battleLoop() {
@@ -2268,6 +2255,7 @@ const ULT_TAG = {
   healAll: '全体治疗 · 净化', shieldAll: '全体护盾', multi: '随机多段',
   poison: '单体 · 中毒', buffAll: '全体增益 · 治疗', drain: '单体 · 吸血',
   aoeShield: '全体伤害 · 转护盾',
+  healShield: '全体治疗 · 护盾',
 };
 
 function ultDetail(ult) {
@@ -2279,6 +2267,7 @@ function ultDetail(ult) {
     case 'shieldAll': bits.push(`护盾 ${pct(ult.mult)} 攻击力`); break;
     case 'buffAll':   bits.push(`攻击 +${Math.round((ult.mult - 1) * 100)}%`); break;
     case 'aoeShield': bits.push(`全体伤害 ${pct(ult.mult)}`); if (ult.shieldPct) bits.push(`护盾 ${pct(ult.shieldPct)} 伤害量`); break;
+    case 'healShield': bits.push(`治疗 ${pct(ult.mult)} 攻击力`); if (ult.shield) bits.push(`护盾 ${pct(ult.shield)} 攻击力`); break;
     default:          bits.push(`伤害 ${pct(ult.mult)}`);
   }
   if (ult.selfAtk)   bits.push(`自身攻击 +${Math.round((ult.selfAtk - 1) * 100)}%`);
@@ -2350,7 +2339,6 @@ function renderRoster() {
       <span class="rc-line"><span>❤${s.hp}</span><span>⚔${s.atk}</span><span>⚡${s.spd}</span></span>
       <span class="rc-role">${s.role}</span>`;
     b.onclick = () => {
-      showSkillPeek(s);
       if (usedIds.has(s.id)) {
         // 已上阵 → 从棋盘上撤下
         for (const k in state.lineup) {
@@ -2536,30 +2524,13 @@ function finishBattle(result) {
     else stars = 1;
   }
 
-  // 解锁 + 灵晶掉落 + 三星首通
-  let rewGain = 0, rewFirst = 0, rewUnlock = 0;
+  // 解锁 + 灵晶掉落
   if (win) {
-    const d = saveData();
-    const stageNo = state.stage + 1;
     const next = Math.min(STAGES.length, state.stage + 2);
-    const firstClear = next > state.unlocked;
-    if (firstClear) state.unlocked = next;
-
-    rewGain = 400 + 20 * stageNo;                // 第1关 420 → 第10关 600
-    d.crystal += rewGain;
-
-    d.first3 = d.first3 || {};
-    if (stars === 3 && !d.first3[state.stage]) { // 三星首通
-      d.first3[state.stage] = true;
-      rewFirst = 100 * stageNo;
-      d.crystal += rewFirst;
-    }
-    rewUnlock = firstClear && state.unlocked < STAGES.length ? stageNo + 1 : 0;
-
-    log(`💎 通关奖励 ${rewGain} 灵晶`
-      + (rewFirst ? `　⭐ 三星首通 +${rewFirst} 灵晶` : '')
-      + `（当前 ${d.crystal}）`, 'sys');
-    if (rewUnlock) log(`🗺 解锁第 ${rewUnlock} 关`, 'sys');
+    if (next > state.unlocked) state.unlocked = next;
+    const gain = 150 + 60 * (state.stage + 1);   // 第1关 210 → 第10关 750
+    saveData().crystal += gain;
+    log(`💎 通关奖励 ${gain} 灵晶（当前 ${saveData().crystal}）`, 'sys');
     saveProgress();
   }
 
@@ -2570,13 +2541,6 @@ function finishBattle(result) {
   $('#resultSub').textContent = win
     ? (state.stage === STAGES.length - 1 ? '全部关卡通关 · 灵契者之名传遍九域' : `第 ${state.stage + 1} 关「${STAGES[state.stage].name}」突破`)
     : `第 ${state.stage + 1} 关「${STAGES[state.stage].name}」失利，调整阵容再试`;
-
-  // —— 奖励提示 ——
-  $('#resultReward').innerHTML = win ? [
-    `<span class="rewchip">💎 通关 +${rewGain}</span>`,
-    rewFirst ? `<span class="rewchip">⭐ 三星首通 +${rewFirst}</span>` : '',
-    rewUnlock ? `<span class="rewchip exp">🗺 解锁第 ${rewUnlock} 关</span>` : '',
-  ].join('') : '';
 
   // —— 星级 ——
   const starBox = $('#resultStars');
@@ -2671,7 +2635,6 @@ function saveProgress() {
       v: 2, unlocked: state.unlocked, crystal: d.crystal,
       spirits: d.spirits, pack: d.pack, uid: d.uid,
       owned: d.owned, pity: d.pity,
-      daily: d.daily, first3: d.first3,
     }));
     localStorage.setItem('jiugong_unlocked', String(state.unlocked));
   } catch (e) {}
@@ -2687,8 +2650,6 @@ function loadProgress() {
         crystal: o.crystal || 0, spirits: o.spirits || {},
         pack: o.pack || [], uid: o.uid || 1,
         owned: o.owned || {}, pity: o.pity || 0,
-        daily: o.daily || { last: '', streak: 0 },
-        first3: o.first3 || {},
       };
       return;
     }
@@ -2969,39 +2930,63 @@ function bindGrow() {
   });
   $('#btnHall1').onclick = () => doHall(1);
   $('#btnHall10').onclick = () => doHall(10);
+  $('#hallBanners').addEventListener('click', e => {
+    const b = e.target.closest('[data-ban]');
+    if (!b || hallBusy) return;
+    hallSel = b.dataset.ban;
+    $('#hallResult').innerHTML = '';
+    renderHall();
+    sfx.tick();
+  });
 }
 
 /* ============================================================================
    12d. 群星圣堂 · 限定精灵抽取
    ========================================================================== */
 const HALL = {
-  cost: 300,           // 单抽灵晶
+  cost: 1200,          // 单抽灵晶
   rate: 0.02,          // 出率 2%
   pity: 100,           // 100 抽必得
-  unit: 'tianquan',    // 本期限定
+  units: ['tianquan', 'tianji'],   // 卡池里的神源
   expPerMiss: 200,     // 未抽中：己方全体各 +200 经验
   soulChance: 0.35,    // 未抽中：35% 额外掉落一枚灵念
 };
-function hallOwned() { return !!(saveData().owned || {})[HALL.unit]; }
-function hallPityLeft() { return Math.max(0, HALL.pity - (saveData().pity || 0)); }
+let hallSel = HALL.units[0];
+
+function hallSpirit(id) { return SPIRITS.find(s => s.id === (id || hallSel)); }
+function hallOwned(id) { return !!(saveData().owned || {})[id || hallSel]; }
+
+/* 保底计数：新档是 {id: n}，老档是单个数字 */
+function hallPityOf(id) {
+  const p = saveData().pity;
+  if (typeof p === 'number') return p;
+  return (p && p[id]) || 0;
+}
+function hallSetPity(id, v) {
+  const d = saveData();
+  if (typeof d.pity === 'number') d.pity = {};
+  d.pity[id] = v;
+}
+function hallPityLeft(id) { return Math.max(0, HALL.pity - hallPityOf(id || hallSel)); }
 
 /* 抽 n 次；抽到即停，未抽的次数退钱 */
 function hallPull(n) {
   const d = saveData();
-  if (hallOwned()) return { err: '本期神源已获得' };
+  const target = hallSel;
+  if (hallOwned(target)) return { err: '该神源已获得' };
   if (d.crystal < HALL.cost * n) return { err: `灵晶不足（需 ${HALL.cost * n}）` };
   d.crystal -= HALL.cost * n;
   const hits = [], drops = [];
-  let got = false, ups = 0;
+  let got = false, ups = 0, pity = hallPityOf(target);
   for (let i = 0; i < n; i++) {
-    d.pity = (d.pity || 0) + 1;
-    const win = Math.random() < HALL.rate || d.pity >= HALL.pity;
+    pity++;
+    const win = Math.random() < HALL.rate || pity >= HALL.pity;
     hits.push(win);
     if (win) {
       got = true;
-      d.pity = 0;
+      pity = 0;
       d.owned = d.owned || {};
-      d.owned[HALL.unit] = true;
+      d.owned[target] = true;
       break;
     }
     /* —— 未抽中补偿 —— */
@@ -3012,20 +2997,45 @@ function hallPull(n) {
       drops.push(s);
     }
   }
+  hallSetPity(target, pity);
   const used = hits.length;
   d.crystal += HALL.cost * (n - used);   // 提前抽到，剩下的退钱
   saveProgress();
-  return { hits, got, used, cost: HALL.cost * used, drops, ups };
+  return { hits, got, used, cost: HALL.cost * used, drops, ups, target };
 }
 
 let hallBusy = false;
 function openHall() { renderHall(); $('#hallModal').classList.remove('hidden'); }
+
+function renderHallBanners() {
+  const box = $('#hallBanners');
+  if (!box) return;
+  box.innerHTML = HALL.units.map(id => {
+    const sp = SPIRITS.find(s => s.id === id);
+    const own = hallOwned(id);
+    return `<button class="hall-ban ${hallSel === id ? 'on' : ''} ${own ? 'got' : ''}" data-ban="${id}">
+      <img src="${sp.art}" alt=""><span>${sp.name}</span>
+      <em>${own ? '已获得' : hallPityLeft(id) + ' 抽'}</em>
+    </button>`;
+  }).join('');
+}
+
 function renderHall() {
   const d = saveData();
+  const sp = hallSpirit();
   $('#hallCrystal').textContent = d.crystal;
   const owned = hallOwned();
-  $('#hallPity').textContent = owned ? '本期限定已获得' : `距离必中还差 ${hallPityLeft()} 抽`;
+  const t = $('#hallTitle');
+  if (t) t.textContent = `${sp.name} · ${sp.title}`;
+  $('#hallPity').textContent = owned ? '该神源已获得' : `距离必中还差 ${hallPityLeft()} 抽`;
   $('#hallRate').textContent = owned ? '已收入灵契 · 可在阵容中上阵' : `出率 2% · 第 ${HALL.pity} 抽必得`;
+  const art = $('#hallArt');
+  if (art) art.src = sp.art;
+  const nm = $('#hallName');
+  if (nm) nm.textContent = `${sp.name} · ${sp.title}`;
+  const ds = $('#hallDesc');
+  if (ds) ds.textContent = `👑 王属性 · 技能必克 · ${sp.role}`;
+  renderHallBanners();
   $('#btnHall1').disabled = owned || d.crystal < HALL.cost;
   $('#btnHall10').disabled = owned || d.crystal < HALL.cost * 10;
   $('#btnHall1').textContent = owned ? '已获得' : `单抽 · ${HALL.cost}`;
@@ -3036,6 +3046,7 @@ function doHall(n) {
   const r = hallPull(n);
   if (r.err) { toast(r.err); return; }
   hallBusy = true;
+  const wonSp = hallSpirit(r.target);
   const box = $('#hallResult');
   box.innerHTML = '';
   // 逐拍亮起
@@ -3066,7 +3077,7 @@ function doHall(n) {
     const tip = document.createElement('span');
     tip.className = 'hall-tip';
     tip.innerHTML = r.got
-      ? `获得 <b>天权座 · 神源龙女</b>！已收入灵契，可上阵`
+      ? `获得 <b>${wonSp.name} · ${wonSp.title}</b>！已收入灵契，可上阵`
       : `星光散尽 · ${miss} 抽未中 · 补偿己方全体 <b>+${HALL.expPerMiss * miss}</b> 经验`
         + (r.drops.length ? ` · 掉落灵念 <b>×${r.drops.length}</b>` : '');
     box.appendChild(tip);
@@ -3075,119 +3086,6 @@ function doHall(n) {
     renderRoster();
     if (state.phase === 'deploy') renderDeploy();
   }, r.hits.length * 90 + 60);
-}
-
-
-/* ============================================================================
-   12c. 每日签到
-   ========================================================================== */
-const DAILY_REWARDS = [300, 400, 500, 600, 800, 1000, 1500];
-const todayStr = () => { const t = new Date(); return `${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()}`; };
-function dayDiff(a, b) {
-  const pa = a.split('-').map(Number), pb = b.split('-').map(Number);
-  return Math.round((Date.UTC(pb[0], pb[1] - 1, pb[2]) - Date.UTC(pa[0], pa[1] - 1, pa[2])) / 86400000);
-}
-function dailyState() {
-  const d = saveData();
-  d.daily = d.daily || { last: '', streak: 0 };
-  return d.daily;
-}
-function dailyAvailable() { return dailyState().last !== todayStr(); }
-function nextStreak() {
-  const d = dailyState();
-  if (!d.last) return 1;
-  if (dayDiff(d.last, todayStr()) !== 1) return 1;
-  return d.streak >= 7 ? 1 : d.streak + 1;
-}
-function claimDaily() {
-  const d = saveData(), st = dailyState();
-  if (st.last === todayStr()) return { err: '今天已经签到过了' };
-  const streak = nextStreak();
-  const reward = DAILY_REWARDS[streak - 1];
-  d.crystal += reward;
-  st.last = todayStr();
-  st.streak = streak;
-  saveProgress();
-  return { reward, streak };
-}
-function renderDaily() {
-  const d = saveData(), st = dailyState();
-  $('#dailyCrystal').textContent = d.crystal;
-  $('#dailyStreak').textContent = st.streak || 0;
-  const claimed = st.last === todayStr();
-  const next = claimed ? st.streak : nextStreak();
-  $('#dailyGrid').innerHTML = DAILY_REWARDS.map((r, i) => {
-    const n = i + 1;
-    const done = claimed && n <= st.streak;
-    const today = !claimed && n === next;
-    return `<div class="daily-cell ${done ? 'done' : ''} ${today ? 'today' : ''}">
-      第 ${n} 天<b>${done ? '已领' : '💎 ' + r}</b></div>`;
-  }).join('');
-  const btn = $('#btnDailyClaim');
-  btn.disabled = claimed;
-  btn.textContent = claimed ? '今日已签' : `领取 ${DAILY_REWARDS[next - 1]} 灵晶`;
-}
-function openDaily() { renderDaily(); $('#dailyModal').classList.remove('hidden'); }
-function bindDaily() {
-  const on = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };
-  on('#btnDailyClose', () => $('#dailyModal').classList.add('hidden'));
-  on('#btnDailyClaim', () => {
-    const r = claimDaily();
-    if (r.err) { toast(r.err); return; }
-    toast(`签到成功 +${r.reward} 灵晶 · 连签 ${r.streak} 天`);
-    sfx.win();
-    renderDaily();
-    if (growSel) renderGrow();
-  });
-  const dm = $('#dailyModal');
-  if (dm) dm.addEventListener('click', e => {
-    if (e.target.id === 'dailyModal') dm.classList.add('hidden');
-  });
-  on('#btnOpenDaily', () => { openDaily(); sfx.tick(); });
-}
-
-
-/* ============================================================================
-   12d. 技能速览：点精灵直接看技能，不用开图鉴
-   ========================================================================== */
-let peekTimer = null;
-function hideSkillPeek() {
-  const box = $('#skillPeek');
-  if (box) box.classList.remove('on');
-}
-function showSkillPeek(sp, unit) {
-  const box = $('#skillPeek');
-  if (!box || !sp) return;
-  const el = ELEM[sp.element] || {};
-  const p = spiritSave(sp.id);
-  const souls = (p.souls || []).filter(x => x != null).map(uid => soulById(uid)).filter(Boolean);
-  const hpTxt = unit ? `${Math.ceil(unit.hp)}/${unit.maxHp}` : `${Math.round(sp.hp * lvMult(p.lv))}`;
-  const atkTxt = unit ? unit.atk : Math.round(sp.atk * lvMult(p.lv));
-  const basicPct = Math.round(((sp.basic && sp.basic.mult) || 1) * 100);
-  const basicName = (sp.basic && sp.basic.name) || '普通攻击';
-
-  box.innerHTML = `
-    <div class="pk-head">
-      <span class="pk-face">${sp.art ? `<img src="${sp.art}" alt="">` : (sp.emoji || '')}</span>
-      <span class="pk-name">${sp.name}<em>Lv ${p.lv}</em><i style="color:${el.color || '#cfc9e8'}">${el.emoji || ''}${el.name || ''}系</i></span>
-      <span class="pk-role">${sp.role || ''}</span>
-    </div>
-    <div class="pk-line"><b>普攻</b><span><em>${basicName}</em> · 单体 ${basicPct}% 攻击伤害</span></div>
-    <div class="pk-line"><b>大招</b><span><em>${sp.ult.name}</em> · ${sp.ult.desc}</span></div>
-    ${sp.royal ? `<div class="pk-line"><b>王权</b><span><em>${sp.royal.name}</em> · ${sp.royal.desc}</span></div>` : ''}
-    <div class="pk-stats"><span>❤ ${hpTxt}</span><span>⚔ ${atkTxt}</span><span>⚡ ${sp.spd}</span>
-      ${unit && unit.soul && unit.soul.allStats ? `<span>全属性 +${unit.soul.allStats.toFixed(1)}%</span>` : ''}</div>
-    ${souls.length ? `<div class="pk-souls">${souls.map(x => {
-      const T = SOUL_TYPES[x.type];
-      return `<span class="pk-soul" style="color:${T.color};border-color:${x.color}66">${T.name} +${x.value}${T.unit}</span>`;
-    }).join('')}</div>` : ''}
-    <span class="pk-more">完整图鉴 ›</span>`;
-
-  box.classList.add('on');
-  clearTimeout(peekTimer);
-  peekTimer = setTimeout(hideSkillPeek, 4600);
-  const more = box.querySelector('.pk-more');
-  if (more) more.onclick = e => { e.stopPropagation(); hideSkillPeek(); openCodex(sp.id); };
 }
 
 /* ============================================================================
@@ -3304,10 +3202,6 @@ function bindEvents() {
     if (e.target.id === 'codexModal') $('#codexModal').classList.add('hidden');
   });
   bindGrow();
-  bindDaily();
-  document.addEventListener('pointerdown', e => {
-    if (!e.target.closest('#skillPeek')) hideSkillPeek();
-  }, true);
 
   // 战斗中直接点角色看它的技能
   $('#arena').addEventListener('click', e => {
@@ -3315,7 +3209,7 @@ function bindEvents() {
     const card = e.target.closest('.unit');
     if (!card) return;
     const u = B.units.find(x => String(x.uid) === card.dataset.uid);
-    if (u) { showSkillPeek(u.spirit, u); sfx.tick(); }
+    if (u) { openCodex(u.spirit.id); sfx.tick(); }
   });
 
   // 音效开关
@@ -3350,7 +3244,6 @@ function init() {
   renderStageChips();
   log('欢迎，灵契者。选择关卡与阵容，然后开战。', 'sys');
   log('提示：右列是前线，先出手、也最容易被集火。', 'sys');
-  if (dailyAvailable()) setTimeout(() => openDaily(), 350);
   syncFullBtn();
 }
 
