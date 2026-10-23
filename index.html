@@ -1689,6 +1689,14 @@ const SPIRITS = [
     ult:{ name:'万魔加身', type:'multiTarget', targets:4, mult:1.4,
           desc:'对 4 个敌人各造成 140% 攻击的暗属性伤害' } },
 
+  /* ===== 摇光座 · 孤星神女（群星圣堂限定） ===== */
+  { id:'yaoguang', art:'assets/spirits/yaoguang.webp', name:'摇光座', title:'孤星神女', emoji:'💫',
+    element:'king', hp:1000, atk:165, spd:110, role:'孤星·献祭', gacha:true,
+    passive:'lonestar', passiveCost:0.05, passiveGain:50,
+    basic:{ name:'孤星刺', mult:1.0, mustCounter:true },
+    ult:{ name:'摇光·威灵尽显', type:'single', mult:4.0, noDodge:true,
+          desc:'对单体造成 400% 攻击伤害，必定命中' } },
+
   /* 召唤物 · 不进灵契列表 */
   { id:'shadow', art:'', name:'虚影', title:'虚空造物', emoji:'🌑',
     element:'dark', hp:500, atk:55, spd:70, role:'召唤物', hidden:true, isAdd:true,
@@ -2534,20 +2542,22 @@ function killUnit(u, src) {  if (!u.alive) return;
 }
 
 /* 核心：一次攻击结算 */
-function strike(src, tgt, mult) {
+function strike(src, tgt, mult, opts) {
+  opts = opts || {};
   if (!tgt || !tgt.alive) return { dmg: 0, crit: false, em: 1, killed: false };
 
   const A = src.soul || {}, D = tgt.soul || {};
 
-  // 命中 / 闪避
+  // 命中 / 闪避（opts.noDodge = 必中，跳过判定）
   const hitRate = clamp(0.92 + (A.hit || 0) / 100 - (D.dodge || 0) / 100, 0.5, 1);
-  if (rnd(0, 1) > hitRate) {
+  if (!opts.noDodge && rnd(0, 1) > hitRate) {
     if (tgt.el) floatText(tgt.el, '闪避', 'dodge');
     log(`${tag(src)} 的攻击被 ${tag(tgt)} 闪避`, 'sys');
     return { dmg: 0, crit: false, em: 1, killed: false, miss: true };
   }
 
-  const em = src.mustCounter ? 1.5 : eleMult(src.element, tgt.element);
+  const mc = opts.mustCounter != null ? opts.mustCounter : src.mustCounter;
+  const em = mc ? 1.5 : eleMult(src.element, tgt.element);
   const critRate = clamp(0.12 + (A.crit || 0) / 100 - (D.critRes || 0) / 100, 0.02, 0.65);
   const crit = chance(critRate);
   const variance = rnd(0.9, 1.1);
@@ -2578,6 +2588,7 @@ function strike(src, tgt, mult) {
   tgt.stats.taken += total;
   src.stats.dmg += total;
   gainEnergy(tgt, ENERGY_GAIN_HIT);   // 挨打攒气势（+50，溢出转技能加成）
+  onAllyDamaged(tgt);                 // 被动：己方被打时的连锁反应
 
   /* 弹伤：护盾还在时把受到的伤害按比例反弹给攻击者 */
   if (hadShield && tgt.reflect > 0 && src && src.alive && src !== tgt) {
@@ -2651,6 +2662,7 @@ async function sealPunish(u) {
 
 async function basicAttack(u) {
   const n = (u.spirit.basic && u.spirit.basic.targets) || 1;
+  const bOpt = (u.spirit.basic && u.spirit.basic.mustCounter) ? { mustCounter: true } : undefined;
   const t = pickTarget(u);
   if (!t) return;
   u.el.classList.add(u.side === 'player' ? 'lunge-r' : 'lunge-l');
@@ -2658,15 +2670,15 @@ async function basicAttack(u) {
   if (n > 1) {
     const tt = tauntTarget(otherSide(u.side));
     if (tt) {
-      strike(u, tt, n);                       // 被嘲讽：全部份数砸在它身上
+      strike(u, tt, n, bOpt);                 // 被嘲讽：全部份数砸在它身上
     } else {
       for (const x of orderedFoes(u).slice(0, n)) {
-        strike(u, x, 1.0);
+        strike(u, x, 1.0, bOpt);
         await pace(70);
       }
     }
   } else {
-    strike(u, t, 1.0);
+    strike(u, t, 1.0, bOpt);
   }
   gainEnergy(u, ENERGY_GAIN_ATTACK);   // 普攻攒气势（+50，溢出转技能加成）
   syncUnit(u);
@@ -2823,7 +2835,7 @@ async function castUlt(u) {
     /* 单体 */
     case 'single': {
       const t = pickTarget(u);
-      if (t) strike(u, t, ult.mult);
+      if (t) strike(u, t, ult.mult, ult.noDodge ? { noDodge: true } : undefined);
       break;
     }
     /* 单体伤害 + 神隐（玩家版） */
@@ -3093,6 +3105,30 @@ function royalWrapPulse() {
   void aw.offsetWidth;
   aw.classList.add('royal-wrap-pulse');
   setTimeout(() => aw.classList.remove('royal-wrap-pulse'), 800);
+}
+
+/* 摇光座被动「孤星」：己方任一单位挨打时，自身 -5% 最大生命、+50 气势（不会因此致死） */
+function onAllyDamaged(tgt) {
+  if (!tgt || !tgt.side) return;
+  for (const u of aliveUnits(tgt.side)) {
+    if (!u.spirit || u.spirit.passive !== 'lonestar') continue;
+    const cost = Math.round(u.maxHp * (u.spirit.passiveCost || 0.05));
+    const loss = u.hp <= 1 ? 0 : Math.min(cost, u.hp - 1);
+    if (loss > 0) {
+      u.hp -= loss;
+      if (u.el) floatText(u.el, '-' + loss, 'dmg', rnd(-8, 8));
+    }
+    const before = u.energy;
+    gainEnergy(u, u.spirit.passiveGain || 50);
+    if (u.el) {
+      u.el.classList.remove('royalcast');
+      void u.el.offsetWidth;
+      u.el.classList.add('royalcast');
+      setTimeout(() => u.el && u.el.classList.remove('royalcast'), 460);
+    }
+    syncUnit(u);
+    if (before < ENERGY_MAX && u.energy >= ENERGY_MAX) log('💫 ' + tag(u) + ' 气势已满', 'sys');
+  }
 }
 
 /* 在排队中插入一次额外行动（紧接着当前行动者，不挤占目标原本的回合） */
@@ -4317,7 +4353,7 @@ const HALL = {
   cost: 300,           // 单抽灵晶
   rate: 0.02,          // 出率 2%
   pity: 100,           // 100 抽必得
-  units: ['tianquan', 'tianji', 'tianxuan'],   // 卡池里的神源
+  units: ['tianquan', 'tianji', 'tianxuan', 'yaoguang'],   // 卡池里的神源
   expPerMiss: 200,     // 未抽中：己方全体各 +200 经验
   soulChance: 0.35,    // 未抽中：35% 额外掉落一枚灵念
 };
