@@ -5238,6 +5238,21 @@ function bindEvents() {
   $('#codexModal').addEventListener('click', e => {
     if (e.target.id === 'codexModal') $('#codexModal').classList.add('hidden');
   });
+  /* 测试用发放：访问 ?grant=all 直接获得全部精灵（练到 80 级） */
+  if (/[?&]grant=all/.test(location.search)) {
+    const sd = saveData();
+    sd.owned = sd.owned || {};
+    SPIRITS.forEach(sp => {
+      if (sp.hidden) return;
+      sd.owned[sp.id] = true;
+      const p = spiritSave(sp.id);
+      if ((p.lv || 1) < 80) { p.lv = 80; p.exp = 0; }
+    });
+    sd.unlocked = 10;
+    sd.crystal = (sd.crystal || 0) + 30000;
+    saveProgress();
+    if (typeof syncAll === 'function') syncAll();
+  }
   bindGrow();
 
   // 战斗中直接点角色看它的技能
