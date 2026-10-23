@@ -716,6 +716,26 @@ body.royal-on .royal-strip{
 .awaken-fx.play .aw-skill{animation:awLine 1.8s ease forwards}
 .aw-line{animation:awLine 1.8s ease forwards}
 @keyframes awLine{0%{opacity:0;transform:translateX(-50%) translateY(14px)}30%,80%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0}}
+/* 开阳座专属 */
+.ky-badge{margin-left:6px;font-size:9px;padding:1px 5px;border-radius:6px;background:rgba(255,200,74,.25);color:#ffe9b0;font-weight:800}
+.ky-modal{width:min(680px,100%);max-height:88dvh;overflow:auto}
+.ky-head{display:flex;gap:16px;align-items:center;margin-bottom:14px}
+.ky-portrait{width:132px;height:132px;flex:none;border-radius:16px;overflow:hidden;border:1px solid rgba(255,200,74,.45);box-shadow:0 0 24px rgba(255,170,60,.28);background:radial-gradient(circle,#241a12,#0d0a14)}
+.ky-portrait img{width:100%;height:100%;object-fit:cover}
+.ky-name{font-size:19px;font-weight:900;letter-spacing:2px;color:#ffe9b0;margin:0 0 6px}
+.ky-tags{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.ky-tags span{font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.07);color:var(--muted)}
+.ky-shards{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.ky-pips{display:flex;gap:5px}
+.ky-pips i{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);display:block}
+.ky-pips i.on{background:radial-gradient(circle,#fff3d0,#ffb347);box-shadow:0 0 12px rgba(255,180,70,.95)}
+.ky-count{font-size:12px;color:#ffe9b0;font-weight:800}
+.ky-btn{padding:8px 18px;font-size:12px}
+.ky-btn:disabled{opacity:.45;cursor:not-allowed}
+.ky-body h3{font-size:12px;letter-spacing:2px;color:var(--gold);margin:14px 0 6px}
+.ky-body p,.ky-body li{font-size:11.5px;line-height:1.85;color:#cfc9d8}
+.ky-body ul{padding-left:16px;margin:0}
+.ky-body b{color:#ffe9b0}
 /* 契约与拖放 */
 .ct-list{display:flex;flex-direction:column;gap:8px}
 .ct-item{
@@ -1360,6 +1380,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <button class="btn ghost" id="btnCodex">图鉴</button>
       <button class="btn ghost" id="btnHall">群星</button>
       <button class="btn ghost" id="btnRaid">深渊</button>
+      <button class="btn ghost" id="btnKy">开阳<span class="ky-badge" id="kyBadge">0/7</span></button>
       <button class="btn ghost" id="btnDivine">占卜</button>
       <button class="btn ghost" id="btnRules">玩法</button>
       <button class="btn ghost iconbtn" id="btnMusic" title="战斗音乐">🎵</button>
@@ -1539,6 +1560,42 @@ table.stats .tname em{font-style:normal;font-size:13px}
   </div>
   <div class="aw-skill" id="awakenSkill"></div>
   <div class="aw-line" id="awakenLine"></div>
+</div>
+<!-- ================= 开阳座 ================= -->
+<div class="mask hidden" id="kyModal">
+  <div class="modal ky-modal">
+    <div class="ky-head">
+      <div class="ky-portrait"><img id="kyImg" alt=""></div>
+      <div class="ky-info">
+        <h2 class="ky-name">开阳座 · 天光龙女</h2>
+        <div class="ky-tags">
+          <span>👑 王属性</span><span>唤灵师</span><span>觉醒型</span>
+        </div>
+        <div class="ky-shards">
+          <div class="ky-pips" id="kyPips"></div>
+          <span class="ky-count" id="kyCount">0 / 7</span>
+        </div>
+        <button class="btn primary ky-btn" id="btnKySummon">召唤开阳座</button>
+      </div>
+    </div>
+    <div class="ky-body">
+      <h3>故事</h3>
+      <p>北斗第六星，开阳。她曾是天穹的司晨者 —— 每日第一缕天光由她点燃，自东向西铺过整片星海。千年前的那场浊潮里，她把自身的光全部抵押出去，只为让黎明的约定不断裂。此后她沉眠于星轨之下，直到听见唤灵师残存的呼声。</p>
+      <p>「我是被光燃烧殆尽的人。所以再次站起时，我要的不是被照亮，而是照亮别人。」</p>
+      <h3>特殊之处</h3>
+      <ul>
+        <li><b>唤灵点</b>：己方<b>王属性</b>精灵每次成功出手 <b>+2</b>；王属性精灵阵亡时额外 <b>+2</b>。十点为满。</li>
+        <li><b>强制插队</b>：满槽瞬间无需等待行动轴，她直接获得最高优先级的额外回合。若已阵亡，将以 <b>10% 最大生命</b>复活并强行插入。</li>
+        <li><b>唤醒</b>：进入第二形态后，普攻与大招同时升级为 <b>220% 倍率、同时打 2 个目标</b>，并在每次出手后<b>额外再出手一次</b>。</li>
+        <li><b>可重复</b>：每次满槽都能再触发一次，死亡的代价也被她一并烧掉。</li>
+      </ul>
+      <h3>强度定位</h3>
+      <p>她是全队唯一的<b>越打越强</b>型核心：前两回合是沉默的计时器，攒满十点之后变成不吃回合轴的第二个输出手。搭配天权座（+50 气势）与天玑座（嘲讽承伤）能在第 2-3 回合完成首次唤醒，此后基本上是双倍行动。</p>
+      <h3>碎片获取</h3>
+      <p>通关 <b>第 6 - 10 关</b>有几率掉落「开阳星屑」；挑战深渊 <b>玉衡座 / 天枢座</b> 掉落率更高。集齐 <b>7 枚</b>即可在此召唤。</p>
+    </div>
+    <div class="btnrow"><button class="btn ghost" id="btnKyClose">关闭</button></div>
+  </div>
 </div>
 <!-- ================= 契约选择 ================= -->
 <div class="mask hidden" id="contractModal">
@@ -3707,6 +3764,61 @@ function rosterPageSize() {
   return cols * 2;
 }
 
+/* ===== 开阳座：碎片与召唤 ===== */
+const KY_SHARDS = 7;
+function kyShards() { return (saveData().kyShards || 0); }
+function renderKyBadge() {
+  const b = document.getElementById('kyBadge');
+  if (b) b.textContent = Math.min(kyShards(), KY_SHARDS) + '/' + KY_SHARDS;
+}
+function openKy() {
+  const sd = saveData();
+  const n = Math.min(kyShards(), KY_SHARDS);
+  const pips = document.getElementById('kyPips');
+  if (pips) pips.innerHTML = Array.from({ length: KY_SHARDS }, (_, i) => '<i class="' + (i < n ? 'on' : '') + '"></i>').join('');
+  const cnt = document.getElementById('kyCount');
+  if (cnt) cnt.textContent = n + ' / ' + KY_SHARDS;
+  const img = document.getElementById('kyImg');
+  if (img) img.src = (SPIRITS.find(s => s.id === 'kaiyang') || {}).art || '';
+  const btn = document.getElementById('btnKySummon');
+  const owned = !!(sd.owned || {})['kaiyang'];
+  if (btn) {
+    btn.disabled = owned || n < KY_SHARDS;
+    btn.textContent = owned ? '已召唤' : (n < KY_SHARDS ? '碎片不足（' + n + '/' + KY_SHARDS + '）' : '召唤开阳座');
+  }
+  document.getElementById('kyModal').classList.remove('hidden');
+  sfx.tick();
+}
+function summonKaiyang() {
+  const sd = saveData();
+  if ((sd.owned || {})['kaiyang']) { toast('已经拥有开阳座'); return; }
+  if (kyShards() < KY_SHARDS) { toast('碎片不足'); return; }
+  sd.kyShards = kyShards() - KY_SHARDS;
+  sd.owned = sd.owned || {};
+  sd.owned['kaiyang'] = true;
+  saveProgress();
+  sfx.win();
+  toast('✦ 群星汇聚 —— 开阳座 · 天光龙女 加入！');
+  document.getElementById('kyModal').classList.add('hidden');
+  renderKyBadge(); renderRoster(); renderDeploy();
+}
+/* 掉落：关卡 6-10 与深渊玉衡/天枢 */
+function rollKyShard() {
+  let chance = 0;
+  if (state.mode === 'raid') {
+    chance = (raidSel === 'yuheng' || raidSel === 'tianshu') ? 0.75 : 0;
+  } else {
+    chance = (state.stage >= 5) ? 0.45 : 0;   // 第 6 关起
+  }
+  if (!chance) return 0;
+  if (Math.random() > chance) return 0;
+  const sd = saveData();
+  if ((sd.owned || {})['kaiyang']) return 0;
+  sd.kyShards = Math.min(KY_SHARDS, kyShards() + 1);
+  saveProgress();
+  renderKyBadge();
+  return 1;
+}
 /* ===== 契约选择 ===== */
 function openContract() {
   const sp = SPIRITS.find(s => s.id === 'tianshu');
@@ -4102,6 +4214,16 @@ function finishBattle(result) {
       saveData().crystal += gain;
       log(`💎 通关奖励 ${gain} 灵晶（当前 ${saveData().crystal}）`, 'sys');
       saveProgress();
+    }
+  }
+
+  /* 开阳座碎片掉落 */
+  if (win) {
+    const got = rollKyShard();
+    if (got) {
+      const li = document.getElementById('autoLine');
+      if (li) { li.classList.remove('hidden'); li.innerHTML = '✦ 获得 <b>开阳星屑</b> ×1（' + kyShards() + '/7）'; }
+      toast('✦ 掉落：开阳星屑 ×1');
     }
   }
 
@@ -5292,6 +5414,12 @@ function bindEvents() {
   };
   // 音乐开关
   $('#btnMusic').onclick = () => { musicToggle(); if (MUSIC.on) sfx.tick(); };
+  $('#btnMusic').onclick = () => { musicToggle(); if (MUSIC.on) sfx.tick(); };
+  document.getElementById('btnKy').onclick = () => openKy();
+  document.getElementById('btnKyClose').onclick = () => document.getElementById('kyModal').classList.add('hidden');
+  document.getElementById('kyModal').addEventListener('click', e => { if (e.target.id === 'kyModal') e.currentTarget.classList.add('hidden'); });
+  document.getElementById('btnKySummon').onclick = () => summonKaiyang();
+  renderKyBadge();
 
   $('#btnFull').onclick = () => toggleFull();
 
