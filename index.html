@@ -2776,8 +2776,9 @@ async function basicAttack(u) {
       return;
     }
   }
-  const n = (u.spirit.basic && u.spirit.basic.targets) || 1;
-  const bOpt = (u.spirit.basic && u.spirit.basic.mustCounter) ? { mustCounter: true } : undefined;
+  const base = (u.isBoss && u.spirit.bossBasic) ? u.spirit.bossBasic : (u.spirit.basic || {});
+  const n = base.targets || 1;
+  const bOpt = base.mustCounter ? { mustCounter: true } : undefined;
   const t = pickTarget(u);
   if (!t) return;
   u.el.classList.add(u.side === 'player' ? 'lunge-r' : 'lunge-l');
@@ -2786,17 +2787,17 @@ async function basicAttack(u) {
     const tt = tauntTarget(otherSide(u.side));
     if (tt) {
       strike(u, tt, n, bOpt);                 // 被嘲讽：全部份数砸在它身上
-      if (u.spirit.basic.drainEnergy && tt.alive) drainEnergy(u, tt, u.spirit.basic.drainEnergy);
+      if (base.drainEnergy && tt.alive) drainEnergy(u, tt, u.spirit.basic.drainEnergy);
     } else {
       for (const x of orderedFoes(u).slice(0, n)) {
         strike(u, x, 1.0, bOpt);
-        if (u.spirit.basic.drainEnergy && x.alive) drainEnergy(u, x, u.spirit.basic.drainEnergy);
+        if (base.drainEnergy && x.alive) drainEnergy(u, x, u.spirit.basic.drainEnergy);
         await pace(70);
       }
     }
   } else {
     strike(u, t, 1.0, bOpt);
-    if (u.spirit.basic.drainEnergy && t.alive) drainEnergy(u, t, u.spirit.basic.drainEnergy);
+    if (base.drainEnergy && t.alive) drainEnergy(u, t, u.spirit.basic.drainEnergy);
   }
   gainEnergy(u, ENERGY_GAIN_ATTACK);   // 普攻攒气势（+50，溢出转技能加成）
   syncUnit(u);
