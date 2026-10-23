@@ -684,7 +684,7 @@ body.royal-on .royal-strip{
 .awaken-fx.play .aw-flash{animation:awFlash 1.8s ease forwards}
 @keyframes awFlash{0%{opacity:.95}25%{opacity:.25}100%{opacity:0}}
 .aw-stage{position:absolute;inset:0;overflow:hidden}
-.aw-form{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+.aw-form{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:auto;height:auto;max-width:94vw;max-height:90vh;object-fit:contain;filter:drop-shadow(0 0 42px rgba(255,170,60,.55)) drop-shadow(0 0 90px rgba(255,90,40,.35));
   -webkit-mask-image:radial-gradient(ellipse 70% 78% at 50% 45%,#000 42%,transparent 84%);
   mask-image:radial-gradient(ellipse 70% 78% at 50% 45%,#000 42%,transparent 84%)}
 .aw-form.f1{opacity:1}
@@ -1827,7 +1827,7 @@ const SPIRITS = [
               desc:'200% 必克伤害 + 额外出手 2 次；每次出手后依次召唤星灵' } },
 
 /* ===== 开阳座 · 天光龙女（唤灵师） ===== */
-  { id:'kaiyang', art:'assets/spirits/kaiyang.webp', art2:'assets/spirits/kaiyang2.webp', name:'开阳座', title:'天光龙女', emoji:'☀️',
+  { id:'kaiyang', art:'assets/spirits/kaiyang.webp', art2:'assets/spirits/kaiyang_f2.webp', wakeArt1:'assets/spirits/kaiyang_f1.webp', name:'开阳座', title:'天光龙女', emoji:'☀️',
     element:'king', hp:1100, atk:140, spd:118, role:'唤灵·觉醒', profession:'spiritcaller', gacha:true,
     basic:{ name:'天光斩', mult:1.0 },
     ult:{ name:'开阳·日曜龙吟', type:'aoe', mult:1.2, targets:3,
@@ -3404,7 +3404,7 @@ async function awakenCinematic(k, first) {
     const root = $('#awakenFx');
     if (root) {
       const l1 = $('#awakenForm1'), l2 = $('#awakenForm2'), txt = $('#awakenLine');
-      if (l1) l1.src = k.spirit.art || '';
+      if (l1) l1.src = k.spirit.wakeArt1 || k.spirit.art || '';
       if (l2) l2.src = k.spirit.art2 || k.spirit.art || '';
       const nm = document.getElementById('awakenSkill');
       if (nm) nm.textContent = first ? '觉醒 · 万龙天罚' : '万龙天罚 · 再临';
