@@ -2288,7 +2288,7 @@ function cardHTML(u, preview = false) {
       <span class="ebadge" style="color:${el.color}">${el.emoji}</span>
       <span class="onum">${u.ordText || ''}</span>
       ${u.isBoss ? '<span class="crown">👑</span>' : ''}
-      ${u.spirit.art ? `<span class="portrait">${faceHTML(u.spirit)}</span>` : `<span class="uanim">${faceHTML(u.spirit)}</span>`}
+      ${(u.spirit.art || (u.awakened && u.spirit.art2)) ? `<span class="portrait">${faceHTML(u.awakened && u.spirit.art2 ? Object.assign({}, u.spirit, { art: u.spirit.art2 }) : u.spirit)}</span>` : `<span class="uanim">${faceHTML(u.spirit)}</span>`}
       <span class="cardinfo">
         <span class="nameline">
           <span class="uname">${u.name}</span>
