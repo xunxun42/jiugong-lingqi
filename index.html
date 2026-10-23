@@ -891,38 +891,64 @@ table.stats .tname em{font-style:normal;font-size:13px}
 .hall-ban.got{opacity:.62}
 .hall-ban.got em{color:#7dffb0}
 
-/* ---------- 天璇占卜 ---------- */
-#divModal .modal{width:min(740px,100%);padding:0;overflow:hidden}
-.div-modal{display:grid;grid-template-columns:250px minmax(0,1fr)}
-.div-art{position:relative;min-height:340px;overflow:hidden;
-  background:radial-gradient(circle at 50% 38%,#16203c,#07070f 72%)}
-.div-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 26%;opacity:.94}
-.div-art::after{content:'';position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(90deg,transparent 48%,rgba(11,11,22,.97) 100%)}
-.div-glow{position:absolute;left:50%;top:42%;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%;
-  background:radial-gradient(circle,rgba(255,215,107,.55),transparent 68%);filter:blur(14px);opacity:.45;
-  z-index:1;pointer-events:none;animation:divGlow 4s ease-in-out infinite}
-@keyframes divGlow{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:.7;transform:scale(1.1)}}
-.div-ring{position:absolute;left:50%;top:42%;width:196px;height:196px;margin:-98px 0 0 -98px;border-radius:50%;
-  border:1px dashed rgba(255,215,107,.72);z-index:2;pointer-events:none;animation:divSpin 20s linear infinite;
-  box-shadow:0 0 30px rgba(255,215,107,.28)}
-.div-ring::before{content:'';position:absolute;inset:16px;border-radius:50%;border:1px solid rgba(127,214,255,.55)}
-.div-ring::after{content:'';position:absolute;inset:40px;border-radius:50%;border:1px solid rgba(255,215,107,.45)}
+/* ---------- 天璇占卜（透明框架 · 插画满版） ---------- */
+#divModal .modal{
+  width:min(432px,92vw);height:min(86dvh,640px);padding:0;overflow:hidden;position:relative;
+  border-radius:22px;background:#06060e;
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 30px 90px rgba(0,0,0,.72), 0 0 70px rgba(255,215,107,.10);
+}
+.div-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 14%;z-index:0}
+.div-scrim{
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(120% 50% at 50% 0%, rgba(6,6,14,.34), transparent 60%),
+    linear-gradient(180deg,
+      rgba(6,6,14,.22) 0%, rgba(6,6,14,0) 16%,
+      rgba(6,6,14,.18) 42%, rgba(6,6,14,.72) 58%,
+      rgba(6,6,14,.94) 74%, #06060e 92%);
+}
+.div-ring{
+  position:absolute;left:50%;top:37%;width:214px;height:214px;margin:-107px 0 0 -107px;
+  border-radius:50%;border:1px dashed rgba(255,215,107,.55);z-index:2;pointer-events:none;
+  animation:divSpin 22s linear infinite;box-shadow:0 0 34px rgba(255,215,107,.20);
+}
+.div-ring::before{content:'';position:absolute;inset:18px;border-radius:50%;border:1px solid rgba(127,214,255,.40)}
+.div-ring::after{content:'';position:absolute;inset:44px;border-radius:50%;border:1px solid rgba(255,215,107,.32)}
 @keyframes divSpin{to{transform:rotate(360deg)}}
-.div-art.spinning .div-ring{animation-duration:.9s}
-.div-body{padding:20px 22px;display:flex;flex-direction:column;gap:9px;min-width:0;justify-content:center}
-.div-tier{font-size:34px;font-weight:900;letter-spacing:6px;text-align:center;color:var(--gold);
-  text-shadow:0 0 28px currentColor;padding:4px 0;transition:color .25s}
-.div-desc{font-size:11px;line-height:1.75;color:var(--muted);text-align:center;letter-spacing:.4px;min-height:40px}
-.div-reward{font-size:12px;text-align:center;color:#fff;letter-spacing:.5px;min-height:22px}
+.div-modal.spinning .div-ring{animation-duration:.85s}
+.div-body{
+  position:relative;z-index:3;height:100%;display:flex;flex-direction:column;
+  justify-content:flex-end;gap:8px;padding:18px 18px 16px;text-align:center;
+}
+.div-head{position:absolute;top:18px;left:0;right:0;text-align:center}
+.div-title{margin:0;font-size:15px;font-weight:800;letter-spacing:7px;color:#fff;
+  text-shadow:0 2px 14px rgba(0,0,0,.95)}
+.div-sub{display:block;margin-top:5px;font-size:9.5px;letter-spacing:2.4px;
+  color:rgba(255,255,255,.62);text-shadow:0 2px 10px rgba(0,0,0,.9)}
+.div-main{display:flex;flex-direction:column;gap:7px}
+.div-tier{
+  font-size:38px;font-weight:900;letter-spacing:9px;color:var(--gold);line-height:1.15;
+  text-shadow:0 0 32px currentColor, 0 3px 18px rgba(0,0,0,.95);transition:color .25s;
+}
+.div-desc{font-size:11px;line-height:1.75;color:rgba(255,255,255,.80);min-height:38px;
+  text-shadow:0 2px 12px rgba(0,0,0,.95)}
+.div-reward{font-size:12px;color:#fff;min-height:20px;letter-spacing:.4px;
+  text-shadow:0 2px 12px rgba(0,0,0,.95)}
 .div-reward b{color:var(--gold);font-size:17px;font-weight:900}
+.div-acts{display:flex;gap:8px}
+/* 全透明玻璃按钮 */
+.div-modal .btn{
+  flex:1;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);
+  backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);color:#fff;
+  text-shadow:0 1px 6px rgba(0,0,0,.8);
+}
+.div-modal .btn:hover{background:rgba(255,255,255,.18)}
+.div-modal .btn:disabled{opacity:.55}
 @media (max-width:680px){
-  .div-modal{grid-template-columns:1fr}
-  .div-art{min-height:200px;max-height:200px}
-  .div-art::after{background:linear-gradient(180deg,transparent 38%,rgba(11,11,22,.97) 100%)}
-  .div-ring{width:150px;height:150px;margin:-75px 0 0 -75px;top:48%}
-  .div-glow{width:130px;height:130px;margin:-65px 0 0 -65px;top:48%}
-  .div-tier{font-size:26px;letter-spacing:4px}
+  #divModal .modal{width:92vw;height:min(80dvh,600px)}
+  .div-tier{font-size:31px;letter-spacing:6px}
+  .div-ring{width:180px;height:180px;margin:-90px 0 0 -90px;top:34%}
 }
 
 /* ---------- 群星圣堂 ---------- */
@@ -1146,20 +1172,22 @@ table.stats .tname em{font-style:normal;font-size:13px}
 <!-- ================= 天璇占卜 ================= -->
 <div class="mask hidden" id="divModal">
   <div class="modal div-modal">
-    <div class="div-art">
-      <img src="assets/spirits/tianxuan-big.webp" alt="天璇座" id="divArt" loading="lazy" decoding="async">
-      <span class="div-ring"></span>
-      <span class="div-glow"></span>
-    </div>
+    <img class="div-bg" src="assets/spirits/tianxuan-oracle.webp" alt="天璇座" loading="lazy" decoding="async">
+    <span class="div-scrim"></span>
+    <span class="div-ring"></span>
     <div class="div-body">
-      <h2 class="h2sm">天璇占卜</h2>
-      <div class="sub">瑶光测命 · 璇玑授时</div>
-      <div class="div-tier" id="divTier">未卜</div>
-      <div class="div-desc" id="divDesc">每日一卦 · 天璇座为你推演今日星轨</div>
-      <div class="div-reward" id="divReward"></div>
-      <div class="btnrow">
-        <button class="btn primary" id="btnDivDraw">起卦</button>
-        <button class="btn ghost" id="btnCloseDiv">关闭</button>
+      <div class="div-head">
+        <h2 class="div-title">天璇占卜</h2>
+        <span class="div-sub">瑶光测命 · 璇玑授时</span>
+      </div>
+      <div class="div-main">
+        <div class="div-tier" id="divTier">未卜</div>
+        <div class="div-desc" id="divDesc">每日一卦 · 天璇座为你推演今日星轨</div>
+        <div class="div-reward" id="divReward"></div>
+      </div>
+      <div class="div-acts">
+        <button class="btn" id="btnDivDraw">起卦</button>
+        <button class="btn" id="btnCloseDiv">关闭</button>
       </div>
     </div>
   </div>
@@ -3302,7 +3330,7 @@ function openDivine() {
 function doDivine() {
   if (divBusy || divineState()) { toast('今日已占卜，明日再来'); return; }
   divBusy = true;
-  const panel = $('#divModal').querySelector('.div-art');
+  const panel = $('#divModal').querySelector('.div-modal');
   panel.classList.add('spinning');
   $('#btnDivDraw').disabled = true;
   $('#divReward').innerHTML = '';
