@@ -1547,6 +1547,11 @@ function rowPriority(u) {
   return order;
 }
 
+/* 对面有嘲讽单位（护盾还在）时返回它 */
+function tauntTarget(side) {
+  return aliveUnits(side).find(t => t.taunt && t.shield > 0) || null;
+}
+
 function pickTarget(u, pool) {
   const cands = (pool || aliveUnits(otherSide(u.side))).filter(t => t && t.alive !== false);
   if (!cands.length) return null;
@@ -1911,10 +1916,23 @@ async function castUlt(u) {
 
   switch (ult.type) {
     case 'aoe': {
+      const tt = tauntTarget(otherSide(u.side));
+      if (tt) {                       // 嘲讽：全体目标集火到它，倍率 × 目标数
+        strike(u, tt, ult.mult * foes.length);
+        log(`（嘲讽使 ${tag(tt)} 承受了 ${foes.length} 份伤害）`, 'sys');
+        break;
+      }
       for (const t of foes) { strike(u, t, ult.mult); await pace(90); }
       break;
     }
     case 'aoeDebuff': {
+      const tt = tauntTarget(otherSide(u.side));
+      if (tt) {
+        strike(u, tt, ult.mult * foes.length);
+        if (tt.alive) { addEffect(tt, 'atkDown', ult.debuff, ult.rounds); floatText(tt.el, '攻击↓', 'debuff'); }
+        log(`（嘲讽使 ${tag(tt)} 承受了 ${foes.length} 份伤害）`, 'sys');
+        break;
+      }
       for (const t of foes) {
         strike(u, t, ult.mult);
         if (t.alive) { addEffect(t, 'atkDown', ult.debuff, ult.rounds); floatText(t.el, '攻击↓', 'debuff'); }
@@ -1944,9 +1962,9 @@ async function castUlt(u) {
     }
     case 'multi': {
       for (let i = 0; i < ult.hits; i++) {
-        const alive = aliveUnits(otherSide(u.side));
-        if (!alive.length) break;
-        strike(u, pick(alive), ult.mult);
+        const t = pickTarget(u);          // 走 pickTarget，嘲讽时逐段集火
+        if (!t) break;
+        strike(u, t, ult.mult);
         await pace(85);
       }
       break;
@@ -1996,10 +2014,16 @@ async function castUlt(u) {
     /* 全体必克 + 按总伤害转化护盾 */
     case 'aoeShield': {
       let total = 0;
-      for (const t of foes) {
-        const r = strike(u, t, ult.mult);
-        total += r.dmg;
-        await pace(85);
+      const tt = tauntTarget(otherSide(u.side));
+      if (tt) {                          // 被嘲讽：集火 + 倍率 × 目标数
+        total = strike(u, tt, ult.mult * foes.length).dmg;
+        log(`（嘲讽使 ${tag(tt)} 承受了 ${foes.length} 份伤害）`, 'sys');
+      } else {
+        for (const t of foes) {
+          const r = strike(u, t, ult.mult);
+          total += r.dmg;
+          await pace(85);
+        }
       }
       const sh = Math.round(total * (ult.shieldPct || 0));
       if (sh > 0) {
