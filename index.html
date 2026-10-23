@@ -971,6 +971,39 @@ table.stats .tname em{font-style:normal;font-size:13px}
   .div-ring{width:180px;height:180px;margin:-90px 0 0 -90px;top:34%}
 }
 
+/* ---------- 养成：分页 + 灵念侧边栏 ---------- */
+.gtabs{display:flex;gap:6px;margin:10px 0 8px}
+.gtab{
+  flex:1;padding:8px 10px;border-radius:10px;cursor:pointer;font:inherit;font-size:12px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--muted);
+  transition:.15s;letter-spacing:1px;
+}
+.gtab em{font-style:normal;font-size:10px;opacity:.7;margin-left:3px}
+.gtab:hover{background:rgba(255,255,255,.08)}
+.gtab.on{background:rgba(232,192,106,.13);border-color:rgba(232,192,106,.55);color:#fff;font-weight:700}
+.gpage{min-height:180px}
+.sdrawer{
+  position:fixed;top:0;right:0;bottom:0;width:min(330px,88vw);z-index:120;
+  transform:translateX(102%);transition:transform .26s cubic-bezier(.2,.8,.3,1);
+  background:linear-gradient(180deg,#15122a,#0c0a18);
+  border-left:1px solid rgba(232,192,106,.28);
+  box-shadow:-24px 0 60px rgba(0,0,0,.6);
+  display:flex;flex-direction:column;
+}
+.sdrawer.open{transform:none}
+.sdrawer-head{
+  display:flex;align-items:center;gap:8px;padding:14px 16px 10px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.sdrawer-head b{font-size:13px;color:#fff;letter-spacing:1px}
+.sdrawer-head span{font-size:11px;color:var(--gold);flex:1}
+.sdrawer-body{padding:12px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start}
+.sdrawer-body .soul{width:76px}
+.sdrawer-body .soul:active{transform:scale(.95)}
+.soul.on-body{opacity:.55;filter:grayscale(.35)}
+.soul .sown{font-style:normal;font-size:8px;color:#8f89ad;margin-top:1px}
+.grow-stats .gcp b{color:#ffd76b}
+
 /* ---------- 群星圣堂 ---------- */
 #hallModal .modal{width:min(520px,100%)}
 .hall-head{
@@ -1115,7 +1148,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
         <div class="roster" id="roster"></div>
       </div>
       <div class="deploy-right">
-        <div class="hintline">已上阵 <b id="deployCount">0</b> / 6 · 至少 4 只</div>
+        <div class="hintline">已上阵 <b id="deployCount">0</b> / 6 · 至少 4 只 · 战力 <b id="deployCp">0</b></div>
         <div class="hintline" id="bonusLine">灵契加成 +0%</div>
         <div class="btnrow">
           <button class="btn" id="btnAuto">一键布阵</button>
@@ -1281,24 +1314,38 @@ table.stats .tname em{font-style:normal;font-size:13px}
         <button class="btn primary" id="btnDrawSoul">抽灵念 · 120</button>
       </span>
     </div>
-    <div class="grow-sec">
-      <div class="grow-title">
-        <span>灵念背包 · 点击装备</span>
-        <span>装备到 <b id="soulTarget">—</b> · 空位 <b id="soulFree">0</b></span>
-      </div>
-      <div class="soul-pack" id="soulPack"></div>
+    <div class="gtabs">
+      <button class="gtab on" data-gtab="spirit">精灵 <em id="gtabN1">0</em></button>
+      <button class="gtab" data-gtab="soul">灵念 <em id="gtabN2">0</em></button>
     </div>
-    <div class="grow-sec">
+    <div class="gpage" id="gpageSpirit">
       <div class="grow-title">
-        <span>精灵 · 点一行选中</span>
+        <span>点一行选中 · 点「＋」唤起侧栏装备</span>
         <span>每只 3 个灵念位</span>
       </div>
       <div id="growList"></div>
+    </div>
+    <div class="gpage hidden" id="gpageSoul">
+      <div class="grow-title">
+        <span>全部灵念 · 点一个装到当前选中精灵</span>
+        <span>装备到 <b id="soulTarget">—</b> · 空位 <b id="soulFree">0</b></span>
+      </div>
+      <div class="soul-pack" id="soulPack"></div>
     </div>
     <div class="btnrow" style="margin-top:6px">
       <button class="btn primary" id="btnCloseGrow">关闭</button>
     </div>
   </div>
+</div>
+
+<!-- 灵念装备侧边栏 -->
+<div class="sdrawer" id="soulDrawer">
+  <div class="sdrawer-head">
+    <b>装备灵念</b>
+    <span id="sdrawerTarget">—</span>
+    <button class="mini" id="btnCloseDrawer">收起</button>
+  </div>
+  <div class="sdrawer-body" id="soulDrawerList"></div>
 </div>
 
 <script>
@@ -2769,6 +2816,7 @@ function renderDeploy() {
 
   $('#enemyName').textContent = `敌方 · ${st.name}`;
   $('#deployCount').textContent = pUnits.length;
+  if ($('#deployCp')) $('#deployCp').textContent = pUnits.reduce((s, u) => s + spiritCP(u.spirit.id), 0);
   const bonusPct = Math.round(PROGRESS_PER_CLEAR * (state.unlocked - 1) * 100);
   $('#bonusLine').innerHTML = `灵契加成 <b>+${bonusPct}%</b>　已通关 ${state.unlocked - 1} 关`;
   setRound('布阵');
@@ -3152,8 +3200,10 @@ function drawSoul() {
 
 /* ---------------- 面板 ---------------- */
 let growSel = null;
+let soulDrawerSlot = null;   // 侧边栏当前要装进第几格（null = 收起）
 function openGrow() {
   if (!growSel) growSel = SPIRITS[0].id;
+  closeSoulDrawer();
   renderGrow();
   $('#growModal').classList.remove('hidden');
 }
@@ -3181,29 +3231,120 @@ function levelUpOnce(id) {
   return { used: cost, ups, cost };
 }
 
+/* ============================================================================
+   战斗力：满级 + 三格全绝品灵念的最优配装标定为 16888
+   ========================================================================== */
+const CP_TARGET = 16888;
+const SOUL_MAX = (() => {
+  const o = {};
+  for (const k in SOUL_TYPES) {
+    const T = SOUL_TYPES[k];
+    const v = T.hi * 2.4;                       // 绝品倍率 2.4 × 上限
+    o[k] = T.unit === '%' ? Math.round(v * 10) / 10 : Math.round(v);
+  }
+  return o;
+})();
+function cpRaw(sp, lv, agg) {
+  const mul = lvMult(lv) * (1 + (agg.allStats || 0) / 100);
+  const hp = sp.hp * mul, atk = sp.atk * mul;
+  return hp * 0.10 + atk * 2.0 + sp.spd * 3.0
+    + (agg.block   || 0) * 0.8 + (agg.crit    || 0) * 1.2 + (agg.critRes || 0) * 0.8
+    + (agg.pierce  || 0) * 0.8 + (agg.hit     || 0) * 0.6 + (agg.dodge   || 0) * 0.9
+    + (agg.flat    || 0) * 1.0 + (agg.dmg     || 0) * 3.0;
+}
+const CP_K = (() => {
+  const keys = Object.keys(SOUL_TYPES);
+  let best = 0;
+  for (const sp of SPIRITS) {
+    if (sp.isAdd || sp.hidden) continue;
+    for (const a of keys) for (const b of keys) for (const c of keys) {
+      const agg = {};
+      for (const k of [a, b, c]) agg[k] = (agg[k] || 0) + SOUL_MAX[k];
+      const v = cpRaw(sp, LV_MAX, agg);
+      if (v > best) best = v;
+    }
+  }
+  return best > 0 ? CP_TARGET / best : 1;
+})();
+function spiritCP(spiritId) {
+  const sp = SPIRITS.find(s => s.id === spiritId);
+  if (!sp || sp.isAdd || sp.hidden) return 0;
+  const p = spiritSave(spiritId);
+  const agg = {};
+  for (const uid of (p.souls || [])) {
+    if (uid == null) continue;
+    const s = soulById(uid);
+    if (s) agg[s.type] = (agg[s.type] || 0) + s.value;
+  }
+  return Math.round(cpRaw(sp, p.lv, agg) * CP_K);
+}
+
 function renderGrow() {
   const d = saveData();
   $('#growCrystal').textContent = d.crystal;
 
   const selSp = SPIRITS.find(s => s.id === growSel) || SPIRITS[0];
-  growSel = selSp.id;
-  const selSave = spiritSave(selSp.id);
+  growSel = selSp.id;  const selSave = spiritSave(selSp.id);
   if ($('#soulTarget')) $('#soulTarget').textContent = selSp.name;
   if ($('#soulFree')) $('#soulFree').textContent = selSave.souls.filter(x => x == null).length;
 
   const eq = equippedUids();
-  const free = d.pack.filter(x => !eq.has(x.uid));
+  /* 排序：品质低 → 高（凡 < 珍 < 绝），同品质按数值低 → 高 */
+  const rarityRank = name => {
+    const i = SOUL_RARITY.findIndex(r => r.name === name);
+    return i < 0 ? 0 : i;
+  };
+  const byAsc = (a, b) =>
+    rarityRank(a.rarity) - rarityRank(b.rarity) ||
+    a.value - b.value ||
+    (SOUL_TYPES[a.type].name || '').localeCompare(SOUL_TYPES[b.type].name || '') ||
+    a.uid - b.uid;
+
+  /* 谁是「装备到」目标 / 每个灵念装在哪只身上 */
+  const ownerOf = {};
+  for (const id in d.spirits) {
+    for (const uid of (d.spirits[id].souls || [])) {
+      if (uid != null) ownerOf[uid] = SPIRITS.find(s => s.id === id)?.name || id;
+    }
+  }
+  const all = d.pack.slice().sort(byAsc);
+  const free = all.filter(x => !eq.has(x.uid));
+
+  if ($('#gtabN1')) $('#gtabN1').textContent = ownedSpirits().length;
+  if ($('#gtabN2')) $('#gtabN2').textContent = all.length;
+
+  /* 【灵念】页：全部灵念，点一个装到当前选中精灵 */
   const pack = $('#soulPack');
-  pack.innerHTML = free.length
-    ? free.map(x => {
-        const T = SOUL_TYPES[x.type];
-        return `<div class="soul" data-uid="${x.uid}" style="border-color:${x.color}66" title="${T.name} +${x.value}${T.unit} · ${T.desc}（点击装到 ${selSp.name}）">
-          <b style="color:${T.color}">${T.name}</b>
-          <i class="sv" style="color:${T.color}">+${x.value}${T.unit}</i>
-          <i class="sr" style="color:${x.color}">${x.rarity}</i>
-        </div>`;
-      }).join('')
-    : '<div class="soul empty">灵念背包是空的 · 点右上角「抽灵念」</div>';
+  if (pack) {
+    pack.innerHTML = all.length
+      ? all.map(x => {
+          const T = SOUL_TYPES[x.type];
+          const own = ownerOf[x.uid];
+          return `<div class="soul ${own ? 'on-body' : ''}" data-uid="${x.uid}" style="border-color:${x.color}66"
+            title="${T.name} +${x.value}${T.unit} · ${T.desc}${own ? `（已装备：${own}）` : ''}">
+            <b style="color:${T.color}">${T.name}</b>
+            <i class="sv" style="color:${T.color}">+${x.value}${T.unit}</i>
+            <i class="sr" style="color:${x.color}">${x.rarity}</i>
+            ${own ? `<i class="sown">${own.slice(0, 2)}</i>` : ''}
+          </div>`;
+        }).join('')
+      : '<div class="soul empty">灵念背包是空的 · 点右上角「抽灵念」</div>';
+  }
+
+  /* 【侧边栏】只列未装备的，点一个直接装进目标槽位 */
+  if (soulDrawerSlot != null) {
+    $('#sdrawerTarget').textContent = `${selSp.name} · 第 ${soulDrawerSlot + 1} 位`;
+    $('#soulDrawerList').innerHTML = free.length
+      ? free.map(x => {
+          const T = SOUL_TYPES[x.type];
+          return `<div class="soul" data-uid="${x.uid}" style="border-color:${x.color}66">
+            <b style="color:${T.color}">${T.name}</b>
+            <i class="sv" style="color:${T.color}">+${x.value}${T.unit}</i>
+            <i class="sr" style="color:${x.color}">${x.rarity}</i>
+          </div>`;
+        }).join('')
+      : '<div class="soul empty">没有可用的灵念</div>';
+  }
 
   $('#growList').innerHTML = ownedSpirits().map(sp => {
     const p = spiritSave(sp.id);
@@ -3239,6 +3380,7 @@ function renderGrow() {
           <span>生命 <b>${hpNow}</b>${maxed ? '' : `<s>+${hpNext - hpNow}</s>`}</span>
           <span>攻击 <b>${atkNow}</b>${maxed ? '' : `<s>+${atkNext - atkNow}</s>`}</span>
           <span>灵速 <b>${sp.spd}</b></span>
+          <span class="gcp">战力 <b>${spiritCP(sp.id)}</b></span>
         </span>
         <span class="grow-xp"><i style="width:${pct}%"></i></span>
         <span class="grow-meta">${maxed ? '已满级' : `经验 ${p.exp}/${lvExpNeed(p.lv)} · 下一级 ${cost} 灵晶 · 倍率 ×${lvMult(p.lv).toFixed(2)}`}</span>
@@ -3251,6 +3393,29 @@ function renderGrow() {
       </span>
     </div>`;
   }).join('');
+}
+
+/* 某个灵念装在谁身上 */
+function equippedOwnerOf(uid) {
+  const d = saveData();
+  for (const id in d.spirits) {
+    if ((d.spirits[id].souls || []).includes(uid)) return id;
+  }
+  return null;
+}
+
+function openSoulDrawer(spId, slot) {
+  growSel = spId;
+  soulDrawerSlot = slot;
+  renderGrow();
+  $('#soulDrawer').classList.add('open');
+  sfx.tick();
+}
+function closeSoulDrawer() {
+  if (soulDrawerSlot == null) return;
+  soulDrawerSlot = null;
+  $('#soulDrawer').classList.remove('open');
+  $('#soulDrawerList').innerHTML = '';
 }
 
 function bindGrow() {
@@ -3280,11 +3445,45 @@ function bindGrow() {
     const el = e.target.closest('.soul[data-uid]');
     if (!el) return;
     const uid = +el.dataset.uid;
+    /* 已装备的点一下就卸下 */
+    const ownerId = equippedOwnerOf(uid);
+    if (ownerId) {
+      const op = spiritSave(ownerId);
+      op.souls = op.souls.map(x => (x === uid ? null : x));
+      saveProgress(); renderGrow();
+      toast(`已从 ${SPIRITS.find(s => s.id === ownerId)?.name || '精灵'} 卸下`);
+      sfx.tick();
+      return;
+    }
     const p = spiritSave(growSel);
     const idx = p.souls.findIndex(x => x == null);
     if (idx < 0) { toast('该角色 3 个灵念位都满了'); return; }
     p.souls[idx] = uid;
     saveProgress(); renderGrow(); sfx.tick();
+  });
+
+  /* 灵念侧边栏 */
+  $('#btnCloseDrawer').onclick = () => { closeSoulDrawer(); sfx.tick(); };
+  $('#soulDrawerList').addEventListener('click', e => {
+    const el = e.target.closest('.soul[data-uid]');
+    if (!el || soulDrawerSlot == null) return;
+    const p = spiritSave(growSel);
+    p.souls[soulDrawerSlot] = +el.dataset.uid;
+    saveProgress();
+    closeSoulDrawer();
+    renderGrow();
+    sfx.win();
+  });
+
+  /* 精灵 / 灵念 分页 */
+  document.querySelectorAll('.gtab').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('.gtab').forEach(x => x.classList.toggle('on', x === b));
+      const tab = b.dataset.gtab;
+      $('#gpageSpirit').classList.toggle('hidden', tab !== 'spirit');
+      $('#gpageSoul').classList.toggle('hidden', tab !== 'soul');
+      sfx.tick();
+    };
   });
   $('#growList').addEventListener('click', e => {
     const up = e.target.closest('[data-up]');
@@ -3306,7 +3505,7 @@ function bindGrow() {
       const p = spiritSave(slot.dataset.id);
       const i = +slot.dataset.slot;
       if (p.souls[i] != null) { p.souls[i] = null; saveProgress(); renderGrow(); sfx.tick(); }
-      else toast('点背包里的灵念来装备');
+      else openSoulDrawer(slot.dataset.id, i);
       return;
     }
     const row = e.target.closest('.grow-row[data-id]');
