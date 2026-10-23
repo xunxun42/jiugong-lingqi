@@ -1250,6 +1250,12 @@ const SPIRITS = [
     basic:{ name:'玑衡垂佑', mult:1.0 },
     ult:{ name:'神佑壁垒', type:'selfWard', shieldPct:1.5, reflect:0.6, rounds:3,
           desc:'为自身附加最大生命 150% 的护盾；护盾存在期间嘲讽全体敌人，并将受到伤害的 60% 反弹给攻击者' } },
+
+  { id:'tianxuan', art:'assets/spirits/tianxuan.webp', name:'天璇座', title:'神佐神女', emoji:'🌟',
+    element:'king', hp:880, atk:136, spd:134, role:'神佐·辅助', gacha:true, mustCounter:true,
+    basic:{ name:'璇光拂', mult:1.0 },
+    ult:{ name:'璇玑授时', type:'giftTurn',
+          desc:'为气势最高的友方补充与其当前气势等量的气势，并让其在队列中立刻额外行动一次（不影响其原本回合）' } },
 ];
 
 /* 关卡：team 里的 slot = 逻辑格子号（r*3+c），c=2 是前线 */
@@ -2016,6 +2022,20 @@ async function castUlt(u) {
       syncUnit(u);
       break;
     }
+    /* 神佐：给气势最高的友方补充等量气势，并插入一次额外行动 */
+    case 'giftTurn': {
+      const pool = mates.filter(m => m !== u);
+      if (!pool.length) break;
+      const t = pool.reduce((a, b) => (b.energy > a.energy ? b : a), pool[0]);
+      const cur = Math.round(t.energy);
+      gainEnergy(t, cur);
+      if (t.el) floatText(t.el, `⚡+${cur}`, 'buff', 6);
+      const queued = queueExtraTurn(t);
+      log(`${tag(u)} 授予 ${tag(t)} ${cur} 点气势（→ ${Math.round(t.energy)}）${queued ? '，并使其在队列中<em>立刻额外行动</em>' : ''}`, 'sys');
+      syncUnit(t);
+      await pace(220);
+      break;
+    }
     /* 全体必克 + 按总伤害转化护盾 */
     case 'aoeShield': {
       let total = 0;
@@ -2208,20 +2228,29 @@ function applyRoyal() {
   if (healed && rNames) log(`🌿 <b style="color:#7dffb0">神佑</b> · ${rNames} 发动：己方全体回复 ${healed} 生命`, 'sys');
 }
 
+/* 在排队中插入一次额外行动（紧接着当前行动者，不挤占目标原本的回合） */
+function queueExtraTurn(u) {
+  if (!B || !B.order || typeof B.orderIdx !== 'number' || !u || !u.alive) return false;
+  B.order.splice(B.orderIdx + 1, 0, u);
+  renderStrip();
+  return true;
+}
+
 async function battleLoop() {
   let result = null;
   for (B.round = 1; B.round <= MAX_ROUNDS; B.round++) {
     setRound('第 ' + B.round + ' 回合');
     const info = computeRoundOrder();
     renderSpeed(info);
-    B.order = info.ordered;
+    B.order = info.ordered.slice();   // 可变队列（「立刻出手」会往里插人）
     B.current = null;
     renderStrip();
     applyRoyal();
     log(`<span class="roundtag">第 ${B.round} 回合</span> · ${info.first === 'player' ? '我方' : '敌方'}先手（总灵速 ${info.pSpd.toFixed(0)} : ${info.eSpd.toFixed(0)}）`, 'roundhead');
     await pace(360);
 
-    for (const u of info.ordered) {
+    for (B.orderIdx = 0; B.orderIdx < B.order.length; B.orderIdx++) {
+      const u = B.order[B.orderIdx];
       if (!u.alive) { renderStrip(); continue; }
       B.current = u;
       renderStrip();
@@ -2316,6 +2345,7 @@ const ULT_TAG = {
   poison: '单体 · 中毒', buffAll: '全体增益 · 治疗', drain: '单体 · 吸血',
   aoeShield: '全体伤害 · 转护盾',
   selfWard: '自身壁垒 · 嘲讽 · 弹伤',
+  giftTurn: '授气势 · 立刻额外行动',
   healShield: '全体治疗 · 护盾',
 };
 
@@ -2330,6 +2360,7 @@ function ultDetail(ult) {
     case 'aoeShield': bits.push(`全体伤害 ${pct(ult.mult)}`); if (ult.shieldPct) bits.push(`护盾 ${pct(ult.shieldPct)} 伤害量`); break;
     case 'healShield': bits.push(`治疗 ${pct(ult.mult)} 攻击力`); if (ult.shield) bits.push(`护盾 ${pct(ult.shield)} 攻击力`); break;
     case 'selfWard':  bits.push(`护盾 ${pct(ult.shieldPct)} 最大生命`); bits.push('嘲讽全体'); if (ult.reflect) bits.push(`弹伤 ${pct(ult.reflect)}`); break;
+    case 'giftTurn':  bits.push('补充等量气势'); bits.push('立刻额外行动'); break;
     default:          bits.push(`伤害 ${pct(ult.mult)}`);
   }
   if (ult.selfAtk)   bits.push(`自身攻击 +${Math.round((ult.selfAtk - 1) * 100)}%`);
@@ -3009,7 +3040,7 @@ const HALL = {
   cost: 1200,          // 单抽灵晶
   rate: 0.02,          // 出率 2%
   pity: 100,           // 100 抽必得
-  units: ['tianquan', 'tianji'],   // 卡池里的神源
+  units: ['tianquan', 'tianji', 'tianxuan'],   // 卡池里的神源
   expPerMiss: 200,     // 未抽中：己方全体各 +200 经验
   soulChance: 0.35,    // 未抽中：35% 额外掉落一枚灵念
 };
