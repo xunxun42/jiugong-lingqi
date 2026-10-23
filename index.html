@@ -1697,6 +1697,18 @@ const SPIRITS = [
     ult:{ name:'摇光·威灵尽显', type:'single', mult:4.0, noDodge:true,
           desc:'对单体造成 400% 攻击伤害，必定命中' } },
 
+  /* ===== 玉衡座 · 琉璃龙女（群星圣堂 / 深渊） ===== */
+  { id:'yuheng', art:'assets/spirits/yuheng.webp', name:'玉衡座', title:'琉璃龙女', emoji:'🪞',
+    element:'king', hp:1000, atk:160, spd:115, role:'琉璃·吸势', gacha:true,
+    basic:{ name:'琉璃击', mult:1.0, mustCounter:true },
+    ult:{ name:'玉衡·琉璃映身', type:'drainAll', mult:2.0,
+          desc:'对目标造成 200% 攻击伤害，吸取其全部气势；每 10 点气势转化为自身 3% 最大生命的护盾' },
+    /* —— 以下只在作为 Boss 时生效 —— */
+    dodgeFromOverflow:true,
+    bossBasic:{ name:'琉璃双碎', mult:1.0, targets:2, drainEnergy:50 },
+    bossUlt:{ name:'玉衡·万彩倾泻', type:'drainFour', targets:4, mult:2.0, perOverflow:50, shieldPct:0.02,
+              desc:'对 4 个敌人各造成 200% 伤害；每 50 点溢出气势转化为 2% 最大生命的护盾' } },
+
   /* 召唤物 · 不进灵契列表 */
   { id:'shadow', art:'', name:'虚影', title:'虚空造物', emoji:'🌑',
     element:'dark', hp:500, atk:55, spd:70, role:'召唤物', hidden:true, isAdd:true,
@@ -1723,6 +1735,7 @@ const RAID = {
   bosses: [
     { id:'xumoluo', slot:4, mult:{ hp:90, atk:1.62 } },
     { id:'leizeya', slot:4, mult:{ hp:21, atk:1.75 } },
+    { id:'yuheng', slot:4, mult:{ hp:40, atk:1.60 } },
   ],
 };
 let raidSel = RAID.bosses[0].id;
@@ -1747,6 +1760,16 @@ const RAID_INFO = {
       '被动「神隐追击」：每次行动后，对<b style="color:#ff9b9b">所有被束缚的敌人</b>各追加 50% 攻击伤害',
       '束缚<b style="color:#7fd6ff">不可叠加</b>，可被净化解除',
       '打法：嘲讽盾吸引火力 + 净化奶解缚 —— 束缚解开，她的追击就没有目标了',
+    ],
+  },
+  yuheng: {
+    name: '玉衡座 · 琉璃龙女', face: '🪞', color: '127,214,255',
+    lines: [
+      '👑 王属性 · 生命 60000 · 攻击 287',
+      '被动：每 10 点溢出气势 +1% 闪避，最高 <b style="color:#ffcf6b">90%</b>',
+      '小技能：打 2 人，各吸取 50 气势 —— 等于给自己喂溢出',
+      '大招：打 4 人 200%，每 50 溢出转 2% 最大生命的护盾',
+      '打法：别让她攒溢出。高速点杀，或用必中（摇光座）打穿她的闪避',
     ],
   },
 };
@@ -2058,6 +2081,18 @@ function gainEnergy(u, amount) {
   u.energy = Math.min(ENERGY_MAX, raw);
   if (overflow > 0) u.overflow = (u.overflow || 0) + overflow;
   return overflow;
+}
+
+/* 吸取气势：从目标抽取并转给自己（溢出照常累积） */
+function drainEnergy(src, tgt, amount) {
+  if (!tgt || !tgt.alive) return 0;
+  const amt = Math.min(tgt.energy || 0, amount);
+  if (amt <= 0) return 0;
+  tgt.energy -= amt;
+  gainEnergy(src, amt);
+  if (tgt.el) floatText(tgt.el, '⚡-' + Math.round(amt), 'debuff', rnd(-8, 8));
+  syncUnit(tgt);
+  return amt;
 }
 
 /* 溢出换算：每 10 点 → 一层，每层 +5% 技能效果 */
@@ -2549,7 +2584,10 @@ function strike(src, tgt, mult, opts) {
   const A = src.soul || {}, D = tgt.soul || {};
 
   // 命中 / 闪避（opts.noDodge = 必中，跳过判定）
-  const hitRate = clamp(0.92 + (A.hit || 0) / 100 - (D.dodge || 0) / 100, 0.5, 1);
+  const ovDodge = (tgt.spirit && tgt.spirit.dodgeFromOverflow)
+    ? Math.min(90, Math.floor((tgt.overflow || 0) / 10)) : 0;   // 玉衡：每 10 溢出 = 1% 闪避，上限 90
+  const hitFloor = ovDodge > 0 ? 0.08 : 0.5;
+  const hitRate = clamp(0.92 + (A.hit || 0) / 100 - (D.dodge || 0) / 100 - ovDodge / 100, hitFloor, 1);
   if (!opts.noDodge && rnd(0, 1) > hitRate) {
     if (tgt.el) floatText(tgt.el, '闪避', 'dodge');
     log(`${tag(src)} 的攻击被 ${tag(tgt)} 闪避`, 'sys');
@@ -2671,14 +2709,17 @@ async function basicAttack(u) {
     const tt = tauntTarget(otherSide(u.side));
     if (tt) {
       strike(u, tt, n, bOpt);                 // 被嘲讽：全部份数砸在它身上
+      if (u.spirit.basic.drainEnergy && tt.alive) drainEnergy(u, tt, u.spirit.basic.drainEnergy);
     } else {
       for (const x of orderedFoes(u).slice(0, n)) {
         strike(u, x, 1.0, bOpt);
+        if (u.spirit.basic.drainEnergy && x.alive) drainEnergy(u, x, u.spirit.basic.drainEnergy);
         await pace(70);
       }
     }
   } else {
     strike(u, t, 1.0, bOpt);
+    if (u.spirit.basic.drainEnergy && t.alive) drainEnergy(u, t, u.spirit.basic.drainEnergy);
   }
   gainEnergy(u, ENERGY_GAIN_ATTACK);   // 普攻攒气势（+50，溢出转技能加成）
   syncUnit(u);
@@ -2693,6 +2734,7 @@ async function castUlt(u) {
   const pw = ultPower(u);                                   // 溢出气势 → 技能效果倍率
   const ult = Object.assign({}, base, { mult: base.mult * pw });
   const ovBonus = Math.round((pw - 1) * 100);
+  const ovBefore = u.overflow || 0;      // 供「溢出转护盾」类技能使用
   u.energy = 0;
   u.overflow = 0;                                           // 溢出被这一次大招消耗掉
   syncUnit(u);
@@ -2887,7 +2929,39 @@ async function castUlt(u) {
       await sealPunish(u);
       break;
     }
-    /* 全体必克 + 按总伤害转化护盾 */
+    /* 玉衡（精灵版）：单体 200% + 吸光目标气势 -> 护盾 */
+    case 'drainAll': {
+      const t = pickTarget(u);
+      if (!t) break;
+      strike(u, t, ult.mult);
+      if (t.alive) {
+        const stole = drainEnergy(u, t, 9999);
+        const sh = Math.round(u.maxHp * 0.03 * Math.floor(stole / 10));
+        if (sh > 0) {
+          addShield(u, sh, 2);
+          log('🪞 ' + tag(u) + ' 吸收 ' + Math.round(stole) + ' 气势，凝成 ' + sh + ' 点护盾', 'sys');
+        } else if (stole > 0) {
+          log('🪞 ' + tag(u) + ' 吸收 ' + Math.round(stole) + ' 气势（不足 10 点，未成形）', 'sys');
+        }
+      }
+      break;
+    }
+    /* 玉衡（Boss 版）：打 4 个 -> 按自身溢出转化护盾 */
+    case 'drainFour': {
+      for (const t of orderedFoes(u).slice(0, ult.targets || 4)) {
+        strike(u, t, ult.mult);
+        await pace(85);
+      }
+      const step = ult.perOverflow || 50;
+      const sh = Math.round(u.maxHp * (ult.shieldPct || 0.02) * Math.floor(ovBefore / step));
+      if (sh > 0) {
+        addShield(u, sh, 2);
+        log('🪞 ' + tag(u) + ' 溢出 ' + Math.round(ovBefore) + ' 气势，凝成 ' + sh + ' 点护盾', 'sys');
+      } else {
+        log('🪞 ' + tag(u) + ' 溢出不足以成形（' + Math.round(ovBefore) + ' 点）', 'sys');
+      }
+      break;
+    }    /* 全体必克 + 按总伤害转化护盾 */
     case 'aoeShield': {
       let total = 0;
       const tt = tauntTarget(otherSide(u.side));
@@ -4353,7 +4427,7 @@ const HALL = {
   cost: 300,           // 单抽灵晶
   rate: 0.02,          // 出率 2%
   pity: 100,           // 100 抽必得
-  units: ['tianquan', 'tianji', 'tianxuan', 'yaoguang'],   // 卡池里的神源
+  units: ['tianquan', 'tianji', 'tianxuan', 'yaoguang', 'yuheng'],   // 卡池里的神源
   expPerMiss: 200,     // 未抽中：己方全体各 +200 经验
   soulChance: 0.35,    // 未抽中：35% 额外掉落一枚灵念
 };
