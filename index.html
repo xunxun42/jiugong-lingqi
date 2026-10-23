@@ -923,6 +923,20 @@ table.stats .tname em{font-style:normal;font-size:13px}
 .hall-tip b{color:var(--gold)}
 .float.dodge{color:#c98bff;font-size:12px}
 .float.block{color:#7fd6ff;font-size:11px}
+
+/* ---------- 每日签到 ---------- */
+.rewline{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:2px 0 10px}
+.rewchip{font-size:10.5px;padding:3px 9px;border-radius:999px;border:1px solid rgba(232,192,106,.45);background:rgba(232,192,106,.12);color:#ffd76b;font-variant-numeric:tabular-nums}
+.rewchip.exp{border-color:rgba(127,214,255,.45);background:rgba(127,214,255,.12);color:#7fd6ff}
+.daily-streak{text-align:center;font-size:11px;color:var(--muted);margin-bottom:10px}
+.daily-streak b{color:var(--gold);font-size:14px}
+.daily-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.daily-cell{padding:9px 3px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.03);text-align:center;font-size:9.5px;color:var(--muted);transition:.2s}
+.daily-cell b{display:block;font-size:11.5px;color:#fff;margin-top:3px;font-variant-numeric:tabular-nums}
+.daily-cell.done{border-color:rgba(127,214,255,.5);background:rgba(127,214,255,.10)}
+.daily-cell.done b{color:#7fd6ff}
+.daily-cell.today{border-color:rgba(232,192,106,.9);background:rgba(232,192,106,.14);box-shadow:0 0 16px rgba(232,192,106,.28)}
+.daily-cell.today b{color:#ffd76b}
 </style>
 </head>
 <body>
@@ -1040,6 +1054,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <h2 id="resultTitle">胜利</h2>
     <div class="sub" id="resultSub">—</div>
     <div class="stars" id="resultStars"></div>
+    <div class="rewline" id="resultReward"></div>
     <div class="kv" id="resultKv"></div>
     <div id="resultTable"></div>
     <div class="btnrow">
@@ -1123,6 +1138,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="grow-head">
       <span class="crystal">💎 灵晶 <b id="growCrystal">0</b><span class="grow-tip">通关关卡获得</span></span>
       <span style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn" id="btnOpenDaily">每日签到</button>
         <button class="btn" id="btnGrowAll" title="把灵晶全部投入当前选中的精灵">一键满投</button>
         <button class="btn primary" id="btnDrawSoul">抽灵念 · 120</button>
       </span>
@@ -1143,6 +1159,20 @@ table.stats .tname em{font-style:normal;font-size:13px}
     </div>
     <div class="btnrow" style="margin-top:6px">
       <button class="btn primary" id="btnCloseGrow">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 每日签到 ================= -->
+<div class="mask hidden" id="dailyModal">
+  <div class="modal">
+    <h2 class="h2sm">每日签到</h2>
+    <div class="sub">连签 7 天，奖励递增</div>
+    <div class="daily-streak">已连签 <b id="dailyStreak">0</b> 天 · 当前灵晶 <b id="dailyCrystal">0</b></div>
+    <div class="daily-grid" id="dailyGrid"></div>
+    <div class="btnrow" style="margin-top:14px">
+      <button class="btn primary" id="btnDailyClaim">领取今日奖励</button>
+      <button class="btn ghost" id="btnDailyClose">稍后</button>
     </div>
   </div>
 </div>
@@ -2473,13 +2503,30 @@ function finishBattle(result) {
     else stars = 1;
   }
 
-  // 解锁 + 灵晶掉落
+  // 解锁 + 灵晶掉落 + 三星首通
+  let rewGain = 0, rewFirst = 0, rewUnlock = 0;
   if (win) {
+    const d = saveData();
+    const stageNo = state.stage + 1;
     const next = Math.min(STAGES.length, state.stage + 2);
-    if (next > state.unlocked) state.unlocked = next;
-    const gain = 150 + 60 * (state.stage + 1);   // 第1关 210 → 第10关 750
-    saveData().crystal += gain;
-    log(`💎 通关奖励 ${gain} 灵晶（当前 ${saveData().crystal}）`, 'sys');
+    const firstClear = next > state.unlocked;
+    if (firstClear) state.unlocked = next;
+
+    rewGain = 400 + 20 * stageNo;                // 第1关 420 → 第10关 600
+    d.crystal += rewGain;
+
+    d.first3 = d.first3 || {};
+    if (stars === 3 && !d.first3[state.stage]) { // 三星首通
+      d.first3[state.stage] = true;
+      rewFirst = 100 * stageNo;
+      d.crystal += rewFirst;
+    }
+    rewUnlock = firstClear && state.unlocked < STAGES.length ? stageNo + 1 : 0;
+
+    log(`💎 通关奖励 ${rewGain} 灵晶`
+      + (rewFirst ? `　⭐ 三星首通 +${rewFirst} 灵晶` : '')
+      + `（当前 ${d.crystal}）`, 'sys');
+    if (rewUnlock) log(`🗺 解锁第 ${rewUnlock} 关`, 'sys');
     saveProgress();
   }
 
@@ -2490,6 +2537,13 @@ function finishBattle(result) {
   $('#resultSub').textContent = win
     ? (state.stage === STAGES.length - 1 ? '全部关卡通关 · 灵契者之名传遍九域' : `第 ${state.stage + 1} 关「${STAGES[state.stage].name}」突破`)
     : `第 ${state.stage + 1} 关「${STAGES[state.stage].name}」失利，调整阵容再试`;
+
+  // —— 奖励提示 ——
+  $('#resultReward').innerHTML = win ? [
+    `<span class="rewchip">💎 通关 +${rewGain}</span>`,
+    rewFirst ? `<span class="rewchip">⭐ 三星首通 +${rewFirst}</span>` : '',
+    rewUnlock ? `<span class="rewchip exp">🗺 解锁第 ${rewUnlock} 关</span>` : '',
+  ].join('') : '';
 
   // —— 星级 ——
   const starBox = $('#resultStars');
@@ -2584,6 +2638,7 @@ function saveProgress() {
       v: 2, unlocked: state.unlocked, crystal: d.crystal,
       spirits: d.spirits, pack: d.pack, uid: d.uid,
       owned: d.owned, pity: d.pity,
+      daily: d.daily, first3: d.first3,
     }));
     localStorage.setItem('jiugong_unlocked', String(state.unlocked));
   } catch (e) {}
@@ -2599,6 +2654,8 @@ function loadProgress() {
         crystal: o.crystal || 0, spirits: o.spirits || {},
         pack: o.pack || [], uid: o.uid || 1,
         owned: o.owned || {}, pity: o.pity || 0,
+        daily: o.daily || { last: '', streak: 0 },
+        first3: o.first3 || {},
       };
       return;
     }
@@ -2885,7 +2942,7 @@ function bindGrow() {
    12d. 群星圣堂 · 限定精灵抽取
    ========================================================================== */
 const HALL = {
-  cost: 1200,          // 单抽灵晶
+  cost: 300,           // 单抽灵晶
   rate: 0.02,          // 出率 2%
   pity: 100,           // 100 抽必得
   unit: 'tianquan',    // 本期限定
@@ -2985,6 +3042,75 @@ function doHall(n) {
     renderRoster();
     if (state.phase === 'deploy') renderDeploy();
   }, r.hits.length * 90 + 60);
+}
+
+
+/* ============================================================================
+   12c. 每日签到
+   ========================================================================== */
+const DAILY_REWARDS = [300, 400, 500, 600, 800, 1000, 1500];
+const todayStr = () => { const t = new Date(); return `${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()}`; };
+function dayDiff(a, b) {
+  const pa = a.split('-').map(Number), pb = b.split('-').map(Number);
+  return Math.round((Date.UTC(pb[0], pb[1] - 1, pb[2]) - Date.UTC(pa[0], pa[1] - 1, pa[2])) / 86400000);
+}
+function dailyState() {
+  const d = saveData();
+  d.daily = d.daily || { last: '', streak: 0 };
+  return d.daily;
+}
+function dailyAvailable() { return dailyState().last !== todayStr(); }
+function nextStreak() {
+  const d = dailyState();
+  if (!d.last) return 1;
+  if (dayDiff(d.last, todayStr()) !== 1) return 1;
+  return d.streak >= 7 ? 1 : d.streak + 1;
+}
+function claimDaily() {
+  const d = saveData(), st = dailyState();
+  if (st.last === todayStr()) return { err: '今天已经签到过了' };
+  const streak = nextStreak();
+  const reward = DAILY_REWARDS[streak - 1];
+  d.crystal += reward;
+  st.last = todayStr();
+  st.streak = streak;
+  saveProgress();
+  return { reward, streak };
+}
+function renderDaily() {
+  const d = saveData(), st = dailyState();
+  $('#dailyCrystal').textContent = d.crystal;
+  $('#dailyStreak').textContent = st.streak || 0;
+  const claimed = st.last === todayStr();
+  const next = claimed ? st.streak : nextStreak();
+  $('#dailyGrid').innerHTML = DAILY_REWARDS.map((r, i) => {
+    const n = i + 1;
+    const done = claimed && n <= st.streak;
+    const today = !claimed && n === next;
+    return `<div class="daily-cell ${done ? 'done' : ''} ${today ? 'today' : ''}">
+      第 ${n} 天<b>${done ? '已领' : '💎 ' + r}</b></div>`;
+  }).join('');
+  const btn = $('#btnDailyClaim');
+  btn.disabled = claimed;
+  btn.textContent = claimed ? '今日已签' : `领取 ${DAILY_REWARDS[next - 1]} 灵晶`;
+}
+function openDaily() { renderDaily(); $('#dailyModal').classList.remove('hidden'); }
+function bindDaily() {
+  const on = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };
+  on('#btnDailyClose', () => $('#dailyModal').classList.add('hidden'));
+  on('#btnDailyClaim', () => {
+    const r = claimDaily();
+    if (r.err) { toast(r.err); return; }
+    toast(`签到成功 +${r.reward} 灵晶 · 连签 ${r.streak} 天`);
+    sfx.win();
+    renderDaily();
+    if (growSel) renderGrow();
+  });
+  const dm = $('#dailyModal');
+  if (dm) dm.addEventListener('click', e => {
+    if (e.target.id === 'dailyModal') dm.classList.add('hidden');
+  });
+  on('#btnOpenDaily', () => { openDaily(); sfx.tick(); });
 }
 
 /* ============================================================================
@@ -3101,6 +3227,7 @@ function bindEvents() {
     if (e.target.id === 'codexModal') $('#codexModal').classList.add('hidden');
   });
   bindGrow();
+  bindDaily();
 
   // 战斗中直接点角色看它的技能
   $('#arena').addEventListener('click', e => {
@@ -3143,6 +3270,7 @@ function init() {
   renderStageChips();
   log('欢迎，灵契者。选择关卡与阵容，然后开战。', 'sys');
   log('提示：右列是前线，先出手、也最容易被集火。', 'sys');
+  if (dailyAvailable()) setTimeout(() => openDaily(), 350);
   syncFullBtn();
 }
 
