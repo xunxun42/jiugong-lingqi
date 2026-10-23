@@ -914,6 +914,10 @@ table.stats .tname em{font-style:normal;font-size:13px}
   border-color:transparent;box-shadow:0 0 18px rgba(232,192,106,.75);
   animation:hallHit .55s cubic-bezier(.2,.9,.3,1.4) both;
 }
+.hall-chip.drop{
+  background:rgba(127,214,255,.10);font-weight:800;
+  animation:hallHit .4s cubic-bezier(.2,.9,.3,1.4) both;
+}
 @keyframes hallHit{0%{transform:scale(.3) rotate(-25deg);opacity:0}62%{transform:scale(1.18)}100%{transform:scale(1)}}
 .hall-tip{font-size:10.5px;color:var(--muted);letter-spacing:.4px;width:100%}
 .hall-tip b{color:var(--gold)}
@@ -1097,6 +1101,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
         <b>天权座 · 神源龙女</b>
         <span>👑 王属性 · 技能必克 · 全体护盾</span>
         <span class="hall-rate" id="hallRate">出率 2% · 第 100 抽必得</span>
+        <span style="font-size:9.5px;color:#8d87aa">未抽中补偿：己方全体 +200 经验 · 35% 掉落灵念</span>
       </span>
     </div>
     <div class="hall-result" id="hallResult"></div>
@@ -1234,6 +1239,22 @@ const STAGES = [
 
   { name:'暗影王座', desc:'影蚀龙王的王座厅 · 首领战', mult:{hp:1.10, atk:1.04}, boss:'nox',
     team:[ {id:'nox',slot:5}, {id:'igris',slot:8}, {id:'phoenix',slot:4}, {id:'aisling',slot:2}, {id:'nauti',slot:0}, {id:'luna',slot:1} ] },
+
+  /* ===== 第二幕：星穹回响（第 6~10 关） ===== */
+  { name:'星陨之境', desc:'坠星未熄的荒原', mult:{hp:1.50, atk:1.34},
+    team:[ {id:'golem',slot:5}, {id:'nox',slot:8}, {id:'phoenix',slot:4}, {id:'aisling',slot:2}, {id:'luna',slot:1}, {id:'zephyr',slot:7} ] },
+
+  { name:'幽泉秘域', desc:'光透不到的深泉', mult:{hp:1.66, atk:1.44},
+    team:[ {id:'golem',slot:5}, {id:'igris',slot:8}, {id:'aisling',slot:2}, {id:'nauti',slot:0}, {id:'moss',slot:4}, {id:'nox',slot:1} ] },
+
+  { name:'雷鸣绝壁', desc:'雷云压顶的断崖', mult:{hp:1.82, atk:1.54},
+    team:[ {id:'golem',slot:5}, {id:'zephyr',slot:8}, {id:'phoenix',slot:4}, {id:'luna',slot:1}, {id:'nox',slot:6}, {id:'aisling',slot:2} ] },
+
+  { name:'万灵祭坛', desc:'万灵低语的古坛', mult:{hp:2.05, atk:1.68},
+    team:[ {id:'golem',slot:5}, {id:'igris',slot:8}, {id:'phoenix',slot:4}, {id:'nauti',slot:0}, {id:'luna',slot:1}, {id:'nox',slot:6} ] },
+
+  { name:'星穹之巅', desc:'神源龙女镇守的天穹 · 终战', mult:{hp:2.25, atk:1.80}, boss:'tianquan',
+    team:[ {id:'tianquan',slot:5}, {id:'golem',slot:8}, {id:'nox',slot:4}, {id:'phoenix',slot:2}, {id:'luna',slot:1}, {id:'nauti',slot:0} ] },
 ];
 
 /* 灵契成长：每通关 1 关，我方全体 +4% 生命与攻击 */
@@ -1656,8 +1677,9 @@ function ultCinematic(u) {
   pushTimer = setTimeout(() => cameraPush(false), 560);
   sfx.ult();
   flashScreen(el.color, 0.15);
-  slowMo(0.3, 640);   // 慢镜
-  hitStop(130);       // 定帧
+  const spdK = clock.speed >= 4 ? 0.35 : clock.speed >= 2 ? 0.62 : 1;
+  slowMo(0.3, 640 * spdK);   // 慢镜（高倍速下自动缩短）
+  hitStop(130);              // 定帧
 }
 function flashScreen(color, opacity) {
   const f = $('#flash');
@@ -2455,7 +2477,7 @@ function finishBattle(result) {
   if (win) {
     const next = Math.min(STAGES.length, state.stage + 2);
     if (next > state.unlocked) state.unlocked = next;
-    const gain = 200 + 5 * (state.stage + 1);
+    const gain = 150 + 60 * (state.stage + 1);   // 第1关 210 → 第10关 750
     saveData().crystal += gain;
     log(`💎 通关奖励 ${gain} 灵晶（当前 ${saveData().crystal}）`, 'sys');
     saveProgress();
@@ -2693,6 +2715,15 @@ function openGrow() {
   renderGrow();
   $('#growModal').classList.remove('hidden');
 }
+/* 直接加经验并自动升级，返回升了几级 */
+function addExp(id, amount) {
+  const p = spiritSave(id);
+  p.exp += amount;
+  let ups = 0;
+  while (p.lv < LV_MAX && p.exp >= lvExpNeed(p.lv)) { p.exp -= lvExpNeed(p.lv); p.lv++; ups++; }
+  return ups;
+}
+
 /* 升 1 级（点一次升一级，花费透明） */
 function levelUpOnce(id) {
   const p = spiritSave(id);
@@ -2854,10 +2885,12 @@ function bindGrow() {
    12d. 群星圣堂 · 限定精灵抽取
    ========================================================================== */
 const HALL = {
-  cost: 1200,        // 单抽灵晶
-  rate: 0.02,        // 出率 2%
-  pity: 100,         // 100 抽必得
-  unit: 'tianquan',  // 本期限定
+  cost: 1200,          // 单抽灵晶
+  rate: 0.02,          // 出率 2%
+  pity: 100,           // 100 抽必得
+  unit: 'tianquan',    // 本期限定
+  expPerMiss: 200,     // 未抽中：己方全体各 +200 经验
+  soulChance: 0.35,    // 未抽中：35% 额外掉落一枚灵念
 };
 function hallOwned() { return !!(saveData().owned || {})[HALL.unit]; }
 function hallPityLeft() { return Math.max(0, HALL.pity - (saveData().pity || 0)); }
@@ -2868,8 +2901,8 @@ function hallPull(n) {
   if (hallOwned()) return { err: '本期神源已获得' };
   if (d.crystal < HALL.cost * n) return { err: `灵晶不足（需 ${HALL.cost * n}）` };
   d.crystal -= HALL.cost * n;
-  const hits = [];
-  let got = false;
+  const hits = [], drops = [];
+  let got = false, ups = 0;
   for (let i = 0; i < n; i++) {
     d.pity = (d.pity || 0) + 1;
     const win = Math.random() < HALL.rate || d.pity >= HALL.pity;
@@ -2881,11 +2914,18 @@ function hallPull(n) {
       d.owned[HALL.unit] = true;
       break;
     }
+    /* —— 未抽中补偿 —— */
+    for (const sp of ownedSpirits()) ups += addExp(sp.id, HALL.expPerMiss);
+    if (Math.random() < HALL.soulChance) {
+      const s = rollSoul();
+      d.pack.push(s);
+      drops.push(s);
+    }
   }
   const used = hits.length;
   d.crystal += HALL.cost * (n - used);   // 提前抽到，剩下的退钱
   saveProgress();
-  return { hits, got, used, cost: HALL.cost * used };
+  return { hits, got, used, cost: HALL.cost * used, drops, ups };
 }
 
 let hallBusy = false;
@@ -2920,11 +2960,25 @@ function doHall(n) {
     }, i * 90);
   });
   setTimeout(() => {
+    // 掉落的灵念
+    r.drops.forEach(dd => {
+      const T = SOUL_TYPES[dd.type];
+      const s = document.createElement('span');
+      s.className = 'hall-chip drop';
+      s.style.borderColor = dd.color;
+      s.style.color = T.color;
+      s.textContent = T.name.slice(0, 1);
+      s.title = `${T.name} +${dd.value}${T.unit} · ${dd.rarity}`;
+      box.appendChild(s);
+      sfx.tick();
+    });
+    const miss = r.hits.filter(h => !h).length;
     const tip = document.createElement('span');
     tip.className = 'hall-tip';
     tip.innerHTML = r.got
       ? `获得 <b>天权座 · 神源龙女</b>！已收入灵契，可上阵`
-      : `星光散尽 · 消耗 ${r.cost} 灵晶${n > 1 ? '（提前抽到会退还未抽部分）' : ''}`;
+      : `星光散尽 · ${miss} 抽未中 · 补偿己方全体 <b>+${HALL.expPerMiss * miss}</b> 经验`
+        + (r.drops.length ? ` · 掉落灵念 <b>×${r.drops.length}</b>` : '');
     box.appendChild(tip);
     hallBusy = false;
     renderHall();
