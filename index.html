@@ -891,6 +891,40 @@ table.stats .tname em{font-style:normal;font-size:13px}
 .hall-ban.got{opacity:.62}
 .hall-ban.got em{color:#7dffb0}
 
+/* ---------- 天璇占卜 ---------- */
+#divModal .modal{width:min(740px,100%);padding:0;overflow:hidden}
+.div-modal{display:grid;grid-template-columns:250px minmax(0,1fr)}
+.div-art{position:relative;min-height:340px;overflow:hidden;
+  background:radial-gradient(circle at 50% 38%,#16203c,#07070f 72%)}
+.div-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 26%;opacity:.94}
+.div-art::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent 48%,rgba(11,11,22,.97) 100%)}
+.div-glow{position:absolute;left:50%;top:42%;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,215,107,.55),transparent 68%);filter:blur(14px);opacity:.45;
+  z-index:1;pointer-events:none;animation:divGlow 4s ease-in-out infinite}
+@keyframes divGlow{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:.7;transform:scale(1.1)}}
+.div-ring{position:absolute;left:50%;top:42%;width:196px;height:196px;margin:-98px 0 0 -98px;border-radius:50%;
+  border:1px dashed rgba(255,215,107,.72);z-index:2;pointer-events:none;animation:divSpin 20s linear infinite;
+  box-shadow:0 0 30px rgba(255,215,107,.28)}
+.div-ring::before{content:'';position:absolute;inset:16px;border-radius:50%;border:1px solid rgba(127,214,255,.55)}
+.div-ring::after{content:'';position:absolute;inset:40px;border-radius:50%;border:1px solid rgba(255,215,107,.45)}
+@keyframes divSpin{to{transform:rotate(360deg)}}
+.div-art.spinning .div-ring{animation-duration:.9s}
+.div-body{padding:20px 22px;display:flex;flex-direction:column;gap:9px;min-width:0;justify-content:center}
+.div-tier{font-size:34px;font-weight:900;letter-spacing:6px;text-align:center;color:var(--gold);
+  text-shadow:0 0 28px currentColor;padding:4px 0;transition:color .25s}
+.div-desc{font-size:11px;line-height:1.75;color:var(--muted);text-align:center;letter-spacing:.4px;min-height:40px}
+.div-reward{font-size:12px;text-align:center;color:#fff;letter-spacing:.5px;min-height:22px}
+.div-reward b{color:var(--gold);font-size:17px;font-weight:900}
+@media (max-width:680px){
+  .div-modal{grid-template-columns:1fr}
+  .div-art{min-height:200px;max-height:200px}
+  .div-art::after{background:linear-gradient(180deg,transparent 38%,rgba(11,11,22,.97) 100%)}
+  .div-ring{width:150px;height:150px;margin:-75px 0 0 -75px;top:48%}
+  .div-glow{width:130px;height:130px;margin:-65px 0 0 -65px;top:48%}
+  .div-tier{font-size:26px;letter-spacing:4px}
+}
+
 /* ---------- 群星圣堂 ---------- */
 #hallModal .modal{width:min(520px,100%)}
 .hall-head{
@@ -969,6 +1003,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <button class="btn ghost" id="btnGrow">养成</button>
       <button class="btn ghost" id="btnCodex">图鉴</button>
       <button class="btn ghost" id="btnHall">群星</button>
+      <button class="btn ghost" id="btnDivine">占卜</button>
       <button class="btn ghost" id="btnRules">玩法</button>
       <button class="btn ghost iconbtn" id="btnSound" title="音效">🔊</button>
       <button class="btn ghost iconbtn" id="btnFull" title="全屏" aria-label="全屏">
@@ -1104,6 +1139,28 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="codex" id="codexList"></div>
     <div class="btnrow" style="margin-top:16px">
       <button class="btn primary" id="btnCloseCodex">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 天璇占卜 ================= -->
+<div class="mask hidden" id="divModal">
+  <div class="modal div-modal">
+    <div class="div-art">
+      <img src="assets/spirits/tianxuan-big.webp" alt="天璇座" id="divArt" loading="lazy" decoding="async">
+      <span class="div-ring"></span>
+      <span class="div-glow"></span>
+    </div>
+    <div class="div-body">
+      <h2 class="h2sm">天璇占卜</h2>
+      <div class="sub">瑶光测命 · 璇玑授时</div>
+      <div class="div-tier" id="divTier">未卜</div>
+      <div class="div-desc" id="divDesc">每日一卦 · 天璇座为你推演今日星轨</div>
+      <div class="div-reward" id="divReward"></div>
+      <div class="btnrow">
+        <button class="btn primary" id="btnDivDraw">起卦</button>
+        <button class="btn ghost" id="btnCloseDiv">关闭</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2707,6 +2764,7 @@ function saveData() {
   const d = state.save;
   d.spirits = d.spirits || {}; d.pack = d.pack || []; d.crystal = d.crystal || 0; d.uid = d.uid || 1;
   d.owned = d.owned || {}; d.pity = d.pity || 0;
+  if (d.divine === undefined) d.divine = null;
   return d;
 }
 /* 已拥有的精灵：普通精灵默认拥有，gacha 精灵必须抽到 */
@@ -2727,7 +2785,7 @@ function saveProgress() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       v: 2, unlocked: state.unlocked, crystal: d.crystal,
       spirits: d.spirits, pack: d.pack, uid: d.uid,
-      owned: d.owned, pity: d.pity,
+      owned: d.owned, pity: d.pity, divine: d.divine,
     }));
     localStorage.setItem('jiugong_unlocked', String(state.unlocked));
   } catch (e) {}
@@ -2742,7 +2800,7 @@ function loadProgress() {
       state.save = {
         crystal: o.crystal || 0, spirits: o.spirits || {},
         pack: o.pack || [], uid: o.uid || 1,
-        owned: o.owned || {}, pity: o.pity || 0,
+        owned: o.owned || {}, pity: o.pity || 0, divine: o.divine || null,
       };
       return;
     }
@@ -3023,6 +3081,14 @@ function bindGrow() {
   });
   $('#btnHall1').onclick = () => doHall(1);
   $('#btnHall10').onclick = () => doHall(10);
+
+  /* 天璇占卜 */
+  $('#btnDivine').onclick = () => { openDivine(); sfx.tick(); };
+  $('#btnCloseDiv').onclick = () => $('#divModal').classList.add('hidden');
+  $('#divModal').addEventListener('click', e => {
+    if (e.target.id === 'divModal') $('#divModal').classList.add('hidden');
+  });
+  $('#btnDivDraw').onclick = doDivine;
   $('#hallBanners').addEventListener('click', e => {
     const b = e.target.closest('[data-ban]');
     if (!b || hallBusy) return;
@@ -3179,6 +3245,92 @@ function doHall(n) {
     renderRoster();
     if (state.phase === 'deploy') renderDeploy();
   }, r.hits.length * 90 + 60);
+}
+
+/* ============================================================================
+   12e. 天璇占卜 · 每日一卦
+   ========================================================================== */
+const DIVINE = [
+  { name:'大凶', color:'#8a93a8', min:100,  max:300,  w:25, tip:'星轨逆行，天璇座仍为你留下一份薄礼。' },
+  { name:'平',   color:'#7fd6ff', min:300,  max:800,  w:30, tip:'四平八稳，灵契如常，宜稳扎稳打。' },
+  { name:'吉',   color:'#3fe0a2', min:800,  max:1500, w:25, tip:'璇光入怀，运势渐起，可放手一搏。' },
+  { name:'大吉', color:'#ffd76b', min:1500, max:2800, w:15, tip:'紫气东来，灵晶自天而降，诸事皆宜。' },
+  { name:'天赐', color:'#ff9fe0', min:5000, max:5000, w:5,  tip:'万星同辉！此签千载难逢，灵契者当记之。' },
+];
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+/* 今天已经卜过就返回结果，否则 null */
+function divineState() {
+  const d = saveData();
+  if (!d.divine || d.divine.date !== todayStr()) return null;
+  return d.divine;
+}
+function rollDivine() {
+  const total = DIVINE.reduce((s, x) => s + x.w, 0);
+  let r = Math.random() * total;
+  for (const x of DIVINE) { r -= x.w; if (r <= 0) return x; }
+  return DIVINE[0];
+}
+function drawDivine() {
+  const d = saveData();
+  const done = divineState();
+  if (done) return done;
+  const tier = rollDivine();
+  const amount = tier.min === tier.max
+    ? tier.min
+    : Math.round((tier.min + Math.random() * (tier.max - tier.min)) / 10) * 10;
+  d.crystal += amount;
+  d.divine = { date: todayStr(), name: tier.name, color: tier.color, amount, tip: tier.tip };
+  saveProgress();
+  return d.divine;
+}
+
+let divBusy = false;
+function openDivine() {
+  const done = divineState();
+  const tierEl = $('#divTier');
+  tierEl.textContent = done ? done.name : '未卜';
+  tierEl.style.color = done ? done.color : 'var(--gold)';
+  $('#divDesc').textContent = done ? done.tip : '每日一卦 · 天璇座为你推演今日星轨';
+  $('#divReward').innerHTML = done ? `今日获得 <b>💎 ${done.amount}</b> 灵晶` : '';
+  $('#btnDivDraw').disabled = !!done;
+  $('#btnDivDraw').textContent = done ? '今日已占卜' : '起卦';
+  $('#divModal').classList.remove('hidden');
+}
+function doDivine() {
+  if (divBusy || divineState()) { toast('今日已占卜，明日再来'); return; }
+  divBusy = true;
+  const panel = $('#divModal').querySelector('.div-art');
+  panel.classList.add('spinning');
+  $('#btnDivDraw').disabled = true;
+  $('#divReward').innerHTML = '';
+  $('#divDesc').textContent = '焚香起卦 · 星轨推演中…';
+  let i = 0;
+  const roll = setInterval(() => {
+    const t = DIVINE[i++ % DIVINE.length];
+    const el = $('#divTier');
+    el.textContent = t.name;
+    el.style.color = t.color;
+    sfx.tick();
+  }, 85);
+  setTimeout(() => {
+    clearInterval(roll);
+    const r = drawDivine();
+    panel.classList.remove('spinning');
+    const el = $('#divTier');
+    el.textContent = r.name;
+    el.style.color = r.color;
+    $('#divDesc').textContent = r.tip;
+    $('#divReward').innerHTML = `获得 <b>💎 ${r.amount}</b> 灵晶`;
+    $('#btnDivDraw').textContent = '今日已占卜';
+    if (r.amount >= 1500) { sfx.win(); flashScreen(r.color, .24); shakeArena(); }
+    else sfx.tick();
+    divBusy = false;
+    if (!$('#hallModal').classList.contains('hidden')) renderHall();
+    renderRoster();
+  }, 1350);
 }
 
 /* ============================================================================
