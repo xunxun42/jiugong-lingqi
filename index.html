@@ -1486,8 +1486,8 @@ const SPIRITS = [
           desc:'对目标造成 200% 攻击伤害，并使目标进入神隐（1 回合无法行动、无法被选中）' },
     /* —— 以下只在作为 Boss 时生效 —— */
     bossBasic:{ name:'雷光斩', mult:1.0 },
-    bossUlt:{ name:'万雷神隐', type:'sealThree', targets:3, gain:0.05,
-              desc:'随机束缚 3 个敌人进入神隐；每束缚到一个新目标，自身全属性 +5%' } },
+    bossUlt:{ name:'万雷神隐', type:'sealThree', targets:3, gain:0.05, maxStacks:10,
+              desc:'随机束缚 3 个敌人进入神隐；每束缚到一个新目标，自身全属性 +5%（最多 +50%）' } },
 ];
 
 /* 蚀界深渊：可重复挑战的首领战（不推进关卡进度） */
@@ -1497,7 +1497,7 @@ const RAID = {
   reward: 1000,
   bosses: [
     { id:'xumoluo', slot:4, mult:{ hp:31, atk:1.05 } },
-    { id:'leizeya', slot:4, mult:{ hp:33, atk:1.10 } },
+    { id:'leizeya', slot:4, mult:{ hp:12, atk:1.10 } },
   ],
 };
 let raidSel = RAID.bosses[0].id;
@@ -1516,7 +1516,7 @@ const RAID_INFO = {
   leizeya: {
     name: '雷塞娅 · 神隐之光', face: '⚡', color: '255,224,122',
     lines: [
-      '☀️ 光属性 · 生命 53460 · 攻击 194',
+      '☀️ 光属性 · 生命 19440 · 攻击 194',
       '大招随机束缚 3 人进入神隐：<b style="color:#ffcf6b">1 回合无法行动、无法被选中</b>',
       '每束缚到一个「新」目标，自身全属性 <b style="color:#ff9b9b">+5%，永久叠加</b>',
       '束缚<b style="color:#7fd6ff">不可叠加</b>，可被净化解除',
@@ -2458,14 +2458,23 @@ async function castUlt(u) {
         syncUnit(t);
         await pace(110);
       }
+      /* 成长：按层数线性封顶，不再复利滚雪球 */
       const step = ult.gain || 0.05;
-      const gain = step * picks.length;
-      u.atk = Math.round(u.atk * (1 + gain));
-      u.maxHp = Math.round(u.maxHp * (1 + gain));
-      u.hp = Math.round(u.hp * (1 + gain));
-      u.sealPower = (u.sealPower || 1) * (1 + gain);   // 仅用于日志展示
+      u.sealStacks = (u.sealStacks || 0) + picks.length;
+      const maxStacks = ult.maxStacks || 10;
+      const capped = Math.min(u.sealStacks, maxStacks);
+      const targetMul = 1 + step * capped;
+      const prev = u.sealMul || 1;
+      if (targetMul > prev) {
+        const r = targetMul / prev;
+        u.atk = Math.round(u.atk * r);
+        u.maxHp = Math.round(u.maxHp * r);
+        u.hp = Math.round(u.hp * r);
+        u.sealMul = targetMul;
+      }
       syncUnit(u);
-      log(`▲ ${tag(u)} 束缚 ${picks.length} 个目标，全属性 +${Math.round(gain * 100)}%（累计 +${Math.round((u.sealPower - 1) * 100)}%）`, 'sys');
+      log(`▲ ${tag(u)} 束缚 ${picks.length} 个目标，全属性 +${Math.round((targetMul - 1) * 100)}%`
+        + (capped >= maxStacks ? '（已达上限）' : ''), 'sys');
       break;
     }
     /* 全体必克 + 按总伤害转化护盾 */
@@ -2713,8 +2722,14 @@ async function battleLoop() {
   finishBattle(result);
 }
 
-/* 20 回合打不完 → 比剩余血量百分比 */
+/* 20 回合打不完 → 普通关卡比血量百分比；深渊讨伐直接判负 */
 function judgeByHp() {
+  if (state.mode === 'raid') {
+    const boss = B.units.find(u => u.isBoss && u.alive);
+    const pct = boss ? Math.round((boss.hp / boss.maxHp) * 100) : 0;
+    log(`⏳ 达到 ${MAX_ROUNDS} 回合上限，未能在限期内击杀首领（首领剩余 ${pct}%）· 讨伐失败`, 'roundhead');
+    return 'lose';
+  }
   const ratio = side => {
     const arr = B.units.filter(u => u.side === side);
     const cur = arr.reduce((s, u) => s + u.hp, 0);
