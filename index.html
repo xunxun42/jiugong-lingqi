@@ -891,6 +891,26 @@ table.stats .tname em{font-style:normal;font-size:13px}
 .hall-ban.got{opacity:.62}
 .hall-ban.got em{color:#7dffb0}
 
+/* ---------- 蚀界深渊 ---------- */
+#raidModal .modal{width:min(520px,100%)}
+.raid-hero{
+  display:flex;gap:14px;align-items:center;padding:14px;border-radius:14px;margin-bottom:12px;
+  border:1px solid rgba(169,123,255,.32);
+  background:radial-gradient(150% 150% at 18% 0%,rgba(169,123,255,.16),transparent 62%),rgba(255,255,255,.02);
+}
+.raid-face{
+  width:84px;height:84px;flex:none;border-radius:14px;display:grid;place-items:center;font-size:38px;
+  background:radial-gradient(circle at 50% 40%,#2a1a44,#0b0714 72%);
+  border:1px solid rgba(169,123,255,.55);box-shadow:0 0 24px rgba(169,123,255,.35);
+}
+.raid-meta{display:flex;flex-direction:column;gap:4px;min-width:0}
+.raid-meta b{font-size:15px;color:#fff;letter-spacing:.6px}
+.raid-meta span{font-size:10.5px;color:var(--muted);letter-spacing:.2px}
+.raid-tip{color:#7fd6ff!important}
+.raid-owned{color:var(--gold)!important;font-weight:700}
+.raid-reward{font-size:11.5px;text-align:center;color:var(--muted);margin-bottom:12px;letter-spacing:.4px}
+.raid-reward b{color:var(--gold);font-size:16px}
+
 /* ---------- 天璇占卜（透明框架 · 插画满版） ---------- */
 #divModal .modal{
   width:min(432px,92vw);height:min(86dvh,640px);padding:0;overflow:hidden;position:relative;
@@ -1029,6 +1049,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <button class="btn ghost" id="btnGrow">养成</button>
       <button class="btn ghost" id="btnCodex">图鉴</button>
       <button class="btn ghost" id="btnHall">群星</button>
+      <button class="btn ghost" id="btnRaid">深渊</button>
       <button class="btn ghost" id="btnDivine">占卜</button>
       <button class="btn ghost" id="btnRules">玩法</button>
       <button class="btn ghost iconbtn" id="btnSound" title="音效">🔊</button>
@@ -1165,6 +1186,31 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="codex" id="codexList"></div>
     <div class="btnrow" style="margin-top:16px">
       <button class="btn primary" id="btnCloseCodex">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 蚀界深渊 ================= -->
+<div class="mask hidden" id="raidModal">
+  <div class="modal">
+    <h2 class="h2sm">蚀界深渊</h2>
+    <div class="sub">虚魔罗盘踞的裂隙 · 可重复挑战</div>
+    <div class="raid-hero">
+      <span class="raid-face">👁️</span>
+      <span class="raid-meta">
+        <b>虚魔罗 · 虚空魔罗</b>
+        <span>🌑 暗属性 · 生命 65100 · 攻击 206</span>
+        <span><b style="color:#ffcf6b">常驻嘲讽</b>：你的所有单体攻击都会打在它身上</span>
+        <span>每次出手召唤一只 500 血虚影（上限 6 只），虚影会攻击，但很弱</span>
+        <span>范围技能被嘲讽时，倍率 × 敌方人数 —— <b style="color:#7fd6ff">召唤物越多，AoE 越猛</b></span>
+        <span class="raid-tip">打法：拖住，等它召满 6 只，再用 AoE 一次灌进去</span>
+        <span class="raid-owned" id="raidOwned">首通解锁虚魔罗</span>
+      </span>
+    </div>
+    <div class="raid-reward">通关奖励 <b>💎 1000</b> 灵晶</div>
+    <div class="btnrow">
+      <button class="btn primary" id="btnRaidGo">挑战</button>
+      <button class="btn ghost" id="btnCloseRaid">关闭</button>
     </div>
   </div>
 </div>
@@ -1341,7 +1387,32 @@ const SPIRITS = [
     basic:{ name:'璇光拂', mult:1.0 },
     ult:{ name:'璇玑授时', type:'giftTurn',
           desc:'为气势最高的友方补充与其当前气势等量的气势，并让其在队列中立刻额外行动一次（不影响其原本回合）' } },
+
+  /* ===== 蚀界深渊 · 虚魔罗（首通解锁） ===== */
+  { id:'xumoluo', art:'assets/spirits/xumoluo.webp', name:'虚魔罗', title:'虚空魔罗', emoji:'👁️',
+    element:'dark', hp:1400, atk:175, spd:96, role:'虚空·召唤', gacha:true, alwaysTaunt:true,
+    basic:{ name:'虚蚀双触', mult:1.0, targets:2 },
+    summonOnEnter:{ id:'shadow', max:1 },
+    summonOnAct:{ id:'shadow', max:6 },      // 仅 Boss 版生效
+    ult:{ name:'万魔加身', type:'multiTarget', targets:4, mult:1.4,
+          desc:'对 4 个敌人各造成 140% 攻击的暗属性伤害' } },
+
+  /* 召唤物 · 不进灵契列表 */
+  { id:'shadow', art:'', name:'虚影', title:'虚空造物', emoji:'🌑',
+    element:'dark', hp:500, atk:55, spd:70, role:'召唤物', hidden:true, isAdd:true,
+    basic:{ name:'虚触', mult:1.0 },
+    ult:{ name:'虚触', type:'single', mult:1.2, desc:'对单体造成 120% 攻击伤害' } },
 ];
+
+/* 蚀界深渊：可重复挑战的首领战（不推进关卡进度） */
+const RAID = {
+  name: '蚀界深渊',
+  desc: '虚魔罗盘踞的裂隙 · 可重复挑战',
+  mult: { hp: 31, atk: 1.05 },
+  boss: 'xumoluo',
+  team: [ { id:'xumoluo', slot:4 } ],
+  reward: 1000,
+};
 
 /* 关卡：team 里的 slot = 逻辑格子号（r*3+c），c=2 是前线 */
 const STAGES = [
@@ -1557,7 +1628,7 @@ function makeUnit(spiritId, side, slot, mult, isBoss = false) {
   let hpMul  = mult.hp  * (isBoss ? 1.5 : 1);
   let atkMul = mult.atk * (isBoss ? 1.12 : 1);
   let soul = {};
-  if (side === 'player') {
+  if (side === 'player' && !s.isAdd) {
     const p = spiritSave(spiritId);
     soul = soulStats(p);
     const bonus = lvMult(p.lv) * (1 + (soul.allStats || 0) / 100);
@@ -1575,6 +1646,7 @@ function makeUnit(spiritId, side, slot, mult, isBoss = false) {
     spd: s.spd,
     mustCounter: !!s.mustCounter,
     dr: s.dr || 0,
+    alwaysTaunt: !!isBoss && !!s.alwaysTaunt,
     energy: 0, overflow: 0, shield: 0, shieldRounds: 0,
     effects: [], alive: true, isBoss,
     stats: { dmg: 0, heal: 0, taken: 0, kills: 0 },
@@ -1641,14 +1713,14 @@ function rowPriority(u) {
 
 /* 对面有嘲讽单位（护盾还在）时返回它 */
 function tauntTarget(side) {
-  return aliveUnits(side).find(t => t.taunt && t.shield > 0) || null;
+  return aliveUnits(side).find(t => t.alwaysTaunt || (t.taunt && t.shield > 0)) || null;
 }
 
 function pickTarget(u, pool) {
   const cands = (pool || aliveUnits(otherSide(u.side))).filter(t => t && t.alive !== false);
   if (!cands.length) return null;
-  /* 嘲讽：护盾还在时，所有攻击强制指向嘲讽者 */
-  const taunter = cands.find(t => t.taunt && t.shield > 0);
+  /* 嘲讽：护盾还在时，所有攻击强制指向嘲讽者；常驻嘲讽则无条件生效 */
+  const taunter = cands.find(t => t.alwaysTaunt || (t.taunt && t.shield > 0));
   if (taunter) return taunter;
   for (const r of rowPriority(u)) {
     for (const c of COL_SWEEP) {
@@ -1716,7 +1788,7 @@ function syncUnit(u) {
   const fx = u.el.querySelector('.fx');
   const parts = [];
   if (u.shield > 0) parts.push(`<b class="sh">🛡${Math.round(u.shield)}</b>`);
-  if (u.taunt && u.shield > 0) parts.push('<b class="ta">嘲</b>');
+  if (u.alwaysTaunt || (u.taunt && u.shield > 0)) parts.push('<b class="ta">嘲</b>');
   const ovSteps = overflowSteps(u);
   if (ovSteps > 0) parts.push(`<b class="ov">⚡+${ovSteps * 5}%</b>`);
   for (const e of u.effects) {
@@ -1865,8 +1937,56 @@ function healUnit(u, amount, src) {
   }
   return real;
 }
-function killUnit(u, src) {
-  if (!u.alive) return;
+/* 按标准优先级排出所有可选目标（队首 = 原本的单体首选） */
+function orderedFoes(u) {
+  const cands = aliveUnits(otherSide(u.side));
+  const out = [];
+  for (const r of rowPriority(u)) {
+    for (const c of COL_SWEEP) {
+      const t = cands.find(x => x.row === r && x.col === c);
+      if (t && !out.includes(t)) out.push(t);
+    }
+  }
+  for (const t of cands) if (!out.includes(t)) out.push(t);
+  return out;
+}
+
+/* 召唤：填进「最靠前」的空位（先 col2 前线，再中军、后阵；同列从上往下） */
+function summonUnit(spiritId, side, mult) {
+  if (!B) return null;
+  const used = new Set(B.units.filter(x => x.side === side && x.alive).map(x => x.slot));
+  const order = [];
+  for (let col = 2; col >= 0; col--) for (let row = 0; row < 3; row++) order.push(row * 3 + col);
+  const slot = order.find(s => !used.has(s));
+  if (slot == null) return null;
+
+  const u = makeUnit(spiritId, side, slot, mult || { hp: 1, atk: 1 });
+  B.units.push(u);
+  const grid = side === 'player' ? $('#gridPlayer') : $('#gridEnemy');
+  if (grid) {
+    const cell = Array.from(grid.children).find(c => +c.dataset.slot === slot);
+    if (cell) {
+      cell.innerHTML = cardHTML(u, false);
+      u.el = cell.querySelector('.unit');
+      syncUnit(u);
+    }
+  }
+  return u;
+}
+
+/* Boss 每次出手召唤一只，达到上限后停止 */
+async function summonFrom(u) {
+  const cfg = u.spirit.summonOnAct;
+  if (!cfg) return;
+  const have = B.units.filter(x => x.side === u.side && x.alive && x.spirit.isAdd).length;
+  if (have >= (cfg.max || 6)) return;
+  const add = summonUnit(cfg.id, u.side, { hp: 1, atk: 1 });
+  if (!add) return;
+  log(`${tag(u)} 自裂隙中召唤了 ${tag(add)}`, 'sys');
+  await pace(150);
+}
+
+function killUnit(u, src) {  if (!u.alive) return;
   u.alive = false;
   u.hp = 0;
   if (src) src.stats.kills++;
@@ -1981,11 +2101,24 @@ function strike(src, tgt, mult) {
    8. 出手：普攻 / 大招
    ========================================================================== */
 async function basicAttack(u) {
+  const n = (u.spirit.basic && u.spirit.basic.targets) || 1;
   const t = pickTarget(u);
   if (!t) return;
   u.el.classList.add(u.side === 'player' ? 'lunge-r' : 'lunge-l');
   await pace(170);
-  strike(u, t, 1.0);
+  if (n > 1) {
+    const tt = tauntTarget(otherSide(u.side));
+    if (tt) {
+      strike(u, tt, n);                       // 被嘲讽：全部份数砸在它身上
+    } else {
+      for (const x of orderedFoes(u).slice(0, n)) {
+        strike(u, x, 1.0);
+        await pace(70);
+      }
+    }
+  } else {
+    strike(u, t, 1.0);
+  }
   gainEnergy(u, ENERGY_GAIN_ATTACK);   // 普攻攒气势（+50，溢出转技能加成）
   syncUnit(u);
   await pace(190);
@@ -2119,6 +2252,27 @@ async function castUlt(u) {
       log(`${tag(u)} 授予 ${tag(t)} ${cur} 点气势（→ ${Math.round(t.energy)}）${queued ? '，并使其在队列中<em>立刻额外行动</em>' : ''}`, 'sys');
       syncUnit(t);
       await pace(220);
+      break;
+    }
+    /* 多目标定点（虚魔罗：打 N 个） */
+    case 'multiTarget': {
+      const tt = tauntTarget(otherSide(u.side));
+      if (tt) {
+        strike(u, tt, ult.mult * (ult.targets || 1));
+        log(`（嘲讽使 ${tag(tt)} 承受了 ${ult.targets} 份伤害）`, 'sys');
+        break;
+      }
+      const picks = orderedFoes(u).slice(0, ult.targets || 1);
+      for (const t of picks) {
+        strike(u, t, ult.mult);
+        await pace(85);
+      }
+      break;
+    }
+    /* 单体 */
+    case 'single': {
+      const t = pickTarget(u);
+      if (t) strike(u, t, ult.mult);
       break;
     }
     /* 全体必克 + 按总伤害转化护盾 */
@@ -2343,6 +2497,7 @@ async function battleLoop() {
       else                 await basicAttack(u);
       result = checkEnd();
       if (result) break;
+      if (u.alive && u.isBoss && u.spirit.summonOnAct) await summonFrom(u);
       await pace(140);
     }
     if (result) break;
@@ -2413,6 +2568,7 @@ function renderStageChips() {
     b.title = st.desc + (i + 1 > state.unlocked ? '（未解锁）' : '');
     b.onclick = () => {
       if (i + 1 > state.unlocked) return;
+      state.mode = 'stage';
       state.stage = i;
       renderDeploy();
       log(`切换到关卡 ${i + 1}「${STAGES[i].name}」`, 'sys');
@@ -2428,6 +2584,8 @@ const ULT_TAG = {
   aoe: '全体伤害', aoeDebuff: '全体伤害 · 削弱', singleBuff: '单体爆发 · 自强化',
   healAll: '全体治疗 · 净化', shieldAll: '全体护盾', multi: '随机多段',
   poison: '单体 · 中毒', buffAll: '全体增益 · 治疗', drain: '单体 · 吸血',
+  multiTarget: '多目标定点',
+  single: '单体',
   aoeShield: '全体伤害 · 转护盾',
   selfWard: '自身壁垒 · 嘲讽 · 弹伤',
   giftTurn: '授气势 · 立刻额外行动',
@@ -2442,6 +2600,8 @@ function ultDetail(ult) {
     case 'healAll':   bits.push(`治疗 ${pct(ult.mult)} 攻击力`); break;
     case 'shieldAll': bits.push(`护盾 ${pct(ult.mult)} 攻击力`); break;
     case 'buffAll':   bits.push(`攻击 +${Math.round((ult.mult - 1) * 100)}%`); break;
+    case 'multiTarget': bits.push(`${ult.targets} 个目标 × ${pct(ult.mult)}`); break;
+    case 'single':    bits.push(`单体 ${pct(ult.mult)}`); break;
     case 'aoeShield': bits.push(`全体伤害 ${pct(ult.mult)}`); if (ult.shieldPct) bits.push(`护盾 ${pct(ult.shieldPct)} 伤害量`); break;
     case 'healShield': bits.push(`治疗 ${pct(ult.mult)} 攻击力`); if (ult.shield) bits.push(`护盾 ${pct(ult.shield)} 攻击力`); break;
     case 'selfWard':  bits.push(`护盾 ${pct(ult.shieldPct)} 最大生命`); bits.push('嘲讽全体'); if (ult.reflect) bits.push(`弹伤 ${pct(ult.reflect)}`); break;
@@ -2462,7 +2622,7 @@ function ultDetail(ult) {
 function renderCodex(focusId) {
   const box = $('#codexList');
   if (!box) return;
-  box.innerHTML = SPIRITS.map(s => {
+  box.innerHTML = SPIRITS.filter(s => !s.hidden).map(s => {
     const el = ELEM[s.element];
     return `<div class="cdx${s.id === focusId ? ' hl' : ''}" data-sid="${s.id}">
       <div class="cdx-top">
@@ -2609,7 +2769,7 @@ function autoLineup() {
    11. 开战 / 结算
    ========================================================================== */
 function buildBattle() {
-  const st = STAGES[state.stage];
+  const st = state.mode === 'raid' ? RAID : STAGES[state.stage];
   const units = [];
 
   for (const slot in state.lineup) {
@@ -2643,6 +2803,14 @@ function buildBattle() {
     u.el = cell.querySelector('.unit');
     syncUnit(u);
   }
+
+  /* 进场召唤：上阵即召，之后不再召唤 */
+  for (const u of units.slice()) {
+    if (u.side === 'player' && u.alive && u.spirit.summonOnEnter) {
+      const add = summonUnit(u.spirit.summonOnEnter.id, 'player', { hp: 1, atk: 1 });
+      if (add) log(`${tag(u)} 入场召唤了 ${tag(add)}`, 'sys');
+    }
+  }
 }
 
 async function startBattle() {
@@ -2669,7 +2837,7 @@ async function startBattle() {
   $('#battleState').innerHTML = '<b>战斗进行中…</b>';
   $('#stageChips').querySelectorAll('button').forEach(b => b.disabled = true);
 
-  log(`⚔ 关卡 ${state.stage + 1}「${STAGES[state.stage].name}」开战！`, 'roundhead');
+  log(`⚔ ${state.mode === 'raid' ? '蚀界深渊 · 虚魔罗' : `关卡 ${state.stage + 1}「${STAGES[state.stage].name}」`} 开战！`, 'roundhead');
   sfx.tick();
 
   try {
@@ -2704,12 +2872,22 @@ function finishBattle(result) {
 
   // 解锁 + 灵晶掉落
   if (win) {
-    const next = Math.min(STAGES.length, state.stage + 2);
-    if (next > state.unlocked) state.unlocked = next;
-    const gain = 150 + 60 * (state.stage + 1);   // 第1关 210 → 第10关 750
-    saveData().crystal += gain;
-    log(`💎 通关奖励 ${gain} 灵晶（当前 ${saveData().crystal}）`, 'sys');
-    saveProgress();
+    if (state.mode === 'raid') {
+      const first = !(saveData().owned || {}).xumoluo;
+      saveData().crystal += RAID.reward;
+      saveData().owned = saveData().owned || {};
+      saveData().owned.xumoluo = true;
+      log(`💎 深渊讨伐奖励 ${RAID.reward} 灵晶（当前 ${saveData().crystal}）`, 'sys');
+      if (first) log(`✦ 虚魔罗被收入灵契`, 'sys');
+      saveProgress();
+    } else {
+      const next = Math.min(STAGES.length, state.stage + 2);
+      if (next > state.unlocked) state.unlocked = next;
+      const gain = 150 + 60 * (state.stage + 1);   // 第1关 210 → 第10关 750
+      saveData().crystal += gain;
+      log(`💎 通关奖励 ${gain} 灵晶（当前 ${saveData().crystal}）`, 'sys');
+      saveProgress();
+    }
   }
 
   // —— 标题 ——
@@ -2717,8 +2895,10 @@ function finishBattle(result) {
   title.textContent = win ? '胜 利' : '战 败';
   title.className = win ? 'win' : 'lose';
   $('#resultSub').textContent = win
-    ? (state.stage === STAGES.length - 1 ? '全部关卡通关 · 灵契者之名传遍九域' : `第 ${state.stage + 1} 关「${STAGES[state.stage].name}」突破`)
-    : `第 ${state.stage + 1} 关「${STAGES[state.stage].name}」失利，调整阵容再试`;
+    ? (state.mode === 'raid' ? `蚀界深渊 · 虚魔罗已被击退`
+      : (state.stage === STAGES.length - 1 ? '全部关卡通关 · 灵契者之名传遍九域' : `第 ${state.stage + 1} 关「${STAGES[state.stage].name}」突破`))
+    : (state.mode === 'raid' ? `蚀界深渊 · 虚魔罗仍在裂隙深处`
+      : `第 ${state.stage + 1} 关「${STAGES[state.stage].name}」失利，调整阵容再试`);
 
   // —— 星级 ——
   const starBox = $('#resultStars');
@@ -3125,6 +3305,20 @@ function bindGrow() {
     renderHall();
     sfx.tick();
   });
+
+  /* 蚀界深渊 */
+  $('#btnRaid').onclick = () => { openRaid(); sfx.tick(); };
+  $('#btnCloseRaid').onclick = () => $('#raidModal').classList.add('hidden');
+  $('#raidModal').addEventListener('click', e => {
+    if (e.target.id === 'raidModal') $('#raidModal').classList.add('hidden');
+  });
+  $('#btnRaidGo').onclick = () => {
+    if (Object.keys(state.lineup).length < 4) { toast('至少上阵 4 只精灵'); return; }
+    state.mode = 'raid';
+    $('#raidModal').classList.add('hidden');
+    if (state.phase !== 'deploy') backToDeploy();
+    setTimeout(() => { if (state.phase === 'deploy') $('#btnFight').click(); }, 160);
+  };
 }
 
 /* ============================================================================
@@ -3192,6 +3386,11 @@ function hallPull(n) {
 }
 
 let hallBusy = false;
+function openRaid() {
+  const owned = !!(saveData().owned || {}).xumoluo;
+  $('#raidOwned').textContent = owned ? '已收入灵契 · 可在阵容中上阵' : '首通解锁虚魔罗';
+  $('#raidModal').classList.remove('hidden');
+}
 function openHall() { renderHall(); $('#hallModal').classList.remove('hidden'); }
 
 function renderHallBanners() {
