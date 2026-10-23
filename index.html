@@ -659,6 +659,47 @@ body.royal-on .royal-strip{
   100%{box-shadow:inset 0 0 0 rgba(255,215,107,0)}
 }
 
+/* 唤灵槽 */
+.wakebar{
+  display:flex;align-items:center;gap:10px;padding:6px 12px;margin:6px 0;border-radius:10px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+}
+.wakebar.hidden{display:none}
+.wake-label{font-size:10px;letter-spacing:3px;color:rgba(255,224,150,.85);flex:none}
+.wake-stars{display:flex;gap:5px}
+.wake-stars i{
+  width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.18);transition:.25s;
+}
+.wake-stars i.on{background:radial-gradient(circle,#fff7dc,#ffc84a);box-shadow:0 0 10px rgba(255,200,74,.9);transform:scale(1.15)}
+.wakebar.awakened{border-color:rgba(255,200,74,.55);box-shadow:0 0 18px rgba(255,200,74,.25)}
+@keyframes wakeFlash{0%,100%{box-shadow:none}50%{box-shadow:0 0 26px rgba(255,210,120,.9)}}
+.wakeflash{animation:wakeFlash .5s ease}
+
+/* 觉醒演出 */
+.awaken-fx{position:fixed;inset:0;z-index:88;pointer-events:none;display:grid;place-items:center;overflow:hidden;
+  background:radial-gradient(circle at 50% 45%,rgba(255,240,210,.10),rgba(6,4,12,.92) 65%)}
+.awaken-fx.hidden{display:none}
+.aw-flash{position:absolute;inset:0;background:#fff;opacity:0}
+.awaken-fx.play .aw-flash{animation:awFlash 1s ease forwards}
+@keyframes awFlash{0%{opacity:.95}25%{opacity:.25}100%{opacity:0}}
+.aw-stage{position:relative;width:min(78vmin,520px);height:min(78vmin,520px)}
+.aw-form{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:16px}
+.aw-form.f1{opacity:1}
+.aw-form.f2{opacity:0}
+.awaken-fx.play .aw-form.f1{animation:awOut .8s ease forwards}
+.awaken-fx.play .aw-form.f2{animation:awIn .8s ease forwards}
+@keyframes awOut{to{opacity:0;transform:scale(.96)}}
+@keyframes awIn{0%{opacity:0;transform:scale(1.05)}70%{opacity:1;transform:scale(1.02)}100%{opacity:1;transform:scale(1)}}
+.aw-line{
+  position:absolute;left:50%;bottom:12%;transform:translateX(-50%);
+  padding:10px 26px;border-radius:12px;background:rgba(8,6,14,.82);
+  border:1px solid rgba(255,200,74,.55);color:#ffe08a;font-size:15px;letter-spacing:3px;
+  text-shadow:0 0 18px rgba(255,200,74,.9),0 0 34px rgba(255,160,60,.6);white-space:nowrap;
+  opacity:0;
+}
+.awaken-fx.play .aw-line{animation:awLine 1s ease forwards}
+@keyframes awLine{0%{opacity:0;transform:translateX(-50%) translateY(14px)}30%,80%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0}}
 /* 契约与拖放 */
 .ct-list{display:flex;flex-direction:column;gap:8px}
 .ct-item{
@@ -1348,7 +1389,10 @@ table.stats .tname em{font-style:normal;font-size:13px}
         </div>
       </div>
 
-      <div class="orderstrip" id="orderStrip">
+      <div class="wakebar hidden" id="wakeBar">
+        <span class="wake-label">群星汇聚</span>
+        <span class="wake-stars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      </div>      <div class="orderstrip" id="orderStrip">
         <span class="strip-label">出手顺序</span>
         <span class="chip player" style="opacity:.5">布阵后显示</span>
       </div>
@@ -1470,6 +1514,15 @@ table.stats .tname em{font-style:normal;font-size:13px}
   </div>
 </div>
 
+<!-- 觉醒演出 -->
+<div class="awaken-fx hidden" id="awakenFx">
+  <div class="aw-flash"></div>
+  <div class="aw-stage">
+    <img class="aw-form f1" id="awakenForm1" alt="">
+    <img class="aw-form f2" id="awakenForm2" alt="">
+  </div>
+  <div class="aw-line" id="awakenLine"></div>
+</div>
 <!-- ================= 契约选择 ================= -->
 <div class="mask hidden" id="contractModal">
   <div class="modal" style="width:min(460px,100%)">
@@ -1747,7 +1800,7 @@ const SPIRITS = [
 
   /* ===== 天枢座 · 引星神女（召唤师） ===== */
   { id:'tianshu', art:'assets/spirits/tianshu.webp', name:'天枢座', title:'引星神女', emoji:'🌙',
-    element:'king', hp:1050, atk:150, spd:175, role:'引星·召唤师', gacha:true, linkOnContract:true,
+    element:'king', hp:1050, atk:150, spd:175, role:'引星·召唤师', profession:'summoner', gacha:true, linkOnContract:true,
     summoner:{ units:['yuheng','yaoguang'], slots:1 },
     basic:{ name:'引星击', mult:1.0, mustCounter:true },
     ult:{ name:'天枢·星引连衡', type:'comboStrike', mult:2.0, combos:2,
@@ -1755,6 +1808,16 @@ const SPIRITS = [
     bossBasic:{ name:'引星击', mult:1.0, mustCounter:true, summon:1 },
     bossUlt:{ name:'天枢·星引连衡', type:'comboStrike', mult:2.0, combos:2, summon:1,
               desc:'200% 必克伤害 + 额外出手 2 次；每次出手后依次召唤星灵' } },
+
+/* ===== 开阳座 · 天光龙女（唤灵师） ===== */
+  { id:'kaiyang', art:'assets/spirits/kaiyang.webp', name:'开阳座', title:'天光龙女', emoji:'☀️',
+    element:'light', hp:1100, atk:140, spd:118, role:'唤灵·觉醒', profession:'spiritcaller', gacha:true,
+    basic:{ name:'天光斩', mult:1.0 },
+    ult:{ name:'开阳·日曜龙吟', type:'aoe', mult:1.2, targets:3,
+          desc:'对 3 个敌人各造成 120% 攻击伤害' },
+    wakeBasic:{ name:'觉醒·天光连斩', mult:2.2, targets:2 },
+    wakeUlt:{ name:'觉醒·万龙天罚', type:'aoe', mult:2.2, targets:2, hits:2,
+              desc:'对 2 个敌人各造成 220% 攻击伤害，并连续出手 2 次' } },
 
   /* 天枢座召唤的星灵 */
   { id:'starlight', art:'', name:'星灵', title:'引星造物', emoji:'⭐',
@@ -2764,7 +2827,8 @@ async function sealPunish(u) {
 }
 
 async function basicAttack(u) {
-  const base = (u.isBoss && u.spirit.bossBasic) ? u.spirit.bossBasic : (u.spirit.basic || {});
+  let base = (u.isBoss && u.spirit.bossBasic) ? u.spirit.bossBasic : (u.spirit.basic || {});
+  if (u.awakened && u.spirit.wakeBasic) base = u.spirit.wakeBasic;
   const n = base.targets || 1;
   const bOpt = base.mustCounter ? { mustCounter: true } : undefined;
   const t = pickTarget(u);
@@ -2798,7 +2862,9 @@ async function basicAttack(u) {
 async function castUlt(u) {
   const base = u.spirit.ult;
   const pw = ultPower(u);                                   // 溢出气势 → 技能效果倍率
-  const ult = Object.assign({}, base, { mult: base.mult * pw });
+  let ultBase = base;
+  if (u.awakened && u.spirit.wakeUlt) ultBase = u.spirit.wakeUlt;
+  const ult = Object.assign({}, ultBase, { mult: ultBase.mult * pw });
   const ovBonus = Math.round((pw - 1) * 100);
   const ovBefore = u.overflow || 0;      // 供「溢出转护盾」类技能使用
   u.energy = 0;
@@ -3315,6 +3381,71 @@ function linkFollow(actor) {
   if (!owner || !owner.spirit || !owner.spirit.linkOnContract) return;
   if (queueExtraTurn(owner)) log('✦ ' + tag(owner) + ' 连携出手', 'sys');
 }
+/* 觉醒演出：白闪 + 震屏 + 立绘切换 + 台词，约 1 秒 */
+async function awakenCinematic(k, first) {
+  try {
+    const root = $('#awakenFx');
+    if (root) {
+      const l1 = $('#awakenForm1'), l2 = $('#awakenForm2'), txt = $('#awakenLine');
+      if (l1) l1.src = k.spirit.art || '';
+      if (l2) l2.src = k.spirit.art2 || k.spirit.art || '';
+      if (txt) txt.textContent = first ? '北斗星移，万龙听令！' : '群星再聚，万龙随行！';
+      root.classList.remove('hidden');
+      root.classList.add('play');
+      if (typeof flashScreen === 'function') flashScreen('rgba(255,245,220,.92)');
+      if (typeof shakeScreen === 'function') shakeScreen(1.4);
+    }
+    sfx.win();
+  } catch (e) {}
+  await pace(1000);
+  const r2 = $('#awakenFx');
+  if (r2) { r2.classList.add('hidden'); r2.classList.remove('play'); }
+}
+/* ===== 唤灵师：唤灵点 / 觉醒 ===== */
+const WAKE_MAX = 10;
+function kaiyangOf(side) {
+  return B ? B.units.find(u => u.spirit && u.spirit.profession === 'spiritcaller' && u.side === side) : null;
+}
+function addWake(n, why) {
+  const k = kaiyangOf('player');
+  if (!k) return;
+  const prev = B.wake || 0;
+  B.wake = Math.min(WAKE_MAX, prev + n);
+  renderWakeBar();
+  if (B.wake > prev && k.el) {
+    k.el.classList.remove('wakeflash'); void k.el.offsetWidth; k.el.classList.add('wakeflash');
+  }
+  if (B.wake >= WAKE_MAX) { B.wake = 0; renderWakeBar(); wakeTrigger(k, why); }
+}
+function renderWakeBar() {
+  const el = $('#wakeBar');
+  if (!el) return;
+  const n = B ? (B.wake || 0) : 0;
+  el.querySelectorAll('i').forEach((d, i) => d.classList.toggle('on', i < n));
+  const k = B ? kaiyangOf('player') : null;
+  el.classList.toggle('awakened', !!(k && k.awakened));
+}
+/* 觉醒：演出 + 复活 + 插队 */
+async function wakeTrigger(k, why) {
+  if (!k || B.wakeLock) return;
+  B.wakeLock = true;
+  const wasDead = !k.alive;
+  if (wasDead) {
+    k.alive = true;
+    k.hp = Math.max(1, Math.round(k.maxHp * 0.1));
+    if (k.el) k.el.classList.remove('dead');
+    log('\u2726 ' + tag(k) + ' 于群星之中归来（' + Math.round(k.maxHp * 0.1) + ' 生命）', 'sys');
+  }
+  const first = !k.awakened;
+  k.awakened = true;
+  await awakenCinematic(k, first);
+  // 强制插队：最高优先级额外回合
+  k.energy = 100;
+  if (queueExtraTurn(k, true)) {
+    log('\u2726 ' + tag(k) + ' 强行插入行动轴', 'sys');
+  }
+  B.wakeLock = false;
+}
 async function battleLoop() {
   let result = null;
   for (B.round = 1; B.round <= MAX_ROUNDS; B.round++) {
@@ -3346,6 +3477,13 @@ async function battleLoop() {
       result = checkEnd();
       if (result) break;
       if (u.spirit.isAdd && u.summonedBy) linkFollow(u);
+      // 唤灵师：王属性队友行动 +2
+      if (u.side === 'player') {
+        if (u.spirit.element === 'king') addWake(2);
+        B.units.filter(x => x.side === 'player' && x.spirit.element === 'king' && !x.alive && !x.__wakeCounted)
+          .forEach(x => { x.__wakeCounted = true; addWake(2); });
+        if (u.awakened && u.spirit.profession === 'spiritcaller' && !u.__acted2) { u.__acted2 = true; queueExtraTurn(u); }
+      }
       if (u.alive && u.isBoss && u.spirit.summonOnAct) await summonFrom(u);
       if (u.alive && u.isBoss && u.spirit.bossBasic && u.spirit.bossBasic.summon) { await bossSummonChain(u); result = checkEnd(); if (result) break; }
       await pace(140);
@@ -3601,13 +3739,27 @@ function bindContract() {
   });
 }
 
+/* 上阵规则：5 常规 + 1 召唤师 + 1 唤灵师 = 7 */
+function canDeploy(id, exceptSlot) {
+  const cur = Object.keys(state.lineup).filter(k => +k !== exceptSlot).map(k => state.lineup[k]);
+  const sp = SPIRITS.find(s => s.id === id) || {};
+  const prof = sp.profession || 'normal';
+  const profs = cur.map(x => (SPIRITS.find(s => s.id === x) || {}).profession || 'normal');
+  if (prof === 'summoner' && profs.includes('summoner')) return '已有召唤师（天枢座）';
+  if (prof === 'spiritcaller' && profs.includes('spiritcaller')) return '已有唤灵师（开阳座）';
+  const normals = profs.filter(x => x === 'normal').length;
+  if (prof === 'normal' && normals >= 5) return '常规精灵最多 5 只';
+  if (cur.length >= 7) return '最多上阵 7 只';
+  return null;
+}
 /* ===== 拖放布阵 ===== */
 let dragData = null;
 function cellDrop(slot) {
   if (!dragData) return;
   const occ = state.lineup[slot];
   for (const k in state.lineup) if (state.lineup[k] === dragData.id && +k !== slot) delete state.lineup[k];
-  if (Object.keys(state.lineup).filter(k => +k !== slot).length >= 6 && dragData.from == null) { toast('最多上阵 6 只'); dragData = null; return; }
+  const deny = dragData.from == null ? canDeploy(dragData.id, null) : canDeploy(dragData.id, slot);
+  if (deny) { toast(deny); dragData = null; return; }
   if (dragData.from != null) {
     delete state.lineup[dragData.from];
     if (occ) state.lineup[dragData.from] = occ;      // 交换位置
@@ -3863,6 +4015,7 @@ async function startBattle() {
 
   buildBattle();
   renderRoyal(B.units.filter(u => u.side === 'player'));
+  renderWakeBar();
   /* 王权技：入局演出 + 战场染金 */
   const royalHolders = B.units.filter(u => u.side === 'player' && u.spirit.royal);
   document.body.classList.toggle('royal-on', royalHolders.length > 0);
@@ -4949,7 +5102,7 @@ function bindEvents() {
       return;
     }
     if (!state.selected) { toast('先在下方选一只精灵'); return; }
-    if (Object.keys(state.lineup).length >= 6) { toast('最多上阵 6 只'); return; }
+      const deny2 = canDeploy(state.selected, null); if (deny2) { toast(deny2); return; }
     state.lineup[slot] = state.selected;
     state.selected = null;
     renderDeploy();
