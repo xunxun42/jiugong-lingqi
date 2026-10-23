@@ -1222,6 +1222,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <button class="btn ghost" id="btnRaid">深渊</button>
       <button class="btn ghost" id="btnDivine">占卜</button>
       <button class="btn ghost" id="btnRules">玩法</button>
+      <button class="btn ghost iconbtn" id="btnMusic" title="战斗音乐">🎵</button>
       <button class="btn ghost iconbtn" id="btnSound" title="音效">🔊</button>
       <button class="btn ghost iconbtn" id="btnSave" title="存档备份（导出 / 导入）">💾</button>
       <button class="btn ghost iconbtn" id="btnFull" title="全屏" aria-label="全屏">
@@ -2219,6 +2220,125 @@ function ultCinematic(u) {
   const spdK = clock.speed >= 4 ? 0.35 : clock.speed >= 2 ? 0.62 : 1;
   slowMo(0.3, 640 * spdK);   // 慢镜（高倍速下自动缩短）
   hitStop(130);              // 定帧
+}
+
+/* ============================================================================
+   战斗音乐：程序生成（无外部音频文件），16 分音符网格 + 前瞻调度
+   ========================================================================== */
+const MUSIC = { bpm: 132, vol: 0.10, on: true, timer: null, step: 0, nextTime: 0, cur: 0 };
+let musicGain = null;
+function musicOut() {
+  const b = bus(); if (!b) return null;
+  if (!musicGain) {
+    musicGain = b.ac.createGain();
+    musicGain.gain.value = 0;
+    musicGain.connect(b.out);
+  }
+  return { ac: b.ac, out: musicGain };
+}
+const midiHz = n => 440 * Math.pow(2, (n - 69) / 12);
+
+function mTone(hz, t0, dur, type, gain) {
+  const b = musicOut(); if (!b) return;
+  const { ac, out } = b;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'triangle';
+  o.frequency.setValueAtTime(hz, t0);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(out);
+  o.start(t0); o.stop(t0 + dur + 0.03);
+}
+function mNoise(t0, dur, gain, hz, type) {
+  const b = musicOut(); if (!b) return;
+  const { ac, out } = b;
+  if (!noiseBuf) {
+    noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+    const dd = noiseBuf.getChannelData(0);
+    for (let i = 0; i < dd.length; i++) dd[i] = Math.random() * 2 - 1;
+  }
+  const src = ac.createBufferSource(); src.buffer = noiseBuf;
+  const flt = ac.createBiquadFilter();
+  flt.type = type || 'highpass'; flt.frequency.value = hz || 6000;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(flt); flt.connect(g); g.connect(out);
+  src.start(t0); src.stop(t0 + dur + 0.02);
+}
+
+/* A 小调：Am – F – C – G */
+const MCHORDS = [
+  [57, 60, 64, 69],
+  [53, 57, 60, 65],
+  [48, 52, 55, 60],
+  [55, 59, 62, 67],
+];
+function musicStepSched(step, t0) {
+  const bar = Math.floor(step / 16) % 4;
+  const s = step % 16;
+  const ch = MCHORDS[bar];
+  const heavy = MUSIC.cur;
+  if (s % 4 === 0) mTone(midiHz(ch[0] - 12), t0, 0.30, 'sawtooth', 0.18 + heavy * 0.05);
+  if (s === 0 || s === 8 || (heavy && s === 14)) {
+    mTone(120, t0, 0.18, 'sine', 0.5);
+    mTone(60, t0, 0.26, 'sine', 0.32);
+  }
+  if (s === 4 || s === 12) mNoise(t0, 0.14, 0.18, 1400, 'bandpass');
+  if (s % 2 === 0) mNoise(t0, 0.045, 0.05 + heavy * 0.02, 8000, 'highpass');
+  if (s % 2 === 1) {
+    const note = ch[(step >> 1) % ch.length] + 12;
+    mTone(midiHz(note), t0, 0.14, 'triangle', 0.095 + heavy * 0.03);
+  }
+  if (s === 0) for (const n of ch.slice(0, 3)) mTone(midiHz(n), t0, 1.7, 'sine', 0.05);
+}
+function musicPump() {
+  const b = musicOut(); if (!b) return;
+  const spb = 60 / MUSIC.bpm / 4;
+  while (MUSIC.nextTime < b.ac.currentTime + 0.15) {
+    musicStepSched(MUSIC.step, MUSIC.nextTime);
+    MUSIC.step = (MUSIC.step + 1) % 64;
+    MUSIC.nextTime += spb;
+  }
+}
+function musicStart() {
+  if (!state.sound || !MUSIC.on || MUSIC.timer) return;
+  const b = musicOut(); if (!b) return;
+  MUSIC.step = 0;
+  MUSIC.nextTime = b.ac.currentTime + 0.08;
+  try {
+    b.out.gain.cancelScheduledValues(b.ac.currentTime);
+    b.out.gain.setValueAtTime(Math.max(0.0001, b.out.gain.value), b.ac.currentTime);
+    b.out.gain.linearRampToValueAtTime(MUSIC.vol, b.ac.currentTime + 0.8);
+  } catch (e) {}
+  MUSIC.timer = setInterval(musicPump, 25);
+  musicPump();
+}
+function musicStop(fade = 0.5) {
+  if (MUSIC.timer) { clearInterval(MUSIC.timer); MUSIC.timer = null; }
+  const b = musicOut(); if (!b) return;
+  try {
+    b.out.gain.cancelScheduledValues(b.ac.currentTime);
+    b.out.gain.setValueAtTime(Math.max(0.0001, b.out.gain.value), b.ac.currentTime);
+    b.out.gain.linearRampToValueAtTime(0.0001, b.ac.currentTime + fade);
+  } catch (e) {}
+}
+function musicDuck(on) {
+  const b = musicOut(); if (!b || !MUSIC.timer) return;
+  try {
+    b.out.gain.cancelScheduledValues(b.ac.currentTime);
+    b.out.gain.setValueAtTime(Math.max(0.0001, b.out.gain.value), b.ac.currentTime);
+    b.out.gain.linearRampToValueAtTime(on ? MUSIC.vol * 0.28 : MUSIC.vol, b.ac.currentTime + 0.25);
+  } catch (e) {}
+}
+function musicToggle() {
+  MUSIC.on = !MUSIC.on;
+  if (MUSIC.on) { if (state.phase === 'battle') musicStart(); }
+  else musicStop(0.35);
+  const btn = $('#btnMusic');
+  if (btn) { btn.textContent = MUSIC.on ? '🎵' : '🔇'; btn.style.opacity = MUSIC.on ? '1' : '.45'; }
 }
 function flashScreen(color, opacity) {
   const f = $('#flash');
@@ -3332,6 +3452,8 @@ async function startBattle() {
   $('#stageChips').querySelectorAll('button').forEach(b => b.disabled = true);
 
   log(`⚔ ${state.mode === 'raid' ? '蚀界深渊 · 虚魔罗' : `关卡 ${state.stage + 1}「${STAGES[state.stage].name}」`} 开战！`, 'roundhead');
+  MUSIC.cur = state.mode === 'raid' ? 1 : 0;   // 深渊用更重的编曲
+  musicStart();
   sfx.tick();
 
   try {
@@ -3349,6 +3471,7 @@ const sideStats = side => B.units.filter(u => u.side === side);
 
 function finishBattle(result) {
   B.result = result;
+  musicStop(1.4);           // 战斗结束，音乐缓慢淡出
   state.phase = 'result';
   clock.paused = true;
 
@@ -3444,6 +3567,7 @@ function backToDeploy() {
   clock.token++;
   clock.aborted = true;
   clock.paused = false;
+  musicStop(0.3);
   state.phase = 'deploy';
   state.paused = false;
   B = null;
@@ -4364,6 +4488,7 @@ function bindEvents() {
     if (state.phase !== 'battle') return;
     clock.paused = !clock.paused;
     state.paused = clock.paused;
+    musicDuck(clock.paused);
     $('#btnPause').textContent = clock.paused ? '▶ 继续' : '⏸ 暂停';
     $('#battleState').innerHTML = clock.paused
       ? '<b>已暂停</b>　点击继续'
@@ -4488,8 +4613,11 @@ function bindEvents() {
   $('#btnSound').onclick = () => {
     state.sound = !state.sound;
     $('#btnSound').textContent = state.sound ? '🔊' : '🔇';
-    if (state.sound) sfx.tick();
+    if (state.sound) { sfx.tick(); if (state.phase === 'battle') musicStart(); }
+    else musicStop(0.3);
   };
+  // 音乐开关
+  $('#btnMusic').onclick = () => { musicToggle(); if (MUSIC.on) sfx.tick(); };
 
   $('#btnFull').onclick = () => toggleFull();
 
