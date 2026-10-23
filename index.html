@@ -500,7 +500,11 @@ body.is-fs #btnFull .ic-compress{display:block}
 .chip.gone{opacity:.22;text-decoration:line-through}
 
 /* ---------- 日志 ---------- */
-.logpanel{padding:11px 12px;display:flex;flex-direction:column;gap:7px;min-height:0;overflow:hidden}
+/* 日志面板：高度必须封顶，否则行数一多会把整个主区撑高 */
+.logpanel{
+  padding:11px 12px;display:flex;flex-direction:column;gap:7px;
+  min-height:240px;max-height:calc(100dvh - 240px);overflow:hidden;
+}
 .loghead{display:flex;align-items:center;justify-content:space-between;font-size:11px;letter-spacing:2px;color:var(--muted)}
 .log{
   flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;
@@ -620,7 +624,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
 /* ---------- 响应式：平板 / 手机 ---------- */
 @media (max-width:1180px){
   .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);flex:1;min-height:0}
-  .logpanel{height:auto;min-height:110px}
+  .logpanel{height:auto;min-height:110px;max-height:clamp(140px, calc(100dvh - 420px), 300px)}
   .arena{flex:0 0 auto}
 }
 @media (max-width:860px){
@@ -720,7 +724,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
   .rc-role{font-size:7px}
   .battle-left{width:100%;justify-content:center}
   .bstate{font-size:11px}
-  .logpanel{min-height:104px;padding:8px 10px;gap:4px}
+  .logpanel{min-height:104px;max-height:34dvh;padding:8px 10px;gap:4px}
   .log{font-size:10px;line-height:1.5}
   .loghead{font-size:10px;letter-spacing:1.5px}
 
@@ -1484,7 +1488,7 @@ function log(html, cls = '') {
   d.className = 'log-line ' + cls;
   d.innerHTML = html;
   box.appendChild(d);
-  while (box.children.length > 260) box.removeChild(box.firstChild);
+  while (box.children.length > 120) box.removeChild(box.firstChild);
   box.scrollTop = box.scrollHeight;
 }
 function sideCls(u) { return u.side === 'player' ? 'player' : 'enemy'; }
