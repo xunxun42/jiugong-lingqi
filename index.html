@@ -235,6 +235,7 @@ body.is-fs #btnFull .ic-compress{display:block}
 .unit .fx .up{color:#7dffb0}
 .unit .fx .dn{color:#ff9b9b}
 .unit .fx .po{color:#b9ff5c}
+.unit .fx .ta{color:#ffcf6b;font-weight:800}
 .unit .fx .ov{color:#ffd76b;font-weight:800}
 /* 立绘：只有设了 art 字段才会出现，没设就是原来的 emoji */
 .unit .uanim{display:flex;align-items:center;justify-content:center}
@@ -941,6 +942,8 @@ table.stats .tname em{font-style:normal;font-size:13px}
 .hall-tip{font-size:10.5px;color:var(--muted);letter-spacing:.4px;width:100%}
 .hall-tip b{color:var(--gold)}
 .float.dodge{color:#c98bff;font-size:12px}
+.float.reflect{color:#ffcf6b;font-size:12px;font-weight:900;
+  text-shadow:0 0 10px rgba(255,207,107,.9),0 2px 8px rgba(0,0,0,.95)}
 .float.block{color:#7fd6ff;font-size:11px}
 </style>
 </head>
@@ -1243,11 +1246,10 @@ const SPIRITS = [
           desc:'对全体敌人造成 100% 攻击的必克伤害，并获得伤害量 30% 的护盾' } },
 
   { id:'tianji', art:'assets/spirits/tianji.webp', name:'天玑座', title:'神佑龙女', emoji:'🌿',
-    element:'king', hp:1080, atk:128, spd:122, role:'神佑·守护', gacha:true, mustCounter:true,
+    element:'king', hp:1080, atk:128, spd:122, role:'神佑·守护者', gacha:true, mustCounter:true,
     basic:{ name:'玑衡垂佑', mult:1.0 },
-    royal:{ name:'禄存厚泽', type:'regen', pct:0.06, desc:'在场时，己方全体每回合开始回复 6% 最大生命' },
-    ult:{ name:'神佑归元', type:'healShield', mult:2.0, shield:1.2, rounds:2,
-          desc:'治疗全体友方 200% 攻击力，并附加 120% 攻击力的护盾（2 回合）' } },
+    ult:{ name:'神佑壁垒', type:'selfWard', shieldPct:1.5, reflect:0.6, rounds:3,
+          desc:'为自身附加最大生命 150% 的护盾；护盾存在期间嘲讽全体敌人，并将受到伤害的 60% 反弹给攻击者' } },
 ];
 
 /* 关卡：team 里的 slot = 逻辑格子号（r*3+c），c=2 是前线 */
@@ -1548,6 +1550,9 @@ function rowPriority(u) {
 function pickTarget(u, pool) {
   const cands = (pool || aliveUnits(otherSide(u.side))).filter(t => t && t.alive !== false);
   if (!cands.length) return null;
+  /* 嘲讽：护盾还在时，所有攻击强制指向嘲讽者 */
+  const taunter = cands.find(t => t.taunt && t.shield > 0);
+  if (taunter) return taunter;
   for (const r of rowPriority(u)) {
     for (const c of COL_SWEEP) {
       const t = cands.find(x => x.row === r && x.col === c);
@@ -1614,6 +1619,7 @@ function syncUnit(u) {
   const fx = u.el.querySelector('.fx');
   const parts = [];
   if (u.shield > 0) parts.push(`<b class="sh">🛡${Math.round(u.shield)}</b>`);
+  if (u.taunt && u.shield > 0) parts.push('<b class="ta">嘲</b>');
   const ovSteps = overflowSteps(u);
   if (ovSteps > 0) parts.push(`<b class="ov">⚡+${ovSteps * 5}%</b>`);
   for (const e of u.effects) {
@@ -1808,6 +1814,7 @@ function strike(src, tgt, mult) {
   raw = Math.max(1, Math.round(raw));
 
   let absorbed = 0;
+  const hadShield = tgt.shield > 0;
   if (tgt.shield > 0) {
     absorbed = Math.min(tgt.shield, raw);
     tgt.shield -= absorbed;
@@ -1818,6 +1825,25 @@ function strike(src, tgt, mult) {
   tgt.stats.taken += total;
   src.stats.dmg += total;
   gainEnergy(tgt, ENERGY_GAIN_HIT);   // 挨打攒气势（+50，溢出转技能加成）
+
+  /* 弹伤：护盾还在时把受到的伤害按比例反弹给攻击者 */
+  if (hadShield && tgt.reflect > 0 && src && src.alive && src !== tgt) {
+    const back = Math.max(1, Math.round(total * tgt.reflect));
+    src.hp = Math.max(0, src.hp - back);
+    src.stats.taken += back;
+    tgt.stats.dmg += back;
+    if (src.el) {
+      floatText(src.el, `反射 -${back}`, 'reflect', rnd(-6, 6));
+      src.el.classList.remove('hit');
+      void src.el.offsetWidth;
+      src.el.classList.add('hit');
+    }
+    log(`↩ ${tag(tgt)} 的壁垒反弹 <span class="num">${back}</span> 给 ${tag(src)}`, 'sys');
+    syncUnit(src);
+    if (src.hp <= 0) killUnit(src, tgt);
+  }
+  /* 护盾碎了，嘲讽与弹伤一并结束 */
+  if (tgt.taunt && tgt.shield <= 0) { tgt.taunt = false; tgt.reflect = 0; }
 
   if (tgt.el) {
     tgt.el.classList.remove('hit');
@@ -1956,11 +1982,15 @@ async function castUlt(u) {
       }
       break;
     }
-    /* 全体治疗 + 全体护盾（神佑） */
-    case 'healShield': {
-      for (const t of mates) { healUnit(t, u.atk * ult.mult, u); await pace(65); }
-      for (const t of mates) { addShield(t, u.atk * (ult.shield || 0), ult.rounds || 2); await pace(55); }
-      sfx.heal();
+    /* 自身壁垒：按最大生命给盾，护盾期间嘲讽 + 弹伤 */
+    case 'selfWard': {
+      const amt = Math.round(u.maxHp * (ult.shieldPct || 0));
+      addShield(u, amt, ult.rounds || 3);
+      u.taunt = true;
+      u.reflect = ult.reflect || 0;
+      floatText(u.el, '嘲讽', 'buff', 10);
+      log(`${tag(u)} 张起壁垒：${amt} 点护盾 · 嘲讽全体 · 弹伤 ${Math.round((ult.reflect || 0) * 100)}%`, 'sys');
+      syncUnit(u);
       break;
     }
     /* 全体必克 + 按总伤害转化护盾 */
@@ -2086,6 +2116,7 @@ async function endOfRound() {
     if (u.shieldRounds > 0) {
       u.shieldRounds--;
       if (u.shieldRounds <= 0) u.shield = 0;
+      if (u.taunt && u.shield <= 0) { u.taunt = false; u.reflect = 0; }
     }
     syncUnit(u);
   }
@@ -2255,6 +2286,7 @@ const ULT_TAG = {
   healAll: '全体治疗 · 净化', shieldAll: '全体护盾', multi: '随机多段',
   poison: '单体 · 中毒', buffAll: '全体增益 · 治疗', drain: '单体 · 吸血',
   aoeShield: '全体伤害 · 转护盾',
+  selfWard: '自身壁垒 · 嘲讽 · 弹伤',
   healShield: '全体治疗 · 护盾',
 };
 
@@ -2268,6 +2300,7 @@ function ultDetail(ult) {
     case 'buffAll':   bits.push(`攻击 +${Math.round((ult.mult - 1) * 100)}%`); break;
     case 'aoeShield': bits.push(`全体伤害 ${pct(ult.mult)}`); if (ult.shieldPct) bits.push(`护盾 ${pct(ult.shieldPct)} 伤害量`); break;
     case 'healShield': bits.push(`治疗 ${pct(ult.mult)} 攻击力`); if (ult.shield) bits.push(`护盾 ${pct(ult.shield)} 攻击力`); break;
+    case 'selfWard':  bits.push(`护盾 ${pct(ult.shieldPct)} 最大生命`); bits.push('嘲讽全体'); if (ult.reflect) bits.push(`弹伤 ${pct(ult.reflect)}`); break;
     default:          bits.push(`伤害 ${pct(ult.mult)}`);
   }
   if (ult.selfAtk)   bits.push(`自身攻击 +${Math.round((ult.selfAtk - 1) * 100)}%`);
