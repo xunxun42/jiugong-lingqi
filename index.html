@@ -677,6 +677,9 @@ body.royal-on .royal-strip{
   background:rgba(232,192,106,.9);color:#1a1206;font-weight:800;letter-spacing:.5px;border:none;
 }
 .rc-contract:hover{background:#ffe9b0}
+/* 契约精灵：专属描边 */
+.cell.contracted{box-shadow:inset 0 0 0 2px rgba(140,190,255,.85), 0 0 18px rgba(120,170,255,.45) !important;border-radius:12px}
+.cell.contracted .unit{outline:2px solid rgba(150,200,255,.9);outline-offset:-2px}
 .cell.dz{outline:2px dashed rgba(232,192,106,.85);outline-offset:-2px;background:rgba(232,192,106,.10)}
 .unit{cursor:grab}
 .unit:active{cursor:grabbing}
@@ -3746,6 +3749,7 @@ function renderDeploy() {
     cell.innerHTML = `<span class="slotno">${slotNumberLabel(slot)}</span>`;
     cell.classList.add('clickable');
     const u = pUnits.find(x => x.slot === slot);
+    cell.classList.toggle('contracted', !!u && saveData().contract === u.spirit.id);
     if (u) cell.insertAdjacentHTML('beforeend', cardHTML(u, true));
   }
   for (const cell of ge.children) {
