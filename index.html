@@ -2761,21 +2761,6 @@ async function sealPunish(u) {
 }
 
 async function basicAttack(u) {
-  /* 召唤师：第一次出手不攻击，改为召唤契约精灵 */
-  if (u.spirit.summoner && !u.summonedOnce) {
-    u.summonedOnce = true;
-    const pool = u.spirit.summoner.units || [];
-    const want = (u.side === 'player' && saveData().contract) ? saveData().contract : pool[0];
-    const id = pool.includes(want) ? want : pool[0];
-    const add = summonUnit(id, u.side, { hp: 1, atk: 1 }, u.uid);
-    if (add) {
-      log('✦ ' + tag(u) + ' 契约召唤 ' + tag(add), 'sys');
-      if (add.el) floatText(add.el, '契约', 'buff', 6);
-      await pace(420);
-      syncUnit(u);
-      return;
-    }
-  }
   const base = (u.isBoss && u.spirit.bossBasic) ? u.spirit.bossBasic : (u.spirit.basic || {});
   const n = base.targets || 1;
   const bOpt = base.mustCounter ? { mustCounter: true } : undefined;
@@ -3593,9 +3578,14 @@ function bindContract() {
     const sel = $('#ctList').querySelector('.ct-item.on');
     if (!sel) { toast('先选一个契约对象'); return; }
     saveData().contract = sel.dataset.ct;
+    const cid = sel.dataset.ct;
+    if (!Object.values(state.lineup).includes(cid)) {
+      if (Object.keys(state.lineup).length >= 6) toast('契约已记录 · 场上已满 6 只，先撤下一只');
+      else { let f = 0; while (f < 9 && state.lineup[f]) f++; if (f < 9) state.lineup[f] = cid; }
+    }
     saveProgress();
     const s = SPIRITS.find(x => x.id === sel.dataset.ct);
-    toast('已契约 ' + (s ? s.name : ''));
+    toast('已契约 ' + (s ? s.name : '') + ' · 已放入阵中');
     $('#contractModal').classList.add('hidden');
     renderRoster();
   };
@@ -3610,6 +3600,8 @@ let dragData = null;
 function cellDrop(slot) {
   if (!dragData) return;
   const occ = state.lineup[slot];
+  for (const k in state.lineup) if (state.lineup[k] === dragData.id && +k !== slot) delete state.lineup[k];
+  if (Object.keys(state.lineup).filter(k => +k !== slot).length >= 6 && dragData.from == null) { toast('最多上阵 6 只'); dragData = null; return; }
   if (dragData.from != null) {
     delete state.lineup[dragData.from];
     if (occ) state.lineup[dragData.from] = occ;      // 交换位置
