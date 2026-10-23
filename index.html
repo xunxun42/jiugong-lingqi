@@ -1662,11 +1662,11 @@ const SPIRITS = [
 
   /* ===== 神源 · 群星圣堂限定（gacha:true = 需抽卡获得） ===== */
   { id:'tianquan', art:'assets/spirits/tianquan.webp', name:'天权座', title:'神源龙女', emoji:'👑',
-    element:'king', hp:700, atk:152, spd:168, role:'神源·必克', gacha:true, mustCounter:true,
+    element:'king', hp:700, atk:152, spd:120, role:'神源·必克', gacha:true, mustCounter:true,
     basic:{ name:'天权裁击', mult:1.0 },
     royal:{ name:'星权裁决', energy:50, desc:'在场时，己方全体每回合开始 +50 气势' },
-    ult:{ name:'天权·星渊龙灭', type:'aoeShield', mult:1.0, shieldPct:0.3,
-          desc:'对全体敌人造成 100% 攻击的必克伤害，并获得伤害量 30% 的护盾' } },
+    ult:{ name:'天权·星渊龙灭', type:'aoe', mult:1.3,
+          desc:'对全体敌人造成 130% 攻击的必克伤害' } },
 
   { id:'tianji', art:'assets/spirits/tianji.webp', name:'天玑座', title:'神佑龙女', emoji:'🌿',
     element:'king', hp:400, atk:128, spd:122, role:'神佑·守护者', gacha:true, mustCounter:true, dr:0.15,
