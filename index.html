@@ -1709,6 +1709,23 @@ const SPIRITS = [
     bossUlt:{ name:'玉衡·万彩倾泻', type:'drainFour', targets:4, mult:2.0, perOverflow:50, shieldPct:0.02,
               desc:'对 4 个敌人各造成 200% 伤害；每 50 点溢出气势转化为 2% 最大生命的护盾' } },
 
+  /* ===== 天枢座 · 引星神女（召唤师） ===== */
+  { id:'tianshu', art:'assets/spirits/tianshu.webp', name:'天枢座', title:'引星神女', emoji:'🌙',
+    element:'king', hp:1050, atk:150, spd:175, role:'引星·召唤师', gacha:true, linkOnContract:true,
+    summoner:{ units:['yuheng','yaoguang'], slots:1 },
+    basic:{ name:'引星击', mult:1.0, mustCounter:true },
+    ult:{ name:'天枢·星引连衡', type:'comboStrike', mult:2.0, combos:2,
+          desc:'对目标造成 200% 攻击的必克伤害，必定命中；并进入连击，额外出手 2 次' },
+    bossBasic:{ name:'引星击', mult:1.0, mustCounter:true, summon:1 },
+    bossUlt:{ name:'天枢·星引连衡', type:'comboStrike', mult:2.0, combos:2, summon:1,
+              desc:'200% 必克伤害 + 额外出手 2 次；每次出手后依次召唤星灵' } },
+
+  /* 天枢座召唤的星灵 */
+  { id:'starlight', art:'', name:'星灵', title:'引星造物', emoji:'⭐',
+    element:'king', hp:420, atk:85, spd:95, role:'召唤物', hidden:true, isAdd:true, chainOnly:true,
+    basic:{ name:'星屑', mult:1.0 },
+    ult:{ name:'星屑', type:'single', mult:1.2, desc:'对单体造成 120% 攻击伤害' } },
+
   /* 召唤物 · 不进灵契列表 */
   { id:'shadow', art:'', name:'虚影', title:'虚空造物', emoji:'🌑',
     element:'dark', hp:500, atk:55, spd:70, role:'召唤物', hidden:true, isAdd:true,
@@ -1736,6 +1753,7 @@ const RAID = {
     { id:'xumoluo', slot:4, mult:{ hp:90, atk:1.62 } },
     { id:'leizeya', slot:4, mult:{ hp:21, atk:1.75 } },
     { id:'yuheng', slot:4, mult:{ hp:40, atk:1.60 } },
+    { id:'tianshu', slot:4, mult:{ hp:26, atk:1.55 } },
   ],
 };
 let raidSel = RAID.bosses[0].id;
@@ -2527,7 +2545,7 @@ function orderedFoes(u) {
 }
 
 /* 召唤：填进「最靠前」的空位（先 col2 前线，再中军、后阵；同列从上往下） */
-function summonUnit(spiritId, side, mult) {
+function summonUnit(spiritId, side, mult, ownerUid) {
   if (!B) return null;
   const used = new Set(B.units.filter(x => x.side === side && x.alive).map(x => x.slot));
   const order = [];
@@ -2536,6 +2554,7 @@ function summonUnit(spiritId, side, mult) {
   if (slot == null) return null;
 
   const u = makeUnit(spiritId, side, slot, mult || { hp: 1, atk: 1 });
+  u.summonedBy = ownerUid || null;
   B.units.push(u);
   const grid = side === 'player' ? $('#gridPlayer') : $('#gridEnemy');
   if (grid) {
@@ -2699,6 +2718,21 @@ async function sealPunish(u) {
 }
 
 async function basicAttack(u) {
+  /* 召唤师：第一次出手不攻击，改为召唤契约精灵 */
+  if (u.spirit.summoner && !u.summonedOnce) {
+    u.summonedOnce = true;
+    const pool = u.spirit.summoner.units || [];
+    const want = (u.side === 'player' && saveData().contract) ? saveData().contract : pool[0];
+    const id = pool.includes(want) ? want : pool[0];
+    const add = summonUnit(id, u.side, { hp: 1, atk: 1 }, u.uid);
+    if (add) {
+      log('✦ ' + tag(u) + ' 契约召唤 ' + tag(add), 'sys');
+      if (add.el) floatText(add.el, '契约', 'buff', 6);
+      await pace(420);
+      syncUnit(u);
+      return;
+    }
+  }
   const n = (u.spirit.basic && u.spirit.basic.targets) || 1;
   const bOpt = (u.spirit.basic && u.spirit.basic.mustCounter) ? { mustCounter: true } : undefined;
   const t = pickTarget(u);
@@ -2961,6 +2995,14 @@ async function castUlt(u) {
         log('🪞 ' + tag(u) + ' 溢出不足以成形（' + Math.round(ovBefore) + ' 点）', 'sys');
       }
       break;
+    }    /* 天枢：200% 必克必中 + 连击（额外出手） */
+    case 'comboStrike': {
+      const t = pickTarget(u);
+      if (t) strike(u, t, ult.mult, { mustCounter: true, noDodge: true });
+      const n = ult.combos || 2;
+      for (let i = 0; i < n; i++) queueExtraTurn(u);
+      log('✦ ' + tag(u) + ' 进入连击，额外出手 ' + n + ' 次', 'sys');
+      break;
     }    /* 全体必克 + 按总伤害转化护盾 */
     case 'aoeShield': {
       let total = 0;
@@ -3008,7 +3050,9 @@ function decideFirst(pArr, eArr) {
 
 function computeRoundOrder() {
   // 先手方在开战时就锁定（按双方初始总灵速），整场不变
-  const p = aliveUnits('player'), e = aliveUnits('enemy');
+  const bossAdd = u => u.spirit && u.spirit.chainOnly;
+  const p = aliveUnits('player').filter(u => !bossAdd(u));
+  const e = aliveUnits('enemy').filter(u => !bossAdd(u));
 
   // 同一方内部：前线列 → 后阵，每列从上到下
   const bySide = arr => arr.slice().sort((a, b) => (b.col - a.col) || (a.row - b.row));
@@ -3213,6 +3257,32 @@ function queueExtraTurn(u) {
   return true;
 }
 
+/* 天枢座（Boss）：每次行动后召唤 1 个星灵，然后所有星灵依次行动 */
+async function bossSummonChain(u) {
+  const isAdd = x => x.spirit && x.spirit.isAdd && x.summonedBy === u.uid;
+  const adds0 = B.units.filter(x => x.side === u.side && x.alive && isAdd(x));
+  if (adds0.length < 4) {
+    const add = summonUnit('starlight', u.side, { hp: 1, atk: 1 }, u.uid);
+    if (add) log('✦ ' + tag(u) + ' 召唤了 ' + tag(add), 'sys');
+    await pace(150);
+  }
+  for (const a of B.units.filter(x => x.side === u.side && x.alive && isAdd(x))) {
+    if (!a.alive || state.phase !== 'battle') continue;
+    B.current = a; renderStrip();
+    if (a.energy >= 100) await castUlt(a); else await basicAttack(a);
+    await pace(110);
+  }
+  B.current = u;
+  renderStrip();
+}
+
+/* 连携：契约精灵出手后，天枢座立即跟着出手一次 */
+function linkFollow(actor) {
+  if (!actor || !actor.spirit || !actor.spirit.isAdd || !actor.summonedBy) return;
+  const owner = B.units.find(x => x.uid === actor.summonedBy && x.alive);
+  if (!owner || !owner.spirit || !owner.spirit.linkOnContract) return;
+  if (queueExtraTurn(owner)) log('✦ ' + tag(owner) + ' 连携出手', 'sys');
+}
 async function battleLoop() {
   let result = null;
   for (B.round = 1; B.round <= MAX_ROUNDS; B.round++) {
@@ -3243,7 +3313,9 @@ async function battleLoop() {
       else                 await basicAttack(u);
       result = checkEnd();
       if (result) break;
+      if (u.spirit.isAdd && u.summonedBy) linkFollow(u);
       if (u.alive && u.isBoss && u.spirit.summonOnAct) await summonFrom(u);
+      if (u.alive && u.isBoss && u.spirit.bossBasic && u.spirit.bossBasic.summon) { await bossSummonChain(u); result = checkEnd(); if (result) break; }
       await pace(140);
     }
     if (result) break;
@@ -4427,7 +4499,7 @@ const HALL = {
   cost: 300,           // 单抽灵晶
   rate: 0.02,          // 出率 2%
   pity: 100,           // 100 抽必得
-  units: ['tianquan', 'tianji', 'tianxuan', 'yaoguang', 'yuheng'],   // 卡池里的神源
+  units: ['tianquan', 'tianji', 'tianxuan', 'yaoguang', 'yuheng', 'tianshu'],   // 卡池里的神源
   expPerMiss: 200,     // 未抽中：己方全体各 +200 经验
   soulChance: 0.35,    // 未抽中：35% 额外掉落一枚灵念
 };
