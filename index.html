@@ -1480,7 +1480,7 @@ const SPIRITS = [
 
   /* ===== 蚀界深渊 · 雷塞娅（首通解锁） ===== */
   { id:'leizeya', art:'assets/spirits/leizeya.webp', name:'雷塞娅', title:'神隐之光', emoji:'⚡',
-    element:'light', hp:1080, atk:158, spd:126, role:'光·神隐', gacha:true,
+    element:'light', hp:1080, atk:158, spd:126, role:'光·神隐', gacha:true, sealBonus:0.5,
     basic:{ name:'雷光斩', mult:1.33 },
     ult:{ name:'神隐之缚', type:'sealStrike', mult:2.0,
           desc:'对目标造成 200% 攻击伤害，并使目标进入神隐（1 回合无法行动、无法被选中）' },
@@ -1518,9 +1518,10 @@ const RAID_INFO = {
     lines: [
       '☀️ 光属性 · 生命 19440 · 攻击 194',
       '大招随机束缚 3 人进入神隐：<b style="color:#ffcf6b">1 回合无法行动、无法被选中</b>',
-      '每束缚到一个「新」目标，自身全属性 <b style="color:#ff9b9b">+5%，永久叠加</b>',
+      '每束缚到一个「新」目标，自身全属性 <b style="color:#ff9b9b">+5%（最多 +50%）</b>',
+      '被动「神隐追击」：每次行动后，对<b style="color:#ff9b9b">所有被束缚的敌人</b>各追加 50% 攻击伤害',
       '束缚<b style="color:#7fd6ff">不可叠加</b>，可被净化解除',
-      '打法：嘲讽盾吸引火力 + 净化奶解缚，别让队伍被集体锁死',
+      '打法：嘲讽盾吸引火力 + 净化奶解缚 —— 束缚解开，她的追击就没有目标了',
     ],
   },
 };
@@ -2255,6 +2256,20 @@ function strike(src, tgt, mult) {
 /* ============================================================================
    8. 出手：普攻 / 大招
    ========================================================================== */
+/* 雷塞娅被动「神隐追击」：每次行动后，对被束缚的敌人各追加 50% 攻击伤害 */
+async function sealPunish(u) {
+  const m = u.spirit && u.spirit.sealBonus;
+  if (!m || !u.alive) return;
+  const targets = aliveUnits(otherSide(u.side)).filter(t => t.sealed > 0);
+  if (!targets.length) return;
+  log(`⚡ ${tag(u)} 神隐追击：对 ${targets.length} 个被缚目标各造成 ${Math.round(m * 100)}% 伤害`, 'sys');
+  for (const t of targets) {
+    if (!t.alive) continue;
+    strike(u, t, m);
+    await pace(70);
+  }
+}
+
 async function basicAttack(u) {
   const n = (u.spirit.basic && u.spirit.basic.targets) || 1;
   const t = pickTarget(u);
@@ -2276,6 +2291,7 @@ async function basicAttack(u) {
   }
   gainEnergy(u, ENERGY_GAIN_ATTACK);   // 普攻攒气势（+50，溢出转技能加成）
   syncUnit(u);
+  await sealPunish(u);                 // 被动：追击被神隐束缚的敌人
   await pace(190);
   u.el.classList.remove('lunge-r', 'lunge-l');
   await pace(90);
@@ -2441,6 +2457,7 @@ async function castUlt(u) {
         log(`⛓ ${tag(t)} 被神隐束缚：1 回合无法行动、无法被选中`, 'sys');
         syncUnit(t);
       }
+      await sealPunish(u);
       break;
     }
     /* 随机束缚 N 人，每束缚到新目标就 +5% 全属性（Boss 版） */
@@ -2475,6 +2492,7 @@ async function castUlt(u) {
       syncUnit(u);
       log(`▲ ${tag(u)} 束缚 ${picks.length} 个目标，全属性 +${Math.round((targetMul - 1) * 100)}%`
         + (capped >= maxStacks ? '（已达上限）' : ''), 'sys');
+      await sealPunish(u);
       break;
     }
     /* 全体必克 + 按总伤害转化护盾 */
