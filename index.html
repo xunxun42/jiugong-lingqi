@@ -3579,6 +3579,8 @@ function bindContract() {
     if (!sel) { toast('先选一个契约对象'); return; }
     saveData().contract = sel.dataset.ct;
     const cid = sel.dataset.ct;
+    saveData().owned = saveData().owned || {};
+    if (!saveData().owned[cid]) { saveData().owned[cid] = true; }
     if (!Object.values(state.lineup).includes(cid)) {
       let f = 0; while (f < 9 && state.lineup[f]) f++;
       if (f < 9) state.lineup[f] = cid; else toast('场上没有空位了，先撤下一只');
