@@ -4438,7 +4438,7 @@ function finishBattle(result) {
     sd.clears = sd.clears || {};
     const isRepeat = !!sd.clears[key];
     const base = 150 + 60 * (state.stage + 1);   // 第1关 210 → 第10关 750
-    const gain = Math.round(base * (isRepeat ? 0.35 : 1));
+    const gain = Math.round(base * (isRepeat ? (state.stage === 9 ? 0.40 : 0.30) : 1));   // 第10关重复 300 — 打两遍正好一抽
     sd.clears[key] = (sd.clears[key] || 0) + 1;
       saveData().crystal += gain;
     (B.rewards = B.rewards || []).push('💎 灵晶 +' + gain);
