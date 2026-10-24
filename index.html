@@ -2098,11 +2098,12 @@ class AbortBattle extends Error {}
 /* ---- 打击感：顿帧 + 慢镜（只影响战斗节拍，不影响 CSS 动画） ---- */
 let freezeUntil = 0, slowUntil = 0, slowFactor = 1;
 function hitStop(ms) {
+  if (state.fxOff || document.hidden) return;
   // 高倍速下按比例缩短，避免 4x 时顿帧拖沓
   const k = clock.speed >= 4 ? 0.35 : clock.speed >= 2 ? 0.65 : 1;
   freezeUntil = Math.max(freezeUntil, performance.now() + (ms * k | 0));
 }
-function slowMo(f, ms) { slowFactor = f; slowUntil = performance.now() + (ms | 0); }
+function slowMo(f, ms) { if (state.fxOff || document.hidden) return; slowFactor = f; slowUntil = performance.now() + (ms | 0); }
 function resetFeel() { freezeUntil = 0; slowUntil = 0; slowFactor = 1; }
 
 function sleep(ms) {
@@ -2125,7 +2126,8 @@ function sleep(ms) {
   });
 }
 async function pace(ms) {
-  const r = await sleep(ms);
+  const wait = document.hidden ? 0 : (state.fxOff ? Math.min(ms, 40) : ms);
+  const r = await sleep(wait);
   if (r === 'abort') throw new AbortBattle();
 }
 
@@ -2501,6 +2503,7 @@ function sideCls(u) { return u.side === 'player' ? 'player' : 'enemy'; }
 function tag(u) { return `<span class="${sideCls(u)}">${u.name}</span>`; }
 
 function floatText(el, text, cls, dx = 0) {
+  if (state.fxOff) { return; }
   if (!el) return;
   const s = document.createElement('span');
   s.className = 'float ' + cls;
