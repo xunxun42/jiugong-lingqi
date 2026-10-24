@@ -3851,7 +3851,6 @@ function bindSettings() {
   g('setFx').onclick = () => toggleFx();
   g('setSave').onclick = () => { g('setModal').classList.add('hidden'); const sm = document.getElementById('saveModal'); if (sm) sm.classList.remove('hidden'); };
   g('setFull').onclick = () => toggleFull();
-  g('btnSave').style.display = 'none';
 }
 /* ===== 阵容预设 ===== */
 function presets() {
@@ -5498,11 +5497,8 @@ function bindEvents() {
   $('#rosterNext').onclick = () => { rosterPage++; renderRoster(); sfx.tick(); };
 
   /* 存档备份 */
-  $('#btnSave').onclick = () => {
-    $('#saveBox').value = '';
-    $('#saveModal').classList.remove('hidden');
-    sfx.tick();
-  };
+  const _bs = document.getElementById('btnSave');
+  if (_bs) _bs.onclick = () => { const sm = document.getElementById('saveModal'); if (sm) sm.classList.remove('hidden'); };
   $('#btnOpenSave').onclick = () => {
     $('#saveBox').value = '';
     $('#saveModal').classList.remove('hidden');
