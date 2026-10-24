@@ -3984,9 +3984,9 @@ function summonKaiyang() {
 function rollKyShard() {
   let chance = 0;
   if (state.mode === 'raid') {
-    chance = (raidSel === 'yuheng' || raidSel === 'tianshu') ? 0.20 : 0;
+    chance = (raidSel === 'yuheng' || raidSel === 'tianshu') ? 0.04 : 0;
   } else {
-    chance = (state.stage >= 5) ? 0.12 : 0;   // 第 6 关起
+    chance = (state.stage >= 5) ? 0.02 : 0;   // 第 6 关起
   }
   if (!chance) return 0;
   if (Math.random() > chance) return 0;
