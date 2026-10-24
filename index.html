@@ -747,6 +747,14 @@ body.royal-on .royal-strip{
 }
 .preset-save:hover{background:rgba(232,192,106,.3)}
 .preset-hint{margin-top:8px;font-size:9px;color:var(--muted);line-height:1.5;white-space:nowrap}
+/* 设置 */
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12.5px;color:#e6e1ee}
+.set-toggle{
+  min-width:56px;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:800;
+  background:rgba(232,192,106,.9);color:#1a1206;border:none;
+}
+.set-toggle.off{background:rgba(255,255,255,.12);color:var(--muted)}
+.set-mini{padding:5px 12px;font-size:11px}
 /* 开阳座专属 */
 .ky-badge{margin-left:6px;font-size:9px;padding:1px 5px;border-radius:6px;background:rgba(255,200,74,.25);color:#ffe9b0;font-weight:800}
 .ky-modal{width:min(680px,100%);max-height:88dvh;overflow:auto}
@@ -1414,10 +1422,8 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <button class="btn ghost" id="btnKy">开阳<span class="ky-badge" id="kyBadge">0/7</span></button>
       <button class="btn ghost" id="btnDivine">占卜</button>
       <button class="btn ghost" id="btnRules">玩法</button>
-      <button class="btn ghost iconbtn" id="btnMusic" title="战斗音乐">🎵</button>
-      <button class="btn ghost iconbtn" id="btnSound" title="音效">🔊</button>
-      <button class="btn ghost iconbtn" id="btnSave" title="存档备份（导出 / 导入）">💾</button>
-      <button class="btn ghost iconbtn" id="btnFull" title="全屏" aria-label="全屏">
+      <button class="btn ghost iconbtn" id="btnSettings" title="设置">⚙</button>
+      <button class="btn ghost iconbtn" id="btnFull" title="全屏" aria-label="全屏">⛶</button>
         <svg class="ic-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
         <svg class="ic-compress" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
       </button>
@@ -1635,6 +1641,18 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <p>通关 <b>第 6 - 10 关</b>有几率掉落「开阳星屑」；挑战深渊 <b>玉衡座 / 天枢座</b> 掉落率更高。集齐 <b>7 枚</b>即可在此召唤。</p>
     </div>
     <div class="btnrow"><button class="btn ghost" id="btnKyClose">关闭</button></div>
+  </div>
+</div>
+<!-- ================= 设置 ================= -->
+<div class="mask hidden" id="setModal">
+  <div class="modal" style="width:min(430px,100%)">
+    <h2 class="h2sm">设置</h2>
+    <div class="set-row"><span>音效</span><button class="set-toggle" id="setSound">开</button></div>
+    <div class="set-row"><span>战斗音乐</span><button class="set-toggle" id="setMusic">开</button></div>
+    <div class="set-row"><span>战斗特效</span><button class="set-toggle" id="setFx">开</button></div>
+    <div class="set-row"><span>存档备份</span><button class="btn ghost set-mini" id="setSave">导出 / 导入</button></div>
+    <div class="set-row"><span>全屏</span><button class="btn ghost set-mini" id="setFull">切换</button></div>
+    <div class="btnrow" style="margin-top:14px"><button class="btn primary" id="btnSetClose">完成</button></div>
   </div>
 </div>
 <!-- ================= 契约选择 ================= -->
@@ -1997,7 +2015,7 @@ const RAID_INFO = {
     name: '玉衡座 · 琉璃龙女', face: '🪞', color: '127,214,255',
     lines: [
       '👑 王属性 · 生命 60000 · 攻击 394',
-      '被动：每 10 点溢出气势 +1% 闪避，最高 <b style="color:#ffcf6b">55%</b>',
+      '被动：每 10 点溢出气势 +1% 闪避，最高 <b style="color:#ffcf6b">90%</b>（堆命中破解）',
       '小技能：打 2 人，各吸取 50 气势 —— 等于给自己喂溢出',
       '大招：打 4 人 200%，每 50 溢出转 2% 最大生命的护盾',
       '打法：别让她攒溢出。高速点杀，或用必中（摇光座）打穿她的闪避',
@@ -2698,6 +2716,7 @@ function musicToggle() {
   if (btn) { btn.textContent = MUSIC.on ? '🎵' : '🔇'; btn.style.opacity = MUSIC.on ? '1' : '.45'; }
 }
 function flashScreen(color, opacity) {
+  if (state.fxOff) return;
   const f = $('#flash');
   f.style.background = color;
   f.classList.remove('on');
@@ -2827,7 +2846,7 @@ function strike(src, tgt, mult, opts) {
 
   // 命中 / 闪避（opts.noDodge = 必中，跳过判定）
   const ovDodge = (tgt.spirit && tgt.spirit.dodgeFromOverflow)
-    ? Math.min(55, Math.floor((tgt.overflow || 0) / 10)) : 0;   // 玉衡：每 10 溢出 = 1% 闪避，上限 55
+    ? Math.min(90, Math.floor((tgt.overflow || 0) / 10)) : 0;   // 玉衡：每 10 溢出 = 1% 闪避，上限 90
   const hitFloor = ovDodge > 0 ? 0.08 : 0.5;
   const hitRate = clamp(0.92 + (A.hit || 0) / 100 - (D.dodge || 0) / 100 - ovDodge / 100, hitFloor, 1);
   if (!opts.noDodge && rnd(0, 1) > hitRate) {
@@ -3497,6 +3516,7 @@ function linkFollow(actor) {
 }
 /* 觉醒演出：白闪 + 震屏 + 立绘切换 + 台词，约 1 秒 */
 async function awakenCinematic(k, first) {
+  if (state.fxOff) { await pace(360); return; }
   try {
     const root = $('#awakenFx');
     if (root) {
@@ -3806,6 +3826,33 @@ function rosterPageSize() {
   return cols * 2;
 }
 
+/* ===== 设置 ===== */
+function syncSetUI() {
+  const g = id => document.getElementById(id);
+  if (g('setSound')) { g('setSound').textContent = state.sound ? '开' : '关'; g('setSound').classList.toggle('off', !state.sound); }
+  if (g('setMusic')) { g('setMusic').textContent = MUSIC.on ? '开' : '关'; g('setMusic').classList.toggle('off', !MUSIC.on); }
+  if (g('setFx')) { g('setFx').textContent = state.fxOff ? '关' : '开'; g('setFx').classList.toggle('off', !!state.fxOff); }
+}
+function toggleFx() {
+  state.fxOff = !state.fxOff;
+  saveProgress();
+  syncSetUI();
+  toast(state.fxOff ? '已关闭战斗特效（演出与震屏跳过）' : '已开启战斗特效');
+  sfx.tick();
+}
+function bindSettings() {
+  const g = id => document.getElementById(id);
+  if (!g('setModal')) return;
+  g('btnSettings').onclick = () => { syncSetUI(); g('setModal').classList.remove('hidden'); sfx.tick(); };
+  g('btnSetClose').onclick = () => g('setModal').classList.add('hidden');
+  g('setModal').addEventListener('click', e => { if (e.target.id === 'setModal') g('setModal').classList.add('hidden'); });
+  g('setSound').onclick = () => { state.sound = !state.sound; document.getElementById('btnSound') && (0); saveProgress(); if (state.sound) sfx.tick(); else musicStop(0.3); syncSetUI(); };
+  g('setMusic').onclick = () => { musicToggle(); syncSetUI(); };
+  g('setFx').onclick = () => toggleFx();
+  g('setSave').onclick = () => { g('setModal').classList.add('hidden'); document.getElementById('btnSave').click(); };
+  g('setFull').onclick = () => toggleFull();
+  g('btnSave').style.display = 'none';
+}
 /* ===== 阵容预设 ===== */
 function presets() {
   const sd = saveData();
@@ -3902,7 +3949,8 @@ function summonKaiyang() {
   toast('✦ 群星汇聚 —— 开阳座 · 天光龙女 加入！');
   document.getElementById('kyModal').classList.add('hidden');
   renderKyBadge();
-  bindPresets(); renderRoster(); renderDeploy();
+  bindPresets();
+  bindSettings(); renderRoster(); renderDeploy();
 }
 /* 掉落：关卡 6-10 与深渊玉衡/天枢 */
 function rollKyShard() {
@@ -3920,6 +3968,7 @@ function rollKyShard() {
   saveProgress();
   renderKyBadge();
   bindPresets();
+  bindSettings();
   return 1;
 }
 /* ===== 契约选择 ===== */
@@ -4501,7 +4550,7 @@ function saveProgress() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       v: 2, unlocked: state.unlocked, crystal: d.crystal,
       spirits: d.spirits, pack: d.pack, uid: d.uid,
-      owned: d.owned, pity: d.pity, divine: d.divine, kyShards: d.kyShards, contract: d.contract, presets: d.presets,
+      owned: d.owned, pity: d.pity, divine: d.divine, kyShards: d.kyShards, fxOff: !!d.fxOff, contract: d.contract, presets: d.presets,
     }));
     localStorage.setItem('jiugong_unlocked', String(state.unlocked));
   } catch (e) {}
@@ -4517,7 +4566,7 @@ function loadProgress() {
         crystal: o.crystal || 0, spirits: o.spirits || {},
         pack: o.pack || [], uid: o.uid || 1,
         owned: o.owned || {}, pity: o.pity || 0, divine: o.divine || null,
-        kyShards: o.kyShards || 0, contract: o.contract || null, presets: o.presets || [null,null,null,null,null],
+        kyShards: o.kyShards || 0, fxOff: !!o.fxOff, contract: o.contract || null, presets: o.presets || [null,null,null,null,null],
       };
       return;
     }
@@ -5540,6 +5589,7 @@ function bindEvents() {
   document.getElementById('btnKySummon').onclick = () => summonKaiyang();
   renderKyBadge();
   bindPresets();
+  bindSettings();
 
   $('#btnFull').onclick = () => toggleFull();
 
