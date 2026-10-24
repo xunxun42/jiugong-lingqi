@@ -2126,7 +2126,8 @@ function sleep(ms) {
   });
 }
 async function pace(ms) {
-  const wait = document.hidden ? 0 : (state.fxOff ? Math.min(ms, 40) : ms);
+  // 后台照常推进：不跳过，按正常节奏走（浏览器会节流定时器，故每步至少 ~1s）
+  const wait = state.fxOff ? Math.min(ms, 60) : ms;
   const r = await sleep(wait);
   if (r === 'abort') throw new AbortBattle();
 }
