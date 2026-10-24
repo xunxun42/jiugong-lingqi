@@ -4223,6 +4223,7 @@ function renderDeploy() {
   renderRoyal(pUnits);
   bindGridDrag();
   renderWakeBar();
+  try { renderPresets(); } catch (e) {}
 }
 
 function autoLineup() {
