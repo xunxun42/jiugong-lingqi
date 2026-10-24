@@ -5859,6 +5859,27 @@ init();
 
 
 
+
+/* ===== 导航兜底：全局委托，不依赖 bindEvents ===== */
+document.addEventListener('click', function (ev) {
+  const b = ev.target.closest && ev.target.closest('button[id^="btn"]');
+  if (!b) return;
+  const id = b.id;
+  const show = mid => { const m = document.getElementById(mid); if (m) m.classList.remove('hidden'); };
+  try {
+    if (id === 'btnGrow') { if (typeof openGrow === 'function') openGrow(); else show('growModal'); }
+    else if (id === 'btnCodex') { if (typeof openCodex === 'function') openCodex(); else show('codexModal'); }
+    else if (id === 'btnHall') { if (typeof openHall === 'function') openHall(); else show('hallModal'); }
+    else if (id === 'btnRaid') { if (typeof openRaid === 'function') openRaid(); else show('raidModal'); }
+    else if (id === 'btnDivine') { if (typeof openDivine === 'function') openDivine(); else show('divModal'); }
+    else if (id === 'btnRules') { show('rulesModal'); }
+    else if (id === 'btnSettings') { if (typeof syncSetUI === 'function') syncSetUI(); show('setModal'); }
+    else if (id === 'btnStage') { show('stageModal'); }
+    else if (id === 'btnFull') { if (typeof toggleFull === 'function') toggleFull(); }
+    else if (id === 'btnKy') { if (typeof openKy === 'function') openKy(); }
+    if (typeof sfx === 'object' && sfx.tick) sfx.tick();
+  } catch (e) { console.warn('nav delegate:', e && e.message); }
+}, true);
 /* 召唤系列切换：全局委托兜底 */
 document.addEventListener('click', function (ev) {
   const b = ev.target.closest && ev.target.closest('#hallSeries [data-series]');
