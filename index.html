@@ -716,6 +716,37 @@ body.royal-on .royal-strip{
 .awaken-fx.play .aw-skill{animation:awLine 1.8s ease forwards}
 .aw-line{animation:awLine 1.8s ease forwards}
 @keyframes awLine{0%{opacity:0;transform:translateX(-50%) translateY(14px)}30%,80%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0}}
+/* 阵容预设 */
+.preset-bar{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:75;display:flex;align-items:flex-start;pointer-events:none}
+.preset-tab{
+  pointer-events:auto;width:26px;padding:12px 4px;border-radius:0 10px 10px 0;cursor:pointer;
+  background:rgba(20,16,30,.92);border:1px solid rgba(232,192,106,.35);border-left:none;
+  color:var(--gold);font-size:11px;letter-spacing:2px;line-height:1.3;writing-mode:vertical-rl;
+}
+.preset-tab:hover{background:rgba(40,32,56,.95)}
+.preset-body{
+  pointer-events:auto;width:0;overflow:hidden;transition:width .25s ease;
+  background:rgba(14,11,22,.96);border:1px solid rgba(232,192,106,.3);border-left:none;border-radius:0 12px 12px 0;
+}
+.preset-bar.open .preset-body{width:172px;padding:10px 10px 10px 12px}
+.preset-title{font-size:10px;letter-spacing:2px;color:var(--gold);margin-bottom:8px;white-space:nowrap}
+.preset-list{display:flex;flex-direction:column;gap:8px}
+.preset-item{display:flex;align-items:center;gap:6px}
+.preset-grid{
+  display:grid;grid-template-columns:repeat(3,14px);grid-template-rows:repeat(3,14px);gap:1px;
+  padding:2px;border-radius:5px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);cursor:pointer;
+}
+.preset-grid:hover{border-color:rgba(232,192,106,.6)}
+.preset-grid i{background:rgba(255,255,255,.07);border-radius:2px;display:block}
+.preset-grid i.on{background:linear-gradient(140deg,#ffe9b0,#e8c06a)}
+.preset-grid i.on.role-s{background:linear-gradient(140deg,#bfe0ff,#6fa8ff)}
+.preset-grid i.on.role-c{background:linear-gradient(140deg,#ffb3c8,#ff6f8f)}
+.preset-save{
+  font-size:9px;padding:3px 6px;border-radius:5px;cursor:pointer;white-space:nowrap;
+  background:rgba(232,192,106,.15);border:1px solid rgba(232,192,106,.4);color:#ffe9b0;
+}
+.preset-save:hover{background:rgba(232,192,106,.3)}
+.preset-hint{margin-top:8px;font-size:9px;color:var(--muted);line-height:1.5;white-space:nowrap}
 /* 开阳座专属 */
 .ky-badge{margin-left:6px;font-size:9px;padding:1px 5px;border-radius:6px;background:rgba(255,200,74,.25);color:#ffe9b0;font-weight:800}
 .ky-modal{width:min(680px,100%);max-height:88dvh;overflow:auto}
@@ -1551,6 +1582,15 @@ table.stats .tname em{font-style:normal;font-size:13px}
   </div>
 </div>
 
+<!-- 阵容预设（左侧折叠） -->
+<div class="preset-bar" id="presetBar">
+  <button class="preset-tab" id="presetTab">阵<br>容</button>
+  <div class="preset-body">
+    <div class="preset-title">阵容预设</div>
+    <div class="preset-list" id="presetList"></div>
+    <div class="preset-hint">点格子读取 · 点“存”覆盖</div>
+  </div>
+</div>
 <!-- 觉醒演出 -->
 <div class="awaken-fx hidden" id="awakenFx">
   <div class="aw-flash"></div>
@@ -1923,10 +1963,10 @@ const RAID = {
   desc: '深渊尽头的两位守门者 · 可重复挑战',
   reward: 1000,
   bosses: [
-    { id:'xumoluo', slot:4, mult:{ hp:90, atk:1.62 } },
-    { id:'leizeya', slot:4, mult:{ hp:21, atk:1.75 } },
-    { id:'yuheng', slot:4, mult:{ hp:40, atk:1.60 } },
-    { id:'tianshu', slot:4, mult:{ hp:26, atk:1.55 } },
+    { id:'xumoluo', slot:4, mult:{ hp:90, atk:2.25 } },
+    { id:'leizeya', slot:4, mult:{ hp:21, atk:4.90 } },
+    { id:'yuheng', slot:4, mult:{ hp:40, atk:2.20 } },
+    { id:'tianshu', slot:4, mult:{ hp:26, atk:2.95 } },
   ],
 };
 let raidSel = RAID.bosses[0].id;
@@ -1935,7 +1975,7 @@ const RAID_INFO = {
   xumoluo: {
     name: '虚魔罗 · 虚空魔罗', face: '👁️', color: '169,123,255',
     lines: [
-      '🌑 暗属性 · 生命 189000 · 攻击 318',
+      '🌑 暗属性 · 生命 189000 · 攻击 441',
       '<b style="color:#ffcf6b">常驻嘲讽</b>：你的所有单体攻击都会打在它身上',
       '每次出手召唤一只 500 血虚影（上限 6 只），虚影会攻击，但很弱',
       '范围技能被嘲讽时，倍率 × 敌方人数 —— <b style="color:#7fd6ff">召唤物越多，AoE 越猛</b>',
@@ -1945,7 +1985,7 @@ const RAID_INFO = {
   leizeya: {
     name: '雷塞娅 · 神隐之光', face: '⚡', color: '255,224,122',
     lines: [
-      '☀️ 光属性 · 生命 51030 · 攻击 310',
+      '☀️ 光属性 · 生命 51030 · 攻击 867',
       '大招随机束缚 3 人进入神隐：<b style="color:#ffcf6b">1 回合无法行动、无法被选中</b>',
       '每束缚到一个「新」目标，自身全属性 <b style="color:#ff9b9b">+5%（最多 +50%）</b>',
       '被动「神隐追击」：每次行动后，对<b style="color:#ff9b9b">所有被束缚的敌人</b>各追加 50% 攻击伤害',
@@ -1956,8 +1996,8 @@ const RAID_INFO = {
   yuheng: {
     name: '玉衡座 · 琉璃龙女', face: '🪞', color: '127,214,255',
     lines: [
-      '👑 王属性 · 生命 60000 · 攻击 287',
-      '被动：每 10 点溢出气势 +1% 闪避，最高 <b style="color:#ffcf6b">90%</b>',
+      '👑 王属性 · 生命 60000 · 攻击 394',
+      '被动：每 10 点溢出气势 +1% 闪避，最高 <b style="color:#ffcf6b">55%</b>',
       '小技能：打 2 人，各吸取 50 气势 —— 等于给自己喂溢出',
       '大招：打 4 人 200%，每 50 溢出转 2% 最大生命的护盾',
       '打法：别让她攒溢出。高速点杀，或用必中（摇光座）打穿她的闪避',
@@ -1966,7 +2006,7 @@ const RAID_INFO = {
   tianshu: {
     name: '天枢座 · 引星神女', face: '🌙', color: '236,214,255',
     lines: [
-      '👑 王属性 · 生命 40950 · 攻击 260',
+      '👑 王属性 · 生命 40950 · 攻击 494',
       '每次出手：召唤 1 个星灵，随后所有星灵依次行动',
       '小技能：100% 必克',
       '大招：200% 必克 + 连击（额外出手 2 次）',
@@ -2787,7 +2827,7 @@ function strike(src, tgt, mult, opts) {
 
   // 命中 / 闪避（opts.noDodge = 必中，跳过判定）
   const ovDodge = (tgt.spirit && tgt.spirit.dodgeFromOverflow)
-    ? Math.min(90, Math.floor((tgt.overflow || 0) / 10)) : 0;   // 玉衡：每 10 溢出 = 1% 闪避，上限 90
+    ? Math.min(55, Math.floor((tgt.overflow || 0) / 10)) : 0;   // 玉衡：每 10 溢出 = 1% 闪避，上限 55
   const hitFloor = ovDodge > 0 ? 0.08 : 0.5;
   const hitRate = clamp(0.92 + (A.hit || 0) / 100 - (D.dodge || 0) / 100 - ovDodge / 100, hitFloor, 1);
   if (!opts.noDodge && rnd(0, 1) > hitRate) {
@@ -3766,6 +3806,65 @@ function rosterPageSize() {
   return cols * 2;
 }
 
+/* ===== 阵容预设 ===== */
+function presets() {
+  const sd = saveData();
+  if (!Array.isArray(sd.presets)) sd.presets = [null, null, null, null, null];
+  while (sd.presets.length < 5) sd.presets.push(null);
+  return sd.presets;
+}
+function renderPresets() {
+  const box = document.getElementById('presetList');
+  if (!box) return;
+  const arr = presets();
+  box.innerHTML = arr.map((p, i) => {
+    const cells = [];
+    for (let s = 0; s < 9; s++) {
+      const id = p ? p[s] : null;
+      const sp = id ? SPIRITS.find(x => x.id === id) : null;
+      const cls = sp ? (sp.profession === 'summoner' ? 'on role-s' : sp.profession === 'spiritcaller' ? 'on role-c' : 'on') : '';
+      cells.push('<i class="' + cls + '"></i>');
+    }
+    return '<div class="preset-item"><div class="preset-grid" data-p="' + i + '">' + cells.join('') + '</div>'
+      + '<button class="preset-save" data-ps="' + i + '">' + (p ? '存' : '空') + '</button></div>';
+  }).join('');
+}
+function savePreset(i) {
+  const arr = presets();
+  const copy = {};
+  for (const k in state.lineup) copy[k] = state.lineup[k];
+  arr[i] = Object.keys(copy).length ? copy : null;
+  saveProgress();
+  renderPresets();
+  toast('预设 ' + (i + 1) + ' 已保存');
+  sfx.tick();
+}
+function loadPreset(i) {
+  const p = presets()[i];
+  if (!p) { toast('预设 ' + (i + 1) + ' 是空的'); return; }
+  state.lineup = {};
+  for (const k in p) {
+    const sp = SPIRITS.find(x => x.id === p[k]);
+    if (sp && (!sp.hidden)) state.lineup[+k] = p[k];
+  }
+  state.selected = null;
+  renderDeploy();
+  toast('已读取预设 ' + (i + 1));
+  sfx.tick();
+}
+function bindPresets() {
+  document.getElementById('presetTab').onclick = () => {
+    document.getElementById('presetBar').classList.toggle('open');
+    sfx.tick();
+  };
+  document.getElementById('presetList').addEventListener('click', e => {
+    const g = e.target.closest('[data-p]');
+    if (g) { loadPreset(+g.dataset.p); return; }
+    const b = e.target.closest('[data-ps]');
+    if (b) { savePreset(+b.dataset.ps); }
+  });
+  renderPresets();
+}
 /* ===== 开阳座：碎片与召唤 ===== */
 const KY_SHARDS = 7;
 function kyShards() { return (saveData().kyShards || 0); }
@@ -3802,7 +3901,8 @@ function summonKaiyang() {
   sfx.win();
   toast('✦ 群星汇聚 —— 开阳座 · 天光龙女 加入！');
   document.getElementById('kyModal').classList.add('hidden');
-  renderKyBadge(); renderRoster(); renderDeploy();
+  renderKyBadge();
+  bindPresets(); renderRoster(); renderDeploy();
 }
 /* 掉落：关卡 6-10 与深渊玉衡/天枢 */
 function rollKyShard() {
@@ -3819,6 +3919,7 @@ function rollKyShard() {
   sd.kyShards = Math.min(KY_SHARDS, kyShards() + 1);
   saveProgress();
   renderKyBadge();
+  bindPresets();
   return 1;
 }
 /* ===== 契约选择 ===== */
@@ -4074,13 +4175,27 @@ function renderDeploy() {
 }
 
 function autoLineup() {
-  const preset = [
-    ['golem', 5], ['nox', 8], ['phoenix', 4], ['aisling', 2], ['nauti', 0], ['luna', 1],
-  ];
+  // 按当前战斗力自动选出最强阵容：5 常规 + 1 召唤师 + 1 唤灵师
+  const owned = ownedSpirits();
+  if (!owned.length) { toast('还没有精灵'); return; }
+  const cpOf = s => {
+    const r = cpRaw(s, spiritSave(s.id));
+    return r;
+  };
+  const ranked = owned.slice().sort((a, b) => cpOf(b) - cpOf(a));
+  const pick = kind => ranked.find(s => (s.profession || 'normal') === kind) || null;
+  const chosen = [];
+  const sum = pick('summoner'); if (sum) chosen.push(sum);
+  const sc = pick('spiritcaller'); if (sc) chosen.push(sc);
+  const normals = ranked.filter(s => (s.profession || 'normal') === 'normal');
+  for (const s of normals) { if (chosen.length >= 7) break; chosen.push(s); }
+  // 站位：前排 → 后排依次填
+  const order = [5, 8, 4, 2, 1, 0, 3, 6, 7];
   state.lineup = {};
-  preset.forEach(([id, slot]) => { state.lineup[slot] = id; });
+  chosen.slice(0, 7).forEach((s, i) => { state.lineup[order[i]] = s.id; });
   state.selected = null;
   renderDeploy();
+  toast('已按战斗力自动布阵（' + chosen.length + ' 只）');
 }
 
 /* ============================================================================
@@ -4386,7 +4501,7 @@ function saveProgress() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       v: 2, unlocked: state.unlocked, crystal: d.crystal,
       spirits: d.spirits, pack: d.pack, uid: d.uid,
-      owned: d.owned, pity: d.pity, divine: d.divine, kyShards: d.kyShards, contract: d.contract,
+      owned: d.owned, pity: d.pity, divine: d.divine, kyShards: d.kyShards, contract: d.contract, presets: d.presets,
     }));
     localStorage.setItem('jiugong_unlocked', String(state.unlocked));
   } catch (e) {}
@@ -4402,7 +4517,7 @@ function loadProgress() {
         crystal: o.crystal || 0, spirits: o.spirits || {},
         pack: o.pack || [], uid: o.uid || 1,
         owned: o.owned || {}, pity: o.pity || 0, divine: o.divine || null,
-        kyShards: o.kyShards || 0, contract: o.contract || null,
+        kyShards: o.kyShards || 0, contract: o.contract || null, presets: o.presets || [null,null,null,null,null],
       };
       return;
     }
@@ -5424,6 +5539,7 @@ function bindEvents() {
   document.getElementById('kyModal').addEventListener('click', e => { if (e.target.id === 'kyModal') e.currentTarget.classList.add('hidden'); });
   document.getElementById('btnKySummon').onclick = () => summonKaiyang();
   renderKyBadge();
+  bindPresets();
 
   $('#btnFull').onclick = () => toggleFull();
 
