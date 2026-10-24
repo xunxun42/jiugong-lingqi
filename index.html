@@ -747,6 +747,9 @@ body.royal-on .royal-strip{
 }
 .preset-save:hover{background:rgba(232,192,106,.3)}
 .preset-hint{margin-top:8px;font-size:9px;color:var(--muted);line-height:1.5;white-space:nowrap}
+.sgroup.r-fan{border-color:rgba(111,168,255,.55)!important}
+.sgroup.r-zhen{border-color:rgba(185,139,255,.62)!important;box-shadow:0 0 14px rgba(185,139,255,.20)}
+.sgroup.r-jue{border-color:rgba(255,215,107,.78)!important;box-shadow:0 0 18px rgba(255,200,74,.30)}
 .soul-detail{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;margin:2px 0 6px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}
 .soul-detail.hidden{display:none}
 .sdx{display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:8px;cursor:pointer;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);font-size:10.5px;color:#ddd}
@@ -4647,8 +4650,8 @@ const SOUL_TYPES = {
 };
 const SOUL_KEYS = Object.keys(SOUL_TYPES);
 const SOUL_RARITY = [
-  { name:'凡', mult:1.0, weight:70, color:'#b9b4d4' },
-  { name:'珍', mult:1.6, weight:25, color:'#7fd6ff' },
+  { name:'凡', mult:1.0, weight:70, color:'#6fa8ff' },
+  { name:'珍', mult:1.6, weight:25, color:'#b98bff' },
   { name:'绝', mult:2.4, weight:5,  color:'#ffd76b' },
 ];
 
@@ -4930,7 +4933,7 @@ function renderGrow() {
     const target = g.items.find(x => !eq.has(x.uid));
     const own = g.items.filter(x => eq.has(x.uid)).length;
     const key = g.type + '|' + g.rarity;
-    return `<div class="soul sgroup ${target ? '' : 'on-body'}" data-g="${key}"
+    return `<div class="soul sgroup ${g.rarity === "绝" ? "r-jue" : g.rarity === "珍" ? "r-zhen" : "r-fan"} ${target ? "" : "on-body"}" data-g="${key}"
       style="border-color:${b.color}66"
       title="${T.name} · ${g.rarity} · 共 ${g.items.length} 颗 · 最高 +${b.value}${T.unit}${own ? ` · 已装备 ${own}` : ''}">
       <b style="color:${T.color}">${T.name}</b>
@@ -5120,14 +5123,23 @@ function bindGrow() {
     renderGrow();
   });
   $('#soulDrawerList').addEventListener('click', e => {
-    const el = e.target.closest('.soul[data-uid]');
-    if (!el || soulDrawerSlot == null) return;
-    const p = spiritSave(growSel);
-    p.souls[soulDrawerSlot] = +el.dataset.uid;
-    saveProgress();
-    closeSoulDrawer();
-    renderGrow();
-    sfx.win();
+    /* 展开条目里点具体一颗 → 装进目标槽位 */
+    const chip = e.target.closest('.sdx[data-uid]');
+    if (chip && soulDrawerSlot != null) {
+      const p2 = spiritSave(growSel);
+      p2.souls[soulDrawerSlot] = +chip.dataset.uid;
+      saveProgress();
+      closeSoulDrawer();
+      renderGrow();
+      sfx.win();
+      return;
+    }
+    /* 点堆叠 → 展开 / 收起 */
+    const grp = e.target.closest('.soul[data-g]');
+    if (grp) {
+      const det = document.querySelector('#soulDrawerList .soul-detail[data-d="' + grp.dataset.g + '"]');
+      if (det) { det.classList.toggle('hidden'); sfx.tick(); }
+    }
   });
 
   /* 精灵 / 灵念 分页 */
@@ -5736,6 +5748,20 @@ function init() {
 
 init();
 
+
+/* 阵容预设栏兜底：全局委托，确保一定能展开 */
+document.addEventListener('click', function (ev) {
+  const tab = ev.target.closest && ev.target.closest('#presetTab');
+  if (tab) {
+    const bar = document.getElementById('presetBar');
+    if (bar) { bar.classList.toggle('open'); }
+    return;
+  }
+  const g = ev.target.closest && ev.target.closest('#presetList [data-p]');
+  if (g) { if (typeof loadPreset === 'function') loadPreset(+g.dataset.p); return; }
+  const b = ev.target.closest && ev.target.closest('#presetList [data-ps]');
+  if (b) { if (typeof savePreset === 'function') savePreset(+b.dataset.ps); }
+}, true);
 /* ===== 预设栏兜底初始化（独立于主绑定流程） ===== */
 (function () {
   function initPreset() {
