@@ -1722,7 +1722,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <span class="raid-face" id="raidFace">👁️</span>
       <span class="raid-meta" id="raidMeta"></span>
     </div>
-    <div class="raid-reward" id="raidReward">通关奖励 <b>💎 1000</b> 灵晶</div>
+    <div class="raid-reward" id="raidReward">首通奖励 <b>💎 1000</b> · 重复通关 <b>400</b> 灵晶</div>
     <div class="btnrow">
       <button class="btn primary" id="btnRaidGo">挑战</button>
       <button class="btn ghost" id="btnCloseRaid">关闭</button>
@@ -3984,9 +3984,9 @@ function summonKaiyang() {
 function rollKyShard() {
   let chance = 0;
   if (state.mode === 'raid') {
-    chance = (raidSel === 'yuheng' || raidSel === 'tianshu') ? 0.75 : 0;
+    chance = (raidSel === 'yuheng' || raidSel === 'tianshu') ? 0.20 : 0;
   } else {
-    chance = (state.stage >= 5) ? 0.45 : 0;   // 第 6 关起
+    chance = (state.stage >= 5) ? 0.12 : 0;   // 第 6 关起
   }
   if (!chance) return 0;
   if (Math.random() > chance) return 0;
@@ -4399,7 +4399,12 @@ function finishBattle(result) {
     if (state.mode === 'raid') {
       const bossId = raidConf().id;
       const first = !(saveData().owned || {})[bossId];
-      saveData().crystal += RAID.reward;
+      const sd2 = saveData();
+      sd2.clears = sd2.clears || {};
+      const rk = 'r' + bossId;
+      const raidRepeat = !!sd2.clears[rk];
+      sd2.clears[rk] = (sd2.clears[rk] || 0) + 1;
+      saveData().crystal += raidRepeat ? Math.round(RAID.reward * 0.4) : RAID.reward;
       saveData().owned = saveData().owned || {};
       saveData().owned[bossId] = true;
       log(`💎 深渊讨伐奖励 ${RAID.reward} 灵晶（当前 ${saveData().crystal}）`, 'sys');
@@ -4408,7 +4413,13 @@ function finishBattle(result) {
     } else {
       const next = Math.min(STAGES.length, state.stage + 2);
       if (next > state.unlocked) state.unlocked = next;
-      const gain = 150 + 60 * (state.stage + 1);   // 第1关 210 → 第10关 750
+      const key = 's' + state.stage;
+    const sd = saveData();
+    sd.clears = sd.clears || {};
+    const isRepeat = !!sd.clears[key];
+    const base = 150 + 60 * (state.stage + 1);   // 第1关 210 → 第10关 750
+    const gain = Math.round(base * (isRepeat ? 0.35 : 1));
+    sd.clears[key] = (sd.clears[key] || 0) + 1;
       saveData().crystal += gain;
       log(`💎 通关奖励 ${gain} 灵晶（当前 ${saveData().crystal}）`, 'sys');
       saveProgress();
@@ -4581,7 +4592,7 @@ function saveProgress() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       v: 2, unlocked: state.unlocked, crystal: d.crystal,
       spirits: d.spirits, pack: d.pack, uid: d.uid,
-      owned: d.owned, pity: d.pity, divine: d.divine, kyShards: d.kyShards, fxOff: !!d.fxOff, bgFast: !!d.bgFast, contract: d.contract, presets: d.presets,
+      owned: d.owned, pity: d.pity, divine: d.divine, kyShards: d.kyShards, clears: d.clears, fxOff: !!d.fxOff, bgFast: !!d.bgFast, contract: d.contract, presets: d.presets,
     }));
     localStorage.setItem('jiugong_unlocked', String(state.unlocked));
   } catch (e) {}
@@ -4597,7 +4608,7 @@ function loadProgress() {
         crystal: o.crystal || 0, spirits: o.spirits || {},
         pack: o.pack || [], uid: o.uid || 1,
         owned: o.owned || {}, pity: o.pity || 0, divine: o.divine || null,
-        kyShards: o.kyShards || 0, fxOff: !!o.fxOff, bgFast: !!o.bgFast, contract: o.contract || null, presets: o.presets || [null,null,null,null,null],
+        kyShards: o.kyShards || 0, clears: o.clears || {}, fxOff: !!o.fxOff, bgFast: !!o.bgFast, contract: o.contract || null, presets: o.presets || [null,null,null,null,null],
       };
       return;
     }
