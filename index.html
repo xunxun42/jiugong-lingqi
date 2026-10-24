@@ -768,6 +768,10 @@ body.royal-on .royal-strip{
 .s10-item b{font-size:13px;font-weight:900}
 .s10-item span{flex:1;color:#e6e1ee}
 .s10-item em{font-style:normal;color:#ffe9b0;font-weight:800}
+.result-reward{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0 4px;padding:9px 14px;border-radius:12px;background:rgba(232,192,106,.10);border:1px solid rgba(232,192,106,.35)}
+.result-reward.hidden{display:none}
+.result-reward .rr-t{font-size:10px;letter-spacing:2px;color:var(--muted)}
+.result-reward b{font-size:12.5px;color:#ffe9b0;font-weight:800}
 /* 设置 */
 .set-row{display:flex;align-items:center;justify-content:space-between;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12.5px;color:#e6e1ee}
 .set-toggle{
@@ -1550,6 +1554,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="autoline hidden" id="autoLine"></div>
     <div class="stars" id="resultStars"></div>
     <div class="kv" id="resultKv"></div>
+    <div class="result-reward hidden" id="resultReward"></div>
     <div id="resultTable"></div>
     <div class="btnrow">
       <button class="btn ghost" id="btnAgain">再来一次</button>
@@ -4417,7 +4422,9 @@ function finishBattle(result) {
       const rk = 'r' + bossId;
       const raidRepeat = !!sd2.clears[rk];
       sd2.clears[rk] = (sd2.clears[rk] || 0) + 1;
-      saveData().crystal += raidRepeat ? Math.round(RAID.reward * 0.4) : RAID.reward;
+      const raidGain = raidRepeat ? Math.round(RAID.reward * 0.4) : RAID.reward;
+      saveData().crystal += raidGain;
+      (B.rewards = B.rewards || []).push('\uD83D\uDC8E 灵晶 +' + raidGain);
       saveData().owned = saveData().owned || {};
       saveData().owned[bossId] = true;
       log(`💎 深渊讨伐奖励 ${RAID.reward} 灵晶（当前 ${saveData().crystal}）`, 'sys');
@@ -4434,6 +4441,7 @@ function finishBattle(result) {
     const gain = Math.round(base * (isRepeat ? 0.35 : 1));
     sd.clears[key] = (sd.clears[key] || 0) + 1;
       saveData().crystal += gain;
+    (B.rewards = B.rewards || []).push('💎 灵晶 +' + gain);
       log(`💎 通关奖励 ${gain} 灵晶（当前 ${saveData().crystal}）`, 'sys');
       saveProgress();
     }
@@ -4442,6 +4450,7 @@ function finishBattle(result) {
   /* 开阳座碎片掉落 */
   if (win) {
     const got = rollKyShard();
+    if (got) (B.rewards = B.rewards || []).push('✦ 开阳星屑 ×1');
     if (got) {
       const li = document.getElementById('autoLine');
       if (li) { li.classList.remove('hidden'); li.innerHTML = '✦ 获得 <b>开阳星屑</b> ×1（' + kyShards() + '/7）'; }
@@ -4478,6 +4487,16 @@ function finishBattle(result) {
   // —— 关键数据 ——
   const remainP = Math.round(mine.reduce((s, u) => s + u.hp, 0));
   const remainE = Math.round(sideStats('enemy').reduce((s, u) => s + u.hp, 0));
+  {
+    const rr = document.getElementById('resultReward');
+    if (rr) {
+      const list = B.rewards || [];
+      if (list.length) {
+        rr.classList.remove('hidden');
+        rr.innerHTML = '<span class="rr-t">本场获得</span>' + list.map(function (x) { return '<b>' + x + '</b>'; }).join('');
+      } else { rr.classList.add('hidden'); }
+    }
+  }
   $('#resultKv').innerHTML = `
     <span>回合 <b>${B.round}</b></span>
     <span>我方存活 <b>${aliveMine}/${mine.length}</b></span>
