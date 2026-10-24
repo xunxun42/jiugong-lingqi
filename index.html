@@ -772,6 +772,11 @@ body.royal-on .royal-strip{
 .result-reward.hidden{display:none}
 .result-reward .rr-t{font-size:10px;letter-spacing:2px;color:var(--muted)}
 .result-reward b{font-size:12.5px;color:#ffe9b0;font-weight:800}
+.hall-series{display:flex;gap:8px;margin:10px 0 14px;flex-wrap:wrap}
+.hs-tab{padding:6px 14px;border-radius:9px;font-size:11px;cursor:pointer;letter-spacing:1px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--muted)}
+.hs-tab.on{background:rgba(232,192,106,.18);border-color:rgba(232,192,106,.6);color:#ffe9b0;font-weight:800}
+.hs-tab:disabled{opacity:.4;cursor:not-allowed}
 /* 设置 */
 .set-row{display:flex;align-items:center;justify-content:space-between;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12.5px;color:#e6e1ee}
 .set-toggle{
@@ -1442,9 +1447,9 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="topbtns">
       <button class="btn ghost" id="btnGrow">养成</button>
       <button class="btn ghost" id="btnCodex">图鉴</button>
-      <button class="btn ghost" id="btnHall">群星</button>
+      <button class="btn ghost" id="btnHall">召唤<span class="ky-badge" id="kyBadge">0/7</span></button>
       <button class="btn ghost" id="btnRaid">深渊</button>
-      <button class="btn ghost" id="btnKy">开阳<span class="ky-badge" id="kyBadge">0/7</span></button>
+      
       <button class="btn ghost" id="btnDivine">占卜</button>
       <button class="btn ghost" id="btnRules">玩法</button>
       <button class="btn ghost iconbtn" id="btnSettings" title="设置">⚙</button>
@@ -1666,7 +1671,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <h3>碎片获取</h3>
       <p>通关 <b>第 6 - 10 关</b>有几率掉落「开阳星屑」；挑战深渊 <b>玉衡座 / 天枢座</b> 掉落率更高。集齐 <b>7 枚</b>即可在此召唤。</p>
     </div>
-    <div class="btnrow"><button class="btn ghost" id="btnKyClose">关闭</button></div>
+    <div class="btnrow"><button class="btn ghost" id="btnKyClose">关闭</button><button class="btn ghost" id="btnKyBack">← 返回召唤</button></div>
   </div>
 </div>
 <!-- ================= 设置 ================= -->
@@ -1775,7 +1780,13 @@ table.stats .tname em{font-style:normal;font-size:13px}
 <!-- ================= 群星圣堂 ================= -->
 <div class="mask hidden" id="hallModal">
   <div class="modal">
-    <h2 class="h2sm">群星圣堂</h2>
+    <h2 class="h2sm">召唤 · 群星圣堂</h2>
+    <nav class="hall-series" id="hallSeries">
+      <button class="hs-tab on" data-series="hall">北斗 · 群星圣堂</button>
+      <button class="hs-tab" data-series="kaiyang">开阳 · 星屑唤灵</button>
+      <button class="hs-tab" data-series="soon" disabled>新系列 · 筹备中</button>
+    </nav>
+
     <div class="sub" id="hallTitle">天权座 · 神源龙女</div>
     <div class="hall-head">
       <span class="crystal">💎 灵晶 <b id="hallCrystal">0</b></span>
@@ -3990,6 +4001,17 @@ function summonKaiyang() {
   toast('✦ 群星汇聚 —— 开阳座 · 天光龙女 加入！');
   document.getElementById('kyModal').classList.add('hidden');
   renderKyBadge();
+  const hs = document.getElementById('hallSeries');
+  if (hs) hs.addEventListener('click', e => {
+    const b = e.target.closest('[data-series]');
+    if (!b || b.disabled) return;
+    const k = b.dataset.series;
+    hs.querySelectorAll('.hs-tab').forEach(x => x.classList.toggle('on', x === b));
+    document.getElementById('hallModal').classList.add('hidden');
+    if (k === 'kaiyang') openKy();
+    else document.getElementById('hallModal').classList.remove('hidden');
+    sfx.tick();
+  });
   bindPresets();
   bindSettings();
   const b10 = document.getElementById('btnDrawSoul10');
@@ -4013,6 +4035,17 @@ function rollKyShard() {
   sd.kyShards = Math.min(KY_SHARDS, kyShards() + 1);
   saveProgress();
   renderKyBadge();
+  const hs = document.getElementById('hallSeries');
+  if (hs) hs.addEventListener('click', e => {
+    const b = e.target.closest('[data-series]');
+    if (!b || b.disabled) return;
+    const k = b.dataset.series;
+    hs.querySelectorAll('.hs-tab').forEach(x => x.classList.toggle('on', x === b));
+    document.getElementById('hallModal').classList.add('hidden');
+    if (k === 'kaiyang') openKy();
+    else document.getElementById('hallModal').classList.remove('hidden');
+    sfx.tick();
+  });
   bindPresets();
   bindSettings();
   const b10 = document.getElementById('btnDrawSoul10');
@@ -5771,9 +5804,21 @@ function bindEvents() {
   if (document.getElementById('btnMusic')) document.getElementById('btnMusic').onclick = () => musicToggle();
   document.getElementById('btnKy').onclick = () => openKy();
   document.getElementById('btnKyClose').onclick = () => document.getElementById('kyModal').classList.add('hidden');
+  const kb = document.getElementById('btnKyBack'); if (kb) kb.onclick = () => { document.getElementById('kyModal').classList.add('hidden'); openHall(); };
   document.getElementById('kyModal').addEventListener('click', e => { if (e.target.id === 'kyModal') e.currentTarget.classList.add('hidden'); });
   document.getElementById('btnKySummon').onclick = () => summonKaiyang();
   renderKyBadge();
+  const hs = document.getElementById('hallSeries');
+  if (hs) hs.addEventListener('click', e => {
+    const b = e.target.closest('[data-series]');
+    if (!b || b.disabled) return;
+    const k = b.dataset.series;
+    hs.querySelectorAll('.hs-tab').forEach(x => x.classList.toggle('on', x === b));
+    document.getElementById('hallModal').classList.add('hidden');
+    if (k === 'kaiyang') openKy();
+    else document.getElementById('hallModal').classList.remove('hidden');
+    sfx.tick();
+  });
   bindPresets();
   bindSettings();
   const b10 = document.getElementById('btnDrawSoul10');
