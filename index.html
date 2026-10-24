@@ -1745,7 +1745,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <span class="raid-face" id="raidFace">👁️</span>
       <span class="raid-meta" id="raidMeta"></span>
     </div>
-    <div class="raid-reward" id="raidReward">首通奖励 <b>💎 1000</b> · 重复通关 <b>400</b> 灵晶</div>
+    <div class="raid-reward" id="raidReward">每次通关 <b>💎 1000</b> 灵晶</div>
     <div class="btnrow">
       <button class="btn primary" id="btnRaidGo">挑战</button>
       <button class="btn ghost" id="btnCloseRaid">关闭</button>
@@ -4455,7 +4455,7 @@ function finishBattle(result) {
       const rk = 'r' + bossId;
       const raidRepeat = !!sd2.clears[rk];
       sd2.clears[rk] = (sd2.clears[rk] || 0) + 1;
-      const raidGain = raidRepeat ? Math.round(RAID.reward * 0.4) : RAID.reward;
+      const raidGain = RAID.reward;   // 深渊每次固定 1000，不递减
       saveData().crystal += raidGain;
       (B.rewards = B.rewards || []).push('\uD83D\uDC8E 灵晶 +' + raidGain);
       saveData().owned = saveData().owned || {};
