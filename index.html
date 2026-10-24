@@ -747,6 +747,14 @@ body.royal-on .royal-strip{
 }
 .preset-save:hover{background:rgba(232,192,106,.3)}
 .preset-hint{margin-top:8px;font-size:9px;color:var(--muted);line-height:1.5;white-space:nowrap}
+/* 灵念十连 */
+.s10-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
+.s10-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);font-size:11.5px}
+.s10-item.r2{border-color:rgba(120,180,255,.5);background:rgba(120,180,255,.1)}
+.s10-item.r3{border-color:rgba(255,200,74,.65);background:rgba(255,200,74,.12);box-shadow:0 0 16px rgba(255,180,60,.22)}
+.s10-item b{font-size:13px;font-weight:900}
+.s10-item span{flex:1;color:#e6e1ee}
+.s10-item em{font-style:normal;color:#ffe9b0;font-weight:800}
 /* 设置 */
 .set-row{display:flex;align-items:center;justify-content:space-between;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12.5px;color:#e6e1ee}
 .set-toggle{
@@ -1656,6 +1664,14 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="btnrow" style="margin-top:14px"><button class="btn primary" id="btnSetClose">完成</button></div>
   </div>
 </div>
+<!-- 十连结果 -->
+<div class="mask hidden" id="soul10Modal">
+  <div class="modal" style="width:min(520px,100%)">
+    <h2 class="h2sm">灵念十连</h2>
+    <div class="s10-grid" id="soul10List"></div>
+    <div class="btnrow" style="margin-top:14px"><button class="btn primary" id="btnS10Close">收下</button></div>
+  </div>
+</div>
 <!-- ================= 契约选择 ================= -->
 <div class="mask hidden" id="contractModal">
   <div class="modal" style="width:min(460px,100%)">
@@ -1778,6 +1794,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <span style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn" id="btnGrowAll" title="把灵晶全部投入当前选中的精灵">一键满投</button>
         <button class="btn primary" id="btnDrawSoul">抽灵念 · 600</button>
+            <button class="btn" id="btnDrawSoul10">十连 · 6000</button>
       </span>
     </div>
     <div class="gtabs">
@@ -3957,6 +3974,10 @@ function summonKaiyang() {
   renderKyBadge();
   bindPresets();
   bindSettings();
+  const b10 = document.getElementById('btnDrawSoul10');
+  if (b10) b10.onclick = () => { drawSoul10(); };
+  const c10 = document.getElementById('btnS10Close');
+  if (c10) c10.onclick = () => document.getElementById('soul10Modal').classList.add('hidden');
   renderPresets(); renderRoster(); renderDeploy();
 }
 /* 掉落：关卡 6-10 与深渊玉衡/天枢 */
@@ -3976,6 +3997,10 @@ function rollKyShard() {
   renderKyBadge();
   bindPresets();
   bindSettings();
+  const b10 = document.getElementById('btnDrawSoul10');
+  if (b10) b10.onclick = () => { drawSoul10(); };
+  const c10 = document.getElementById('btnS10Close');
+  if (c10) c10.onclick = () => document.getElementById('soul10Modal').classList.add('hidden');
   renderPresets();
   return 1;
 }
@@ -4682,6 +4707,39 @@ function drawSoul() {
   return soul;
 }
 
+
+/* 灵念十连：6000 灵晶抽 10 颗，附结果弹窗 */
+function drawSoul10() {
+  const d = saveData();
+  const cost = SOUL_COST * 10;
+  if (d.crystal < cost) { toast('灵晶不足（需要 ' + cost + '）'); return; }
+  d.crystal -= cost;
+  const got = [];
+  for (let i = 0; i < 10; i++) {
+    const s = rollSoul();
+    d.pack.push(s);
+    got.push(s);
+  }
+  saveProgress();
+  const rank = { '凡': 0, '珍': 1, '绝': 2 };
+  got.sort((a, b) => (rank[b.rarity] || 0) - (rank[a.rarity] || 0) || (b.value - a.value));
+  const box = document.getElementById('soul10List');
+  if (box) {
+    box.innerHTML = got.map(s => {
+      const T = SOUL_TYPES[s.type];
+      return '<div class="s10-item ' + (s.rarity === '绝' ? 'r3' : s.rarity === '珍' ? 'r2' : 'r1') + '">'
+        + '<b style="color:' + s.color + '">' + s.rarity + '</b>'
+        + '<span>' + T.name + '</span>'
+        + '<em>+' + s.value + T.unit + '</em></div>';
+    }).join('');
+    const m = document.getElementById('soul10Modal');
+    if (m) m.classList.remove('hidden');
+  }
+  const best = got[0];
+  toast('十连完成 · 最高 ' + best.rarity + ' ' + SOUL_TYPES[best.type].name);
+  sfx.win();
+  renderGrow();
+}
 /* ---------------- 面板 ---------------- */
 let growSel = null;
 let soulDrawerSlot = null;   // 侧边栏当前要装进第几格（null = 收起）
@@ -5586,6 +5644,10 @@ function bindEvents() {
   renderKyBadge();
   bindPresets();
   bindSettings();
+  const b10 = document.getElementById('btnDrawSoul10');
+  if (b10) b10.onclick = () => { drawSoul10(); };
+  const c10 = document.getElementById('btnS10Close');
+  if (c10) c10.onclick = () => document.getElementById('soul10Modal').classList.add('hidden');
   renderPresets();
 
   $('#btnFull').onclick = () => toggleFull();
