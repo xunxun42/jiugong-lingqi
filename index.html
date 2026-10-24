@@ -3494,8 +3494,10 @@ function addWake(n, why) {
   if (B.wake >= WAKE_MAX) { B.wake = 0; renderWakeBar(); wakeTrigger(k, why); }
 }
 function renderWakeBar() {
-  const el = $('#wakeBar');
+  const el = document.getElementById('wakeBar');
   if (!el) return;
+  const hasKy = Object.values(state.lineup || {}).some(id => ((SPIRITS.find(s => s.id === id)) || {}).profession === 'spiritcaller');
+  el.classList.toggle('hidden', !hasKy);
   const n = B ? (B.wake || 0) : 0;
   el.querySelectorAll('i').forEach((d, i) => d.classList.toggle('on', i < n));
   const k = B ? kaiyangOf('player') : null;
@@ -4068,6 +4070,7 @@ function renderDeploy() {
   $('#btnFight').disabled = pUnits.length < 4;
   renderRoyal(pUnits);
   bindGridDrag();
+  renderWakeBar();
 }
 
 function autoLineup() {
