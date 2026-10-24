@@ -5877,6 +5877,17 @@ document.addEventListener('click', function (ev) {
     else if (id === 'btnStage') { show('stageModal'); }
     else if (id === 'btnFull') { if (typeof toggleFull === 'function') toggleFull(); }
     else if (id === 'btnKy') { if (typeof openKy === 'function') openKy(); }
+    else if (id === 'btnKyBack') { const km = document.getElementById('kyModal'); if (km) km.classList.add('hidden'); if (typeof openHall === 'function') openHall(); else show('hallModal'); }
+    else {
+      /* 通用：关闭 / 取消 / 返回 / 完成 / 收下 → 关掉所在弹窗 */
+      const txt = (b.textContent || '').trim();
+      if (/关闭|取消|返回|完成|收下|确定返回/.test(txt)) {
+        const mask = b.closest('.mask');
+        if (mask) mask.classList.add('hidden');
+        if (typeof sfx === 'object' && sfx.tick) sfx.tick();
+        return;
+      }
+    }
     if (typeof sfx === 'object' && sfx.tick) sfx.tick();
   } catch (e) { console.warn('nav delegate:', e && e.message); }
 }, true);
