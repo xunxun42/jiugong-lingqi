@@ -5862,7 +5862,7 @@ init();
 
 /* ===== 导航兜底：全局委托，不依赖 bindEvents ===== */
 document.addEventListener('click', function (ev) {
-  const b = ev.target.closest && ev.target.closest('button[id^="btn"]');
+  const b = ev.target.closest && ev.target.closest('button[id]');
   if (!b) return;
   const id = b.id;
   const show = mid => { const m = document.getElementById(mid); if (m) m.classList.remove('hidden'); };
