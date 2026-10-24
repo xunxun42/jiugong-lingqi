@@ -5605,7 +5605,7 @@ function bindEvents() {
 function init() {
   loadProgress();
   buildGrids();
-  bindEvents();
+  try { bindEvents(); } catch (e) { console.warn('bindEvents 部分绑定失败:', e && e.message); }
   autoLineup();
   renderStageChips();
   log('欢迎，灵契者。选择关卡与阵容，然后开战。', 'sys');
