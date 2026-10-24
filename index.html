@@ -5877,7 +5877,37 @@ document.addEventListener('click', function (ev) {
     else if (id === 'btnStage') { show('stageModal'); }
     else if (id === 'btnFull') { if (typeof toggleFull === 'function') toggleFull(); }
     else if (id === 'btnKy') { if (typeof openKy === 'function') openKy(); }
-    else if (id === 'btnKyBack') { const km = document.getElementById('kyModal'); if (km) km.classList.add('hidden'); if (typeof openHall === 'function') openHall(); else show('hallModal'); }
+    else if (id === 'setSound') {
+      state.sound = !state.sound;
+      if (state.sound) { if (state.phase === 'battle' && typeof musicStart === 'function') musicStart(); }
+      else if (typeof musicStop === 'function') musicStop(0.3);
+      saveProgress();
+      if (typeof syncSetUI === 'function') syncSetUI();
+      return;
+    }
+    else if (id === 'setMusic') {
+      if (typeof musicToggle === 'function') musicToggle();
+      if (typeof syncSetUI === 'function') syncSetUI();
+      return;
+    }
+    else if (id === 'setFx') {
+      if (typeof toggleFx === 'function') toggleFx();
+      return;
+    }
+    else if (id === 'setBg') {
+      state.bgFast = !state.bgFast;
+      saveProgress();
+      if (typeof syncSetUI === 'function') syncSetUI();
+      if (typeof toast === 'function') toast(state.bgFast ? '后台加速：开' : '后台加速：关');
+      return;
+    }
+    else if (id === 'setSave') {
+      const sm = document.getElementById('saveModal');
+      if (sm) sm.classList.remove('hidden');
+      const st2 = document.getElementById('setModal');
+      if (st2) st2.classList.add('hidden');
+      return;
+    }    else if (id === 'btnKyBack') { const km = document.getElementById('kyModal'); if (km) km.classList.add('hidden'); if (typeof openHall === 'function') openHall(); else show('hallModal'); }
     else {
       /* 通用：关闭 / 取消 / 返回 / 完成 / 收下 → 关掉所在弹窗 */
       const txt = (b.textContent || '').trim();
