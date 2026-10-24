@@ -777,6 +777,24 @@ body.royal-on .royal-strip{
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--muted)}
 .hs-tab.on{background:rgba(232,192,106,.18);border-color:rgba(232,192,106,.6);color:#ffe9b0;font-weight:800}
 .hs-tab:disabled{opacity:.4;cursor:not-allowed}
+.tarot-pop{
+  position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) rotate(-8deg);
+  font-size:34px;pointer-events:none;z-index:9;
+  filter:drop-shadow(0 0 14px rgba(255,215,110,.95)) drop-shadow(0 0 30px rgba(255,180,60,.7));
+  animation:tarotFlip .9s cubic-bezier(.2,.9,.3,1) forwards;
+}
+@keyframes tarotFlip{
+  0%{opacity:0;transform:translate(-50%,-50%) rotate(-40deg) scale(.4)}
+  35%{opacity:1;transform:translate(-50%,-60%) rotate(0deg) scale(1.25)}
+  70%{opacity:1;transform:translate(-50%,-70%) rotate(6deg) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-95%) rotate(12deg) scale(.9)}
+}
+.float-tarotText{color:#ffe08a !important;font-weight:900 !important;text-shadow:0 0 16px rgba(255,200,74,.95)}
+.tarot-hud{
+  display:inline-flex;align-items:center;gap:5px;margin-left:8px;padding:3px 9px;border-radius:8px;
+  font-size:10.5px;font-weight:800;color:#ffe08a;background:rgba(255,200,74,.14);
+  border:1px solid rgba(255,200,74,.5);box-shadow:0 0 12px rgba(255,200,74,.25);
+}
 /* 设置 */
 .set-row{display:flex;align-items:center;justify-content:space-between;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12.5px;color:#e6e1ee}
 .set-toggle{
@@ -2911,8 +2929,17 @@ function strike(src, tgt, mult, opts) {
   /* 命运塔罗：抵挡一次伤害（AOE 只有最前排能触发） */
   if (tgt && tgt.alive && B && B.tarot && B.tarot[tgt.side] > 0 && (!opts.aoe || opts.first)) {
     B.tarot[tgt.side]--;
-    if (tgt.el) floatText(tgt.el, '塔罗', 'buff', 0);
-    log('\uD83C\uDCCF 命运塔罗为 ' + tag(tgt) + ' 挡下了伤害', 'sys');
+    if (tgt.el) {
+      var _card = document.createElement('div');
+      _card.className = 'tarot-pop';
+      _card.textContent = 'uD83CuDCCF';
+      tgt.el.appendChild(_card);
+      (function (c) { setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 900); })(_card);
+      floatText(tgt.el, '命运塔罗 · 挡下', 'tarotText', 0);
+    }
+    if (typeof flashScreen === 'function') flashScreen('rgba(255,215,110,.32)');
+    if (typeof sfx === 'object' && sfx.win) { try { sfx.win(); } catch (e) {} }
+    log('uD83CuDCCF <b style="color:#ffd76b">命运塔罗</b> 为 ' + tag(tgt) + ' 挡下伤害（剩余 ' + B.tarot[tgt.side] + '）', 'sys');
     return { dmg: 0, crit: false, em: 1, killed: false, blocked: true };
   }
   if (!tgt || !tgt.alive) return { dmg: 0, crit: false, em: 1, killed: false };
