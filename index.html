@@ -5858,6 +5858,21 @@ function init() {
 init();
 
 
+
+/* 召唤系列切换：全局委托兜底 */
+document.addEventListener('click', function (ev) {
+  const b = ev.target.closest && ev.target.closest('#hallSeries [data-series]');
+  if (!b || b.disabled) return;
+  const k = b.dataset.series;
+  document.querySelectorAll('#hallSeries .hs-tab').forEach(function (x) { x.classList.toggle('on', x === b); });
+  const hm = document.getElementById('hallModal');
+  if (k === 'kaiyang') {
+    if (hm) hm.classList.add('hidden');
+    if (typeof openKy === 'function') openKy();
+  } else {
+    if (hm) hm.classList.remove('hidden');
+  }
+}, true);
 /* 阵容预设栏兜底：全局委托，确保一定能展开 */
 document.addEventListener('click', function (ev) {
   const tab = ev.target.closest && ev.target.closest('#presetTab');
