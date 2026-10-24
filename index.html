@@ -1784,7 +1784,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <nav class="hall-series" id="hallSeries">
       <button class="hs-tab on" data-series="hall">北斗 · 群星圣堂</button>
       <button class="hs-tab" data-series="kaiyang">开阳 · 星屑唤灵</button>
-      <button class="hs-tab" data-series="soon" disabled>新系列 · 筹备中</button>
+      <button class="hs-tab" data-series="arcana">阿尔卡纳 · 500/抽</button>
     </nav>
 
     <div class="sub" id="hallTitle">天权座 · 神源龙女</div>
@@ -3292,7 +3292,14 @@ async function castUlt(u) {
         log('🪞 ' + tag(u) + ' 溢出不足以成形（' + Math.round(ovBefore) + ' 点）', 'sys');
       }
       break;
-    }    /* 天枢：200% 必克必中 + 连击（额外出手） */
+    }    /* 愚者：220% 单体 + 抽一张命运塔罗 */
+    case 'tarotStrike': {
+      const tt2 = pickTarget(u);
+      if (tt2) strike(u, tt2, ult.mult);
+      if (B && B.tarot) { B.tarot[u.side] = (B.tarot[u.side] || 0) + 1; log('🃏 ' + tag(u) + ' 抽到一张命运塔罗（' + B.tarot[u.side] + '）', 'sys'); }
+      break;
+    }
+    /* 天枢：200% 必克必中 + 连击（额外出手） */
     case 'comboStrike': {
       const t = pickTarget(u);
       if (t) strike(u, t, ult.mult, { mustCounter: true, noDodge: true });
@@ -4367,7 +4374,9 @@ function buildBattle() {
     units.filter(u => u.side === 'enemy')
   );
 
-  B = {
+
+
+B = {
     units, round: 0, order: [], current: null, result: null,
     firstSide: d.first, pSpdInit: d.pSpd, eSpdInit: d.eSpd,
   };
@@ -4409,6 +4418,8 @@ async function startBattle() {
   cameraPush(false);
 
   buildBattle();
+  B.tarot = { player: 0, enemy: 0 };
+  B.units.forEach(function (u) { var g = (u.spirit && u.spirit.grantsTarot) || 0; if (g) B.tarot[u.side] += g; });
   renderRoyal(B.units.filter(u => u.side === 'player'));
   renderWakeBar();
   /* 王权技：入局演出 + 战场染金 */
@@ -5341,8 +5352,14 @@ function bindGrow() {
 /* ============================================================================
    12d. 群星圣堂 · 限定精灵抽取
    ========================================================================== */
+const HALL_SERIES = [
+  { id:'beidou', name:'北斗', cost:300, units:['tianquan','tianji','tianxuan','yaoguang'] },
+  { id:'arcana', name:'阿尔卡纳', cost:500, units:['fool'] },
+];
+let hallSeries = 'beidou';
+const hallSeriesConf = () => HALL_SERIES.find(s => s.id === hallSeries) || HALL_SERIES[0];
 const HALL = {
-  cost: 300,           // 单抽灵晶（北斗系列）
+  get cost() { return hallSeriesConf().cost; },
   rate: 0.02,          // 出率 2%
   pity: 100,           // 100 抽必得
   get units() { return hallSeriesConf().units; },   // 当前系列卡池
@@ -5944,6 +5961,8 @@ document.addEventListener('click', function (ev) {
   const k = b.dataset.series;
   document.querySelectorAll('#hallSeries .hs-tab').forEach(function (x) { x.classList.toggle('on', x === b); });
   const hm = document.getElementById('hallModal');
+  if (k === 'arcana') { hallSeries = 'arcana'; if (typeof renderHall === 'function') renderHall(); const hm0 = document.getElementById('hallModal'); if (hm0) hm0.classList.remove('hidden'); return; }
+  if (k === 'beidou') { hallSeries = 'beidou'; if (typeof renderHall === 'function') renderHall(); const hm1 = document.getElementById('hallModal'); if (hm1) hm1.classList.remove('hidden'); return; }
   if (k === 'kaiyang') {
     if (hm) hm.classList.add('hidden');
     if (typeof openKy === 'function') openKy();
