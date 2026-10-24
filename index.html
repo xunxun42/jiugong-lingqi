@@ -1957,11 +1957,20 @@ const SPIRITS = [
     ult:{ name:'万魔加身', type:'multiTarget', targets:4, mult:1.4,
           desc:'对 4 个敌人各造成 140% 攻击的暗属性伤害' } },
 
+  /* ===== 阿尔卡纳 · 契约兽（占位，待补） ===== */
+  { id:'arcana_beast1', art:'', name:'？？？', title:'愚者契约兽 · 其一', emoji:'❓',
+    element:'light', hp:520, atk:95, spd:100, role:'契约兽', hidden:true, isAdd:true,
+    basic:{ name:'未知名', mult:1.0 },
+    ult:{ name:'未知名', type:'single', mult:1.5, desc:'——（尚未揭示）' } },
+  { id:'arcana_beast2', art:'', name:'？？？', title:'愚者契约兽 · 其二', emoji:'❓',
+    element:'light', hp:520, atk:95, spd:100, role:'契约兽', hidden:true, isAdd:true,
+    basic:{ name:'未知名', mult:1.0 },
+    ult:{ name:'未知名', type:'single', mult:1.5, desc:'——（尚未揭示）' } },
   /* ===== 阿尔卡纳 · 愚者 ===== */
-  { id:'fool', art:'', name:'愚者', title:'阿尔卡纳 · 0', emoji:'🃏',
+  { id:'fool', art:'assets/spirits/fool.webp', name:'愚者', title:'阿尔卡纳 · 0', emoji:'🃏',
     element:'light', hp:1020, atk:150, spd:132, role:'阿尔卡纳·召唤师', profession:'summoner', gacha:true,
     grantsTarot:1,
-    summoner:{ units:['yuheng','yaoguang'], slots:1 },
+    summoner:{ units:['arcana_beast1','arcana_beast2'], slots:1 },
     basic:{ name:'流浪之掷', mult:1.0 },
     ult:{ name:'愚者·命运之跃', type:'tarotStrike', mult:2.2,
           desc:'对单体造成 220% 攻击伤害，并抽取一张命运塔罗' } },
