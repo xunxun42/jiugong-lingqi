@@ -5574,15 +5574,8 @@ function bindEvents() {
   });
 
   // 音效开关
-  $('#btnSound').onclick = () => {
-    state.sound = !state.sound;
-    $('#btnSound').textContent = state.sound ? '🔊' : '🔇';
-    if (state.sound) { sfx.tick(); if (state.phase === 'battle') musicStart(); }
-    else musicStop(0.3);
-  };
-  // 音乐开关
-  $('#btnMusic').onclick = () => { musicToggle(); if (MUSIC.on) sfx.tick(); };
-  $('#btnMusic').onclick = () => { musicToggle(); if (MUSIC.on) sfx.tick(); };
+  if (document.getElementById('btnSound')) document.getElementById('btnSound').onclick = () => { state.sound = !state.sound; if (state.sound) { if (state.phase === 'battle') musicStart(); } else musicStop(0.3); };
+  if (document.getElementById('btnMusic')) document.getElementById('btnMusic').onclick = () => musicToggle();
   document.getElementById('btnKy').onclick = () => openKy();
   document.getElementById('btnKyClose').onclick = () => document.getElementById('kyModal').classList.add('hidden');
   document.getElementById('kyModal').addEventListener('click', e => { if (e.target.id === 'kyModal') e.currentTarget.classList.add('hidden'); });
