@@ -3950,7 +3950,8 @@ function summonKaiyang() {
   document.getElementById('kyModal').classList.add('hidden');
   renderKyBadge();
   bindPresets();
-  bindSettings(); renderRoster(); renderDeploy();
+  bindSettings();
+  renderPresets(); renderRoster(); renderDeploy();
 }
 /* 掉落：关卡 6-10 与深渊玉衡/天枢 */
 function rollKyShard() {
@@ -3969,6 +3970,7 @@ function rollKyShard() {
   renderKyBadge();
   bindPresets();
   bindSettings();
+  renderPresets();
   return 1;
 }
 /* ===== 契约选择 ===== */
@@ -4227,10 +4229,7 @@ function autoLineup() {
   // 按当前战斗力自动选出最强阵容：5 常规 + 1 召唤师 + 1 唤灵师
   const owned = ownedSpirits();
   if (!owned.length) { toast('还没有精灵'); return; }
-  const cpOf = s => {
-    const r = cpRaw(s, spiritSave(s.id));
-    return r;
-  };
+  const cpOf = s => spiritCP(s.id);
   const ranked = owned.slice().sort((a, b) => cpOf(b) - cpOf(a));
   const pick = kind => ranked.find(s => (s.profession || 'normal') === kind) || null;
   const chosen = [];
@@ -5590,6 +5589,7 @@ function bindEvents() {
   renderKyBadge();
   bindPresets();
   bindSettings();
+  renderPresets();
 
   $('#btnFull').onclick = () => toggleFull();
 
@@ -5620,6 +5620,28 @@ function init() {
 }
 
 init();
-</script>
+
+/* ===== 预设栏兜底初始化（独立于主绑定流程） ===== */
+(function () {
+  function initPreset() {
+    const bar = document.getElementById('presetBar');
+    if (!bar) return;
+    const tab = document.getElementById('presetTab');
+    const list = document.getElementById('presetList');
+    if (tab && !tab._bound) { tab._bound = true; tab.onclick = () => { bar.classList.toggle('open'); }; }
+    if (list && !list._bound) {
+      list._bound = true;
+      list.addEventListener('click', ev => {
+        const g = ev.target.closest('[data-p]');
+        if (g) { loadPreset(+g.dataset.p); return; }
+        const b = ev.target.closest('[data-ps]');
+        if (b) { savePreset(+b.dataset.ps); }
+      });
+    }
+    if (typeof renderPresets === 'function') { try { renderPresets(); } catch (e) {} }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPreset);
+  else setTimeout(initPreset, 0);
+})();</script>
 </body>
 </html>
