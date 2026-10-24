@@ -1650,6 +1650,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="set-row"><span>音效</span><button class="set-toggle" id="setSound">开</button></div>
     <div class="set-row"><span>战斗音乐</span><button class="set-toggle" id="setMusic">开</button></div>
     <div class="set-row"><span>战斗特效</span><button class="set-toggle" id="setFx">开</button></div>
+    <div class="set-row"><span>后台加速<small style="color:#8b8398;font-size:10px"> 最小化时跳过等待</small></span><button class="set-toggle" id="setBg">关</button></div>
     <div class="set-row"><span>存档备份</span><button class="btn ghost set-mini" id="setSave">导出 / 导入</button></div>
     <div class="set-row"><span>全屏</span><button class="btn ghost set-mini" id="setFull">切换</button></div>
     <div class="btnrow" style="margin-top:14px"><button class="btn primary" id="btnSetClose">完成</button></div>
@@ -2127,7 +2128,7 @@ function sleep(ms) {
 }
 async function pace(ms) {
   // 后台照常推进：不跳过，按正常节奏走（浏览器会节流定时器，故每步至少 ~1s）
-  const wait = state.fxOff ? Math.min(ms, 60) : ms;
+  const wait = state.fxOff ? Math.min(ms, 60) : (state.bgFast && document.hidden ? 0 : ms);
   const r = await sleep(wait);
   if (r === 'abort') throw new AbortBattle();
 }
@@ -3836,6 +3837,7 @@ function syncSetUI() {
   if (g('setSound')) { g('setSound').textContent = state.sound ? '开' : '关'; g('setSound').classList.toggle('off', !state.sound); }
   if (g('setMusic')) { g('setMusic').textContent = MUSIC.on ? '开' : '关'; g('setMusic').classList.toggle('off', !MUSIC.on); }
   if (g('setFx')) { g('setFx').textContent = state.fxOff ? '关' : '开'; g('setFx').classList.toggle('off', !!state.fxOff); }
+  if (g('setBg')) { g('setBg').textContent = state.bgFast ? '开' : '关'; g('setBg').classList.toggle('off', !state.bgFast); }
 }
 function toggleFx() {
   state.fxOff = !state.fxOff;
@@ -3853,6 +3855,7 @@ function bindSettings() {
   g('setSound').onclick = () => { state.sound = !state.sound; saveProgress(); if (state.sound) sfx.tick(); else musicStop(0.3); syncSetUI(); };
   g('setMusic').onclick = () => { musicToggle(); syncSetUI(); };
   g('setFx').onclick = () => toggleFx();
+  g('setBg').onclick = () => { state.bgFast = !state.bgFast; saveProgress(); syncSetUI(); toast(state.bgFast ? '后台加速已开启：最小化时战斗快速推进' : '后台加速已关闭：最小化时按正常速度继续'); };
   g('setSave').onclick = () => { g('setModal').classList.add('hidden'); const sm = document.getElementById('saveModal'); if (sm) sm.classList.remove('hidden'); };
   g('setFull').onclick = () => toggleFull();
 }
@@ -4553,7 +4556,7 @@ function saveProgress() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       v: 2, unlocked: state.unlocked, crystal: d.crystal,
       spirits: d.spirits, pack: d.pack, uid: d.uid,
-      owned: d.owned, pity: d.pity, divine: d.divine, kyShards: d.kyShards, fxOff: !!d.fxOff, contract: d.contract, presets: d.presets,
+      owned: d.owned, pity: d.pity, divine: d.divine, kyShards: d.kyShards, fxOff: !!d.fxOff, bgFast: !!d.bgFast, contract: d.contract, presets: d.presets,
     }));
     localStorage.setItem('jiugong_unlocked', String(state.unlocked));
   } catch (e) {}
@@ -4569,7 +4572,7 @@ function loadProgress() {
         crystal: o.crystal || 0, spirits: o.spirits || {},
         pack: o.pack || [], uid: o.uid || 1,
         owned: o.owned || {}, pity: o.pity || 0, divine: o.divine || null,
-        kyShards: o.kyShards || 0, fxOff: !!o.fxOff, contract: o.contract || null, presets: o.presets || [null,null,null,null,null],
+        kyShards: o.kyShards || 0, fxOff: !!o.fxOff, bgFast: !!o.bgFast, contract: o.contract || null, presets: o.presets || [null,null,null,null,null],
       };
       return;
     }
