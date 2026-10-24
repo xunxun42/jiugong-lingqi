@@ -750,6 +750,9 @@ body.royal-on .royal-strip{
 .sgroup.r-fan{border-color:rgba(111,168,255,.55)!important}
 .sgroup.r-zhen{border-color:rgba(185,139,255,.62)!important;box-shadow:0 0 14px rgba(185,139,255,.20)}
 .sgroup.r-jue{border-color:rgba(255,215,107,.78)!important;box-shadow:0 0 18px rgba(255,200,74,.30)}
+.sgroup.r-sheng{border-color:rgba(255,91,138,.85)!important;box-shadow:0 0 22px rgba(255,91,138,.40)!important}
+.s10-item.r4{border-color:rgba(255,91,138,.7);background:rgba(255,91,138,.12)}
+.fusebtn.saint{border-color:rgba(255,91,138,.6)}
 .soul-detail{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;margin:2px 0 6px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}
 .soul-detail.hidden{display:none}
 .sdx{display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:8px;cursor:pointer;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);font-size:10.5px;color:#ddd}
@@ -4653,6 +4656,7 @@ const SOUL_RARITY = [
   { name:'凡', mult:1.0, weight:70, color:'#6fa8ff' },
   { name:'珍', mult:1.6, weight:25, color:'#b98bff' },
   { name:'绝', mult:2.4, weight:5,  color:'#ffd76b' },
+  { name:'圣', mult:3.4, weight:0,  color:'#ff5b8a', noDraw:true },   // 只能合成
 ];
 
 function blankSpirit() { return { lv: 1, exp: 0, souls: [null, null, null] }; }
@@ -4707,9 +4711,10 @@ function levelUpWithCrystal(id, maxCrystal) {
 
 function rollSoul() {
   const d = saveData();
-  const total = SOUL_RARITY.reduce((a, b) => a + b.weight, 0);
+  const POOL = SOUL_RARITY.filter(r => !r.noDraw);
+  const total = POOL.reduce((a, b) => a + b.weight, 0);
   let r = Math.random() * total, rarity = SOUL_RARITY[0];
-  for (const t of SOUL_RARITY) { r -= t.weight; if (r <= 0) { rarity = t; break; } }
+  for (const t of POOL) { r -= t.weight; if (r <= 0) { rarity = t; break; } }
   const type = SOUL_KEYS[Math.floor(Math.random() * SOUL_KEYS.length)];
   const T = SOUL_TYPES[type];
   // 品质区间严格不重叠：凡 0~40% / 珍 44~74% / 绝 78~100%
@@ -4806,7 +4811,7 @@ const SOUL_MAX = (() => {
   const o = {};
   for (const k in SOUL_TYPES) {
     const T = SOUL_TYPES[k];
-    const v = T.hi * 2.4;                       // 绝品倍率 2.4 × 上限
+    const v = T.unit === '%' ? Math.max(T.hi * 2.4, 15) : Math.max(T.hi * 2.4, 90);
     o[k] = T.unit === '%' ? Math.round(v * 10) / 10 : Math.round(v);
   }
   return o;
@@ -4872,6 +4877,28 @@ function groupSouls(list) {
 
 /* 合成：5 颗同品质 → 1 颗更高品质，花费 200 + 200 × 品质系数 */
 const fuseCost = i => Math.round(200 + 200 * (SOUL_RARITY[i].mult || 1));
+/* 圣品合成：20 颗绝品 + 10000 灵晶 → 随机品类、数值 10~15 */
+function fuseSaint() {
+  const d = saveData();
+  const cost = 10000;
+  if (d.crystal < cost) return { err: '灵晶不足（需 ' + cost + '）' };
+  const eq = equippedUids();
+  const pool = d.pack.filter(x => x.rarity === '绝' && !eq.has(x.uid));
+  if (pool.length < 20) return { err: '需要 20 颗「绝」，现有 ' + pool.length };
+  pool.sort((a, b) => a.value - b.value || a.uid - b.uid);
+  const eat = new Set(pool.slice(0, 20).map(x => x.uid));
+  d.pack = d.pack.filter(x => !eat.has(x.uid));
+  d.crystal -= cost;
+  const type = SOUL_KEYS[Math.floor(Math.random() * SOUL_KEYS.length)];
+  const T = SOUL_TYPES[type];
+  const roll = 10 + Math.random() * 5;                       // 10 ~ 15
+  const v = T.unit === '%' ? Math.round(roll * 10) / 10 : Math.round(roll * 6);
+  const rarity = SOUL_RARITY.find(r => r.name === '圣');
+  const soul = { uid: d.uid++, type, value: v, rarity: '圣', color: rarity.color };
+  d.pack.push(soul);
+  saveProgress();
+  return { soul, cost };
+}
 function fuseSouls(i) {
   const d = saveData();
   const from = SOUL_RARITY[i], to = SOUL_RARITY[i + 1];
@@ -4915,8 +4942,8 @@ function renderGrow() {
 
   /* 合成行：5 颗同品质 → 1 颗更高品质 */
   if ($('#fuseRow')) {
-    $('#fuseRow').innerHTML = SOUL_RARITY.slice(0, -1).map((r, i) => {
-      const next = SOUL_RARITY[i + 1];
+    var _fuseBox = document.getElementById('fuseRow'); _fuseBox.innerHTML = SOUL_RARITY.filter(r => !r.noDraw).slice(0, -1).map((r, i) => {
+      const next = SOUL_RARITY.filter(r => !r.noDraw)[i + 1];
       const have = free.filter(x => x.rarity === r.name).length;
       const cost = fuseCost(i);
       const can = have >= 5 && d.crystal >= cost;
@@ -4924,7 +4951,15 @@ function renderGrow() {
         <b>${r.name} ×5 → ${next.name}</b>
         <em>${cost} 灵晶 · 现有 ${have}/5</em>
       </button>`;
-    }).join('');
+    }).join('') + (() => {
+      const have = free.filter(x => x.rarity === '绝').length;
+      const cost = 10000;
+      const can = have >= 20 && d.crystal >= cost;
+      return `<button class="fusebtn saint" data-saint="1" ${can ? '' : 'disabled'}>
+        <b style="color:#ff5b8a">绝 ×20 → 圣</b>
+        <em>${cost} 灵晶 · 现有 ${have}/20</em>
+      </button>`;
+    })();
   }
 
   const groupHTML = g => {
@@ -4933,7 +4968,7 @@ function renderGrow() {
     const target = g.items.find(x => !eq.has(x.uid));
     const own = g.items.filter(x => eq.has(x.uid)).length;
     const key = g.type + '|' + g.rarity;
-    return `<div class="soul sgroup ${g.rarity === "绝" ? "r-jue" : g.rarity === "珍" ? "r-zhen" : "r-fan"} ${target ? "" : "on-body"}" data-g="${key}"
+    return `<div class="soul sgroup ${g.rarity === "圣" ? "r-sheng" : g.rarity === "绝" ? "r-jue" : g.rarity === "珍" ? "r-zhen" : "r-fan"} ${target ? "" : "on-body"}" data-g="${key}"
       style="border-color:${b.color}66"
       title="${T.name} · ${g.rarity} · 共 ${g.items.length} 颗 · 最高 +${b.value}${T.unit}${own ? ` · 已装备 ${own}` : ''}">
       <b style="color:${T.color}">${T.name}</b>
@@ -5113,6 +5148,16 @@ function bindGrow() {
 
   /* 合成 */
   $('#fuseRow').addEventListener('click', e => {
+    const sBtn = e.target.closest('[data-saint]');
+    if (sBtn) {
+      const r2 = fuseSaint();
+      if (r2.err) { toast(r2.err); return; }
+      const T2 = SOUL_TYPES[r2.soul.type];
+      toast('圣品降临：' + T2.name + ' +' + r2.soul.value + T2.unit + ' -' + r2.cost + ' 灵晶');
+      sfx.win();
+      renderGrow();
+      return;
+    }
     const b = e.target.closest('[data-fuse]');
     if (!b) return;
     const r = fuseSouls(+b.dataset.fuse);
