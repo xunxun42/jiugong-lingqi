@@ -3846,10 +3846,10 @@ function bindSettings() {
   g('btnSettings').onclick = () => { syncSetUI(); g('setModal').classList.remove('hidden'); sfx.tick(); };
   g('btnSetClose').onclick = () => g('setModal').classList.add('hidden');
   g('setModal').addEventListener('click', e => { if (e.target.id === 'setModal') g('setModal').classList.add('hidden'); });
-  g('setSound').onclick = () => { state.sound = !state.sound; document.getElementById('btnSound') && (0); saveProgress(); if (state.sound) sfx.tick(); else musicStop(0.3); syncSetUI(); };
+  g('setSound').onclick = () => { state.sound = !state.sound; saveProgress(); if (state.sound) sfx.tick(); else musicStop(0.3); syncSetUI(); };
   g('setMusic').onclick = () => { musicToggle(); syncSetUI(); };
   g('setFx').onclick = () => toggleFx();
-  g('setSave').onclick = () => { g('setModal').classList.add('hidden'); document.getElementById('btnSave').click(); };
+  g('setSave').onclick = () => { g('setModal').classList.add('hidden'); const sm = document.getElementById('saveModal'); if (sm) sm.classList.remove('hidden'); };
   g('setFull').onclick = () => toggleFull();
   g('btnSave').style.display = 'none';
 }
