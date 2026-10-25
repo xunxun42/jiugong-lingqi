@@ -830,6 +830,13 @@ body.royal-on .royal-strip{
 
 /* 阵容预设 */
 .preset-bar{position:fixed;left:8px;top:120px;z-index:75;display:flex;align-items:stretch;pointer-events:none;max-height:calc(100dvh - 140px)}
+@media (max-width:860px){
+  /* 手机：预设栏默认收起成左侧抽屉，不再占用正文宽度 */
+  .preset-bar{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);left:0;max-height:calc(100dvh - 200px)}
+  .preset-tab{display:block}
+  .preset-bar:not(.open) .preset-body{display:none}
+  .preset-bar.open .preset-body{width:min(196px,72vw)}
+}
 .preset-tab{display:none;
   pointer-events:auto;width:26px;padding:12px 4px;border-radius:0 10px 10px 0;cursor:pointer;
   background:rgba(20,16,30,.92);border:1px solid rgba(232,192,106,.35);border-left:none;
@@ -1116,12 +1123,29 @@ table.stats .tname em{font-style:normal;font-size:13px}
   .arena{flex:0 0 auto}
 }
 @media (max-width:860px){
-  /* 卡组：固定列宽，只排列数变化 */
-  .roster{grid-template-columns:repeat(auto-fill,92px);gap:6px}
+  /* 卡组：手机改单行横滑，dock 高度砍掉一半 */
+  .roster{
+    display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;
+    padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    scroll-snap-type:x proximity;
+  }
+  .roster::-webkit-scrollbar{display:none}
+  .roster .rcard{flex:0 0 88px;min-height:96px;padding:6px 7px 6px;scroll-snap-align:start}
   .rcard{min-height:96px;padding:6px 7px 6px}
-  .dock-tools{gap:6px}
-  .rsearch{max-width:none;flex:1 1 100%;order:-1}
-  .rpager{margin-left:0;width:100%;justify-content:flex-end}
+  .dock-tools{gap:6px;flex-wrap:nowrap;margin-bottom:6px}
+  .rsearch{display:none}
+  .rpager{display:none}
+  .rfilters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%}
+  .rfilters::-webkit-scrollbar{display:none}
+  .rf{flex:none}
+  /* 战斗记录限高，把高度让给战场与卡组 */
+  .logpanel{max-height:126px;min-height:96px}
+  /* 预设抽屉：手机端露出标签，默认收起 */
+  .preset-bar .preset-tab{display:block}
+  .preset-bar:not(.open) .preset-body{display:none}
+  .preset-bar{top:auto;left:0;bottom:calc(env(safe-area-inset-bottom,0px) + 240px);max-height:calc(100dvh - 320px);align-items:flex-start}
+  .preset-bar .preset-tab{padding:9px 4px;font-size:10.5px}
+  .preset-bar.open .preset-body{width:min(196px,74vw)}
   .stagebtn{font-size:11px;padding:7px 12px}
   /* 基础触屏优化 */
   html{-webkit-text-size-adjust:100%}
@@ -1141,11 +1165,12 @@ table.stats .tname em{font-style:normal;font-size:13px}
     mask-image:linear-gradient(90deg,#000 0,#000 86%,transparent 100%)}
   .stages::-webkit-scrollbar{display:none}
   .stage-chip{flex:none;font-size:10.5px;padding:5px 9px}
-  .topbtns{margin-left:auto;gap:5px}
+  .topbtns{margin-left:auto;gap:5px;flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
+  .topbtns::-webkit-scrollbar{display:none}
   .topbtns .btn{padding:6px 9px;font-size:11px}
 
   /* 战场 */
-  .main{padding-left:214px;gap:8px}
+  .main{padding-left:0;gap:8px}
   .arena-wrap{padding:8px;gap:7px}
   .speedbar{padding:5px 8px;gap:6px;border-radius:10px}
   .sp-side{font-size:9.5px;gap:3px}
@@ -1239,6 +1264,10 @@ table.stats .tname em{font-style:normal;font-size:13px}
   .toast{font-size:11px;bottom:calc(16px + env(safe-area-inset-bottom));padding:8px 14px;max-width:88vw;text-align:center}
 }
 @media (max-width:420px){
+  .topbtns .btn{padding:5px 7px;font-size:10.5px;letter-spacing:0}
+  .topbtns{gap:4px}
+  .brand h1{font-size:14px;letter-spacing:2px}
+  .deploy-right .hintline{font-size:10px}
   .unit .uanim{font-size:clamp(13px,4.4vw,19px)}
   .unit .uname{font-size:7px}
   .unit .pstats{font-size:6px;gap:2px}
@@ -1685,7 +1714,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
         <div class="roster" id="roster"></div>
       </div>
       <div class="deploy-right">
-        <div class="hintline">已上阵 <b id="deployCount">0</b> / 6 · 至少 4 只 · 战力 <b id="deployCp">0</b></div>
+        <div class="hintline">已上阵 <b id="deployCount">0</b> / 7 · 至少 4 只 · 战力 <b id="deployCp">0</b></div>
         <div class="hintline" id="bonusLine">灵契加成 +0%</div>
         <div class="btnrow">
           <button class="btn" id="btnAutoFarm" title="三星通关后等待 3 秒自动再战">刷关 OFF</button>
@@ -4535,7 +4564,7 @@ function addWake(n, why) {
   B.wake = Math.min(WAKE_MAX, prev + n);
   renderWakeBar();
   try { renderRail(); } catch (e) {}
-  const _pb = document.getElementById('presetBar'); if (_pb) _pb.classList.add('open');
+  const _pb = document.getElementById('presetBar'); if (_pb && innerWidth > 860) _pb.classList.add('open');
   try { alignRail(); } catch (e) {}
   if (B.wake > prev && k.el) {
     k.el.classList.remove('wakeflash'); void k.el.offsetWidth; k.el.classList.add('wakeflash');
@@ -5098,6 +5127,11 @@ function alignRail() {
   const bar = document.getElementById('presetBar');
   const main = document.querySelector('.main');
   if (!bar || !main) return;
+  // 手机端预设栏是抽屉，位置交给 CSS，不要用桌面那套内联定位
+  if (window.innerWidth <= 860) {
+    bar.style.top = ''; bar.style.height = ''; bar.style.maxHeight = '';
+    return;
+  }
   const r = main.getBoundingClientRect();
   const pad = 8;
   bar.style.top = Math.max(0, r.top + pad) + 'px';
@@ -5641,7 +5675,7 @@ function renderDeploy() {
   bindGridDrag();
   renderWakeBar();
   try { renderRail(); } catch (e) {}
-  const _pb = document.getElementById('presetBar'); if (_pb) _pb.classList.add('open');
+  const _pb = document.getElementById('presetBar'); if (_pb && innerWidth > 860) _pb.classList.add('open');
   try { alignRail(); } catch (e) {}
   try { renderPresets(); } catch (e) {}
 }
@@ -5757,7 +5791,7 @@ async function startBattle() {
   renderRoyal(B.units.filter(u => u.side === 'player'));
   renderWakeBar();
   try { renderRail(); } catch (e) {}
-  const _pb = document.getElementById('presetBar'); if (_pb) _pb.classList.add('open');
+  const _pb = document.getElementById('presetBar'); if (_pb && innerWidth > 860) _pb.classList.add('open');
   try { alignRail(); } catch (e) {}
   /* 王权技：入局演出 + 战场染金 */
   const royalHolders = B.units.filter(u => u.side === 'player' && u.spirit.royal);
