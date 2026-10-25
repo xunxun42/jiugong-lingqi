@@ -3964,8 +3964,8 @@ function computeRoundOrder() {
     const bossSide = B.firstSide === 'player' ? p : e;
     const playerSide = B.firstSide === 'player' ? e : p;
     const ordered2 = [];
-    const bosses = B.firstSide === 'player' ? e : p;
-    const actors = B.firstSide === 'player' ? p : e;
+    const bosses = bySide(B.firstSide === 'player' ? e : p);
+    const actors = bySide(B.firstSide === 'player' ? p : e);
     var bossActs = 0;
     actors.forEach(function (u, i) {
       ordered2.push(u);
