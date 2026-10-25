@@ -412,6 +412,22 @@ body.is-fs #btnFull .ic-compress{display:block}
 }
 #ultFx.play .ult-sweep{animation:ultSweep .52s ease-out .02s}
 .ult-title{position:relative;text-align:center;padding:0 16px}
+/* 大招专属立绘（正义） */
+.ult-art{
+  position:absolute;inset:0;margin:auto;max-height:94vh;max-width:94vw;object-fit:contain;
+  opacity:0;
+  -webkit-mask-image:radial-gradient(ellipse 60% 66% at 50% 46%,#000 40%,transparent 86%);
+  mask-image:radial-gradient(ellipse 60% 66% at 50% 46%,#000 40%,transparent 86%);
+}
+#ultFx.play .ult-art{animation:ultArtIn 1s ease both}
+@keyframes ultArtIn{
+  0%{opacity:0;transform:scale(1.18)}
+  12%{opacity:.96;transform:scale(1)}
+  72%{opacity:.88;transform:scale(1.02)}
+  100%{opacity:0;transform:scale(1.06)}
+}
+.ult-title{position:relative;z-index:2}
+
 .ult-caster{
   display:block;font-size:12px;letter-spacing:5px;color:rgba(255,255,255,.88);
   text-shadow:0 2px 12px rgba(0,0,0,.95);margin-bottom:8px;
@@ -2222,6 +2238,7 @@ const SPIRITS = [
     basic:{ name:'天平之刃', mult:1.5 },
     bossBasic:{ name:'天平双斩', mult:2.2, targets:2 },
     bossUlt:{ name:'正义·天秤裁决', type:'aoe', mult:1.6, summonOnUlt:'sulfurSpirit' },
+    ultArt:'assets/spirits/justice_ult.webp',
     alwaysTaunt:true, soulEnergy:50, soulHeal:{ threshold:0.3, pct:0.05 },
     ult:{ name:'正义·最终裁断', type:'aoeFinisher', mult:1.6, extra:1.5,
           desc:'对全体敌人造成 160% 伤害，再对生命值最低的敌人追加 150% 伤害' } },
@@ -2962,7 +2979,7 @@ function ultCinematic(u) {
   const fx = $('#ultFx');
   if (fx) {
     fx.style.setProperty('--c', el.color);
-    fx.innerHTML = '<div class="ult-vignette"></div><div class="ult-sweep"></div>'
+    fx.innerHTML = (u.spirit.ultArt ? '<img class="ult-art" src="' + u.spirit.ultArt + '" alt="">' : '') + '<div class="ult-vignette"></div><div class="ult-sweep"></div>'
       + '<div class="ult-title">'
       + `<span class="ult-caster">${u.name} · ${el.name}系</span>`
       + `<span class="ult-name">${u.spirit.ult.name}</span>`
