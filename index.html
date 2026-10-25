@@ -3937,6 +3937,8 @@ function decideFirst(pArr, eArr) {
 }
 
 function computeRoundOrder() {
+  // 深渊 Boss 关：固定我方先手；普通关卡按总灵速决定
+  if (state.mode === 'raid') B.firstSide = 'player';
   // 先手方在开战时就锁定（按双方初始总灵速），整场不变
   const bossAdd = u => u.spirit && u.spirit.chainOnly;
   const p = aliveUnits('player').filter(u => !bossAdd(u));
@@ -3947,6 +3949,19 @@ function computeRoundOrder() {
   const lead  = bySide(B.firstSide === 'player' ? p : e);
   const trail = bySide(B.firstSide === 'player' ? e : p);
 
+  // 深渊 Boss 关：我方先手，Boss 与我方逐个交替出手（我方每出一人，Boss 跟一次）
+  if (state.mode === 'raid' && e.length >= 1) {
+    const bossSide = B.firstSide === 'player' ? p : e;
+    const playerSide = B.firstSide === 'player' ? e : p;
+    const ordered2 = [];
+    const bosses = B.firstSide === 'player' ? e : p;
+    const actors = B.firstSide === 'player' ? p : e;
+    actors.forEach(function (u) {
+      ordered2.push(u);
+      bosses.forEach(function (b) { ordered2.push(b); });
+    });
+    return { first: B.firstSide, pSpd: B.pSpdInit, eSpd: B.eSpdInit, ordered: ordered2 };
+  }
   // 交替出手：先手1 → 后手1 → 先手2 → 后手2 …… 一方出完则另一方补完
   const ordered = [];
   const n = Math.max(lead.length, trail.length);
