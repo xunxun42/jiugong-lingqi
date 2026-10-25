@@ -3956,10 +3956,13 @@ function computeRoundOrder() {
     const ordered2 = [];
     const bosses = B.firstSide === 'player' ? e : p;
     const actors = B.firstSide === 'player' ? p : e;
+    var bossActs = 0;
     actors.forEach(function (u, i) {
       ordered2.push(u);
-      if ((i + 1) % 2 === 0) { bosses.forEach(function (b) { ordered2.push(b); }); }
+      if ((i + 1) % 2 === 0) { bosses.forEach(function (b) { ordered2.push(b); bossActs++; }); }
     });
+    /* 保底：我方不足 2 人时 Boss 至少出手一次 */
+    if (bossActs === 0 && actors.length) { bosses.forEach(function (b) { ordered2.push(b); }); }
     return { first: B.firstSide, pSpd: B.pSpdInit, eSpd: B.eSpdInit, ordered: ordered2 };
   }
   // 交替出手：先手1 → 后手1 → 先手2 → 后手2 …… 一方出完则另一方补完
