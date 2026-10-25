@@ -751,6 +751,22 @@ body.royal-on .royal-strip{
 }
 .gp-btn:disabled{opacity:.35;cursor:default}
 .gp-info{font-size:11px;color:var(--muted);font-weight:800}
+/* 通灵技选择 */
+.caller-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:12px}
+.caller-card{
+  position:relative;border-radius:12px;overflow:hidden;cursor:pointer;
+  border:2px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);
+  transition:transform .12s ease,border-color .12s;
+}
+.caller-card:hover{transform:translateY(-2px);border-color:rgba(232,192,106,.6)}
+.caller-card.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(232,192,106,.35),0 0 22px rgba(232,192,106,.35)}
+.caller-card .cc-pic{aspect-ratio:1;display:grid;place-items:center;background:rgba(0,0,0,.35)}
+.caller-card .cc-pic img{width:100%;height:100%;object-fit:cover}
+.caller-card .cc-nm{padding:8px 6px;text-align:center;font-size:12px;font-weight:800;color:#fff;background:rgba(0,0,0,.45)}
+.caller-card .cc-badge{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  background:#e05a5a;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;letter-spacing:1px;
+}
 /* 背包页签 */
 .bag-tabs{display:flex;gap:6px;margin:2px 0 12px}
 .bag-tab{
@@ -1761,7 +1777,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
   <div class="preset-body">
     <div class="rail-sec">
       <div class="preset-title">阵容预览</div>
-      <button class="rail-btn" id="btnComp">查看当前阵容</button>
+      <button class="rail-btn" id="btnComp">查看当前阵容</button>`r`n        <button class="rail-btn" id="btnCaller" style="margin-top:6px">选择通灵技</button>
     </div>
     <div class="rail-sec">
       <div class="preset-title">阵容预设</div>
@@ -1792,6 +1808,15 @@ table.stats .tname em{font-style:normal;font-size:13px}
   </div>
   <div class="aw-skill" id="awakenSkill"></div>
   <div class="aw-line" id="awakenLine"></div>
+</div>
+<!-- ================= 通灵技选择 ================= -->
+<div class="mask hidden" id="callerModal">
+  <div class="modal" style="width:min(560px,94vw)">
+    <h2 class="h2sm">选择阵上使用的通灵技</h2>
+    <div class="sub">同阵营只生效一位，其余唤灵师退化为普通单位</div>
+    <div class="caller-grid" id="callerList"></div>
+    <div class="btnrow" style="margin-top:14px"><button class="btn primary" id="btnCallerClose">关闭</button></div>
+  </div>
 </div>
 <!-- ================= 阵容预览 ================= -->
 <div class="mask hidden" id="compModal">
@@ -3297,8 +3322,8 @@ function strike(src, tgt, mult, opts) {
       (function (c) { setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 900); })(_card);
       floatText(tgt.el, '命运塔罗 · 挡下', 'tarotText', 0);
     }
-    const _ps = activeCaller(tgt.side);
-    if (_ps && _ps.spirit.wakeOnTarot && typeof addWake === 'function') { addWake((mult * 100 >= 350) ? 3 : 1); }
+    const _ps = B.units.find(function (x) { return x.side === tgt.side && x.alive && x.spirit && x.spirit.wakeOnTarot; });
+    if (_ps && typeof addWake === 'function') { addWake((mult * 100 >= 350) ? 3 : 1); }
     if (typeof flashScreen === 'function') flashScreen('rgba(190,130,255,.34)');
     if (typeof tarotShow === 'function') tarotShow();
     if (typeof sfx === 'object' && sfx.win) { try { sfx.win(); } catch (e) {} }
@@ -4259,8 +4284,49 @@ function activeCaller(side) {
   if (!B) return null;
   var list = B.units.filter(function (u) { return u.side === side && u.alive && u.spirit && u.spirit.profession === 'spiritcaller'; });
   if (!list.length) return null;
+  var pick = (side === 'player') ? (state.activeCallerId || null) : null;
+  if (pick) {
+    var hit = list.filter(function (u) { return u.spirit.id === pick; })[0];
+    if (hit) return hit;
+  }
   list.sort(function (a, b) { return (b.col - a.col) || (a.row - b.row) || (a.uid - b.uid); });
   return list[0];
+}
+function callerOptions() {
+  var ids = Object.keys(state.lineup || {}).map(function (k) { return state.lineup[k]; });
+  var out = [];
+  ids.forEach(function (id) {
+    var sp = SPIRITS.find(function (s) { return s.id === id; });
+    if (sp && sp.profession === 'spiritcaller' && out.indexOf(sp) < 0) out.push(sp);
+  });
+  return out;
+}
+function pickCaller(id) {
+  state.activeCallerId = id || null;
+  saveProgress();
+  try { renderRail(); } catch (e) {}
+  try { renderWakeBar(); } catch (e) {}
+  var m = document.getElementById('callerModal'); if (m) m.classList.add('hidden');
+  var nm = (SPIRITS.find(function (s) { return s.id === id; }) || {}).name || '—';
+  toast('通灵技已切换为 ' + nm);
+  sfx.tick();
+}
+function openCallerPick() {
+  var box = document.getElementById('callerList');
+  if (!box) return;
+  var opts = callerOptions();
+  var ac = (typeof B !== 'undefined' && B) ? activeCaller('player') : null;
+  var cur = state.activeCallerId || (ac && ac.spirit ? ac.spirit.id : (opts[0] ? opts[0].id : null));
+  if (!opts.length) box.innerHTML = '<div style="color:var(--muted);font-size:12px">场上没有唤灵师</div>';
+  else box.innerHTML = opts.map(function (sp) {
+    var on = sp.id === cur;
+    return '<div class="caller-card' + (on ? ' on' : '') + '" data-caller="' + sp.id + '">'
+      + '<div class="cc-pic">' + (sp.art ? '<img src="' + sp.art + '" alt="">' : '<span style="font-size:34px">' + sp.emoji + '</span>') + '</div>'
+      + (on ? '<div class="cc-badge">当前上阵</div>' : '')
+      + '<div class="cc-nm">' + sp.name + '</div>'
+      + '</div>';
+  }).join('');
+  document.getElementById('callerModal').classList.remove('hidden');
 }
 function kaiyangOf(side) {
   return activeCaller(side);
@@ -4349,8 +4415,8 @@ async function battleLoop() {
       if (u.spirit.isAdd && u.summonedBy) linkFollow(u);
       // 唤灵师：王属性队友行动 +2
       if (u.side === 'player') {
-        const _sc = activeCaller('player');
-        if (u.spirit.element === 'king' && _sc && _sc.spirit.wakeOnKing) addWake(2);
+        const _sc = B.units.find(function (x) { return x.side === 'player' && x.alive && x.spirit && x.spirit.wakeOnKing; });
+        if (u.spirit.element === 'king' && _sc) addWake(2);
         B.units.filter(x => x.side === 'player' && x.spirit.element === 'king' && !x.alive && !x.__wakeCounted)
           .forEach(x => { x.__wakeCounted = true; addWake(2); });
         if (u.awakened && u.spirit.profession === 'spiritcaller' && !u.__acted2) { u.__acted2 = true; queueExtraTurn(u); }
@@ -5738,6 +5804,7 @@ function drawSoul10() {
 /* ---------------- 面板 ---------------- */
 let growSel = null;
 let growPage = 0;
+let callerPick = null;   // 玩家选择的通灵技（精灵 id）
 let soulDrawerSlot = null;   // 侧边栏当前要装进第几格（null = 收起）
 function openGrow() {
   if (!growSel) growSel = SPIRITS[0].id;
@@ -6795,6 +6862,8 @@ init();
 document.addEventListener('click', function (ev) {
   const _gp = ev.target.closest && ev.target.closest('#growList [data-gp]');
   if (_gp) { growPage += (_gp.dataset.gp === 'next' ? 1 : -1); if (growPage < 0) growPage = 0; renderGrow(); sfx.tick(); return; }
+  const _cc = ev.target.closest && ev.target.closest('#callerList [data-caller]');
+  if (_cc) { if (typeof pickCaller === 'function') pickCaller(_cc.dataset.caller); return; }
   const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
   if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const b = ev.target.closest && ev.target.closest('button[id]');
@@ -6813,6 +6882,8 @@ document.addEventListener('click', function (ev) {
     else if (id === 'btnFull') { if (typeof toggleFull === 'function') toggleFull(); }
     else if (id === 'btnKy') { if (typeof openKy === 'function') openKy(); }
     else if (id === 'btnComp') { if (typeof openComp === 'function') openComp(); }
+    else if (id === 'btnCaller') { if (typeof openCallerPick === 'function') openCallerPick(); }
+    else if (id === 'btnCallerClose') { const _cm = document.getElementById('callerModal'); if (_cm) _cm.classList.add('hidden'); }
     else if (id === 'btnBag' || id === 'btnGrow') { if (typeof openBag === 'function') openBag(); }
     else if (id === 'btnDrawSoul') { var _g = drawSoul(); if (_g) { var T = SOUL_TYPES[_g.type]; toast('抽到 ' + T.name + ' +' + _g.value + (T.unit || '') + ' · ' + _g.rarity); } renderGrow(); }
     else if (id === 'btnDrawSoul10') { drawSoul10(); renderGrow(); }
@@ -6878,6 +6949,8 @@ document.addEventListener('click', function (ev) {
 document.addEventListener('click', function (ev) {
   const _gp = ev.target.closest && ev.target.closest('#growList [data-gp]');
   if (_gp) { growPage += (_gp.dataset.gp === 'next' ? 1 : -1); if (growPage < 0) growPage = 0; renderGrow(); sfx.tick(); return; }
+  const _cc = ev.target.closest && ev.target.closest('#callerList [data-caller]');
+  if (_cc) { if (typeof pickCaller === 'function') pickCaller(_cc.dataset.caller); return; }
   const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
   if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const b = ev.target.closest && ev.target.closest('#hallSeries [data-series]');
@@ -6898,6 +6971,8 @@ document.addEventListener('click', function (ev) {
 document.addEventListener('click', function (ev) {
   const _gp = ev.target.closest && ev.target.closest('#growList [data-gp]');
   if (_gp) { growPage += (_gp.dataset.gp === 'next' ? 1 : -1); if (growPage < 0) growPage = 0; renderGrow(); sfx.tick(); return; }
+  const _cc = ev.target.closest && ev.target.closest('#callerList [data-caller]');
+  if (_cc) { if (typeof pickCaller === 'function') pickCaller(_cc.dataset.caller); return; }
   const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
   if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const g = ev.target.closest && ev.target.closest('#presetList [data-p]');
