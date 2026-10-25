@@ -1609,6 +1609,28 @@ table.stats .tname em{font-style:normal;font-size:13px}
 .float.reflect{color:#ffcf6b;font-size:12px;font-weight:900;
   text-shadow:0 0 10px rgba(255,207,107,.9),0 2px 8px rgba(0,0,0,.95)}
 .float.block{color:#7fd6ff;font-size:11px}
+
+/* ---------- 手机性能：砍掉高开销的持续重绘 ---------- */
+@media (max-width:860px){
+  /* 1. 面板毛玻璃 -> 实色（backdrop-filter 在移动 GPU 上非常贵） */
+  .panel,.dock .panel,.mask{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  .dock .panel{background:rgba(11,9,24,.97)}
+
+  /* 2. 背景漂移 + 品牌脉冲这类常驻动画关掉 */
+  body::before{animation:none!important}
+  .sigil{animation:none!important}
+  .brand h1{animation:none!important}
+
+  /* 3. "可放大招"的发光原来是 filter:brightness() 逐帧重绘整张卡 */
+  .unit.ready{animation:none!important;box-shadow:0 0 0 1px rgba(255,216,107,.85),0 0 14px rgba(255,216,107,.35)!important}
+
+  /* 4. 立绘投影改成容器阴影（filter 会强制重绘） */
+  .unit .uanim,.unit .pix,.rc-emoji{filter:none!important}
+  .roster .rc-portrait{filter:none!important}
+
+  /* 5. 屏幕外内容不做布局/绘制 */
+  .log .log-line:nth-last-child(n+40){content-visibility:auto;contain-intrinsic-size:auto 18px}
+}
 </style>
 </head>
 <body>
@@ -2003,7 +2025,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
 <!-- ================= 天璇占卜 ================= -->
 <div class="mask hidden" id="divModal">
   <div class="modal div-modal">
-    <img class="div-bg" src="assets/spirits/tianxuan-oracle.webp" alt="天璇座" loading="lazy" decoding="async">
+    <img class="div-bg" src="assets/spirits/tianxuan-oracle.webp" alt="天璇座" decoding="async">
     <span class="div-scrim"></span>
     <span class="div-ring"></span>
     <div class="div-body">
@@ -2965,7 +2987,7 @@ function pickTarget(u, pool) {
 function faceHTML(sp) {
   if (!sp || !sp.art) return (sp && sp.emoji) || '';
   const fb = String(sp.emoji || '').replace(/['"\\<>&]/g, '');
-  return `<img class="pix" src="${sp.art}" alt="${sp.name}" draggable="false"`
+  return `<img class="pix" src="${sp.art}" alt="${sp.name}" draggable="false" decoding="async"`
     + ` onerror="this.replaceWith(document.createTextNode('${fb}'))">`;
 }
 
@@ -4806,6 +4828,7 @@ function basicDesc(s) {
 
 function renderCodex(focusId) {
   const box = $('#codexList');
+  const lazyFix = () => box.querySelectorAll('img').forEach(i => { i.loading = 'lazy'; i.decoding = 'async'; });
   if (!box) return;
   box.innerHTML = SPIRITS.filter(s => !s.hidden).map(s => {
     const el = ELEM[s.element];
@@ -4851,6 +4874,7 @@ function renderCodex(focusId) {
   </div>`;
   const hl = box.querySelector('.cdx.hl');
   if (hl) setTimeout(() => hl.scrollIntoView({ block: 'center', behavior: 'smooth' }), 40);
+  lazyFix();
 }
 
 function openCodex(focusId) {
@@ -5569,6 +5593,7 @@ function renderRoster() {
   slice.forEach(s => {
     const el = ELEM[s.element];
     const b = document.createElement('button');
+    b.dataset.id = s.id;
     b.className = 'rcard'
       + (state.selected === s.id ? ' sel' : '')
       + (usedIds.has(s.id) ? ' used' : '');
@@ -5592,7 +5617,9 @@ function renderRoster() {
         return;
       }
       state.selected = (state.selected === s.id ? null : s.id);
-      renderDeploy();
+      // 只切换选中态：避免每次点选都重建 26 张卡 + 18 个格子
+      box.querySelectorAll('.rcard').forEach(c =>
+        c.classList.toggle('sel', c.dataset.id === state.selected));
       sfx.tick();
     };
     if (s.id === 'tianshu') {
