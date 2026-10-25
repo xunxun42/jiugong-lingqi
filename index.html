@@ -1809,6 +1809,23 @@ table.stats .tname em{font-style:normal;font-size:13px}
   <div class="aw-skill" id="awakenSkill"></div>
   <div class="aw-line" id="awakenLine"></div>
 </div>
+<!-- ================= 阿尔卡纳角色面板 ================= -->
+<div class="mask hidden" id="arcModal">
+  <div class="modal ky-modal" style="width:min(760px,96vw)">
+    <div class="ky-head">
+      <div class="ky-portrait"><img id="arcImg" alt=""></div>
+      <div class="ky-info">
+        <h2 class="ky-name" id="arcName"></h2>
+        <div class="ky-tags" id="arcTags"></div>
+        <div class="ky-shards"><div class="ky-pips" id="arcPips"></div><span class="ky-count" id="arcCount"></span></div>
+        <button class="btn primary ky-btn" id="btnArcGet"></button>
+      </div>
+    </div>
+    <div class="ky-body" id="arcBody"></div>
+    <div class="btnrow" style="margin-top:12px"><button class="btn primary" id="btnArcClose">关闭</button></div>
+  </div>
+</div>
+
 <!-- ================= 选择生效对象（通灵技 / 王权技 / 契约兽） ================= -->
 <div class="mask hidden" id="pickModal">
   <div class="modal" style="width:min(620px,94vw)">
@@ -2035,7 +2052,16 @@ table.stats .tname em{font-style:normal;font-size:13px}
           <div class="bi-name">节制 · 阿尔卡纳 XIV</div>
           <div class="bi-desc">光属性 · 入场送 3 层命运塔罗<br>大招：25% 血复活 2 人或给等量护盾</div>
         </div>
+        <button class="btn ghost" data-arcana="temperance" style="flex:none">详情</button>
         <button class="btn primary" id="btnSummonTemperance" style="flex:none">召唤</button>
+      </div>
+      <div class="bag-item" style="border-color:rgba(170,160,255,.5);background:rgba(170,160,255,.08)">
+        <div class="bi-ico">🌙</div>
+        <div class="bi-main">
+          <div class="bi-name">女祭司 · 阿尔卡纳 II</div>
+          <div class="bi-desc">王属性 · 唤灵师 · 通灵双形态<br>深渊「女祭司」通关 4% 掉落</div>
+        </div>
+        <button class="btn ghost" data-arcana="priestess" style="flex:none">详情</button>
       </div>
       <div class="bag-item">
         <div class="bi-ico">✦</div>
@@ -5036,6 +5062,65 @@ function bagTab(k) {
   modal.scrollTop = 0;
   if (k === 'item' && typeof renderBagItems === 'function') renderBagItems();
 }
+
+/* ===== 阿尔卡纳角色面板 ===== */
+const ARC_INFO = {
+  temperance: {
+    need: 10, item: '星轨塔罗', fn: 'summonTemperance',
+    tags: ['光属性', '阿尔卡纳 XIV', '复生 / 护盾'],
+    lore: ['天平两端各执一盏杯，光从高处倾入、又从低处升起。节制从不加速，她只让倾斜的一切重新回正。',
+           '「生与死不是两件事，是同一条河的下游与上游。」'],
+    kit: [
+      ['甘露之触（普攻）', '对单体造成 100% 伤害'],
+      ['节制·生死流转（大招）', '以自身 25% 最大生命复活 2 名阵亡队友；若无阵亡者，则为生命最低的 2 名队友提供等量护盾'],
+      ['入场被动', '开场为己方送上 3 层命运塔罗'],
+    ],
+    tips: '她是全队唯一的「复活 + 护盾」双保险，配合命运塔罗能把一次团灭硬生生拖回来。短板是输出极低，需要队友补伤害。',
+    get: '第 11-15 关通关 2%、深渊倒吊人/正义 4% 掉落「星轨塔罗」，集满 10 枚即可召唤。',
+  },
+  priestess: {
+    need: 10, item: '月辉塔罗', fn: 'summonPriestess',
+    tags: ['王属性', '唤灵师', '通灵双形态'],
+    lore: ['她不说话，因为答案写在牌背。月光透过她的指尖，把「尚未发生」与「已经结束」叠成同一种颜色。',
+           '「你以为你在选择命运——其实是命运在挑选能承载它的人。」'],
+    kit: [
+      ['月影之刃（普攻）', '对随机 2 名敌人各造成 170% 伤害'],
+      ['女祭司·双月映照（大招）', '对随机 2 名敌人各造成 170% 伤害，并获得 2 层命运塔罗'],
+      ['通灵·横断月华（通灵普攻）', '对横排合计 330% 伤害，平均分摊'],
+      ['通灵·纵贯星轨（通灵大招）', '对竖排合计 330% 伤害，平均分摊'],
+      ['唤灵点', '塔罗挡下伤害时：倍率 <350% 得 1 点，≥350% 得 3 点；满 9 点通灵，可重复触发，每次通灵额外 +3 层塔罗与 1 回合嘲讽'],
+    ],
+    tips: '她是「越挨打越强」的核心：命运塔罗挡得越多，她通灵越快，通灵后从单体随机两点变成横竖排 330% 洗地。要注意塔罗层数上限只有 5，别在关键时刻空池。',
+    get: '深渊「女祭司」通关 4% 掉落「月辉塔罗」，集满 10 枚即可解锁。',
+  },
+};
+function openArc(id) {
+  const inf = ARC_INFO[id] || ARC_INFO.temperance;
+  const sp = SPIRITS.find(function (x) { return x.id === id; });
+  if (!sp) return;
+  const img = document.getElementById('arcImg');
+  if (img) img.src = sp.art || '';
+  document.getElementById('arcName').textContent = sp.title ? (sp.name + ' · ' + sp.title) : sp.name;
+  document.getElementById('arcTags').innerHTML = inf.tags.map(function (t) { return '<span>' + t + '</span>'; }).join('');
+  const have = (id === 'temperance') ? starTarot() : moonTarot();
+  const own = !!(saveData().owned || {})[id];
+  document.getElementById('arcCount').textContent = own ? '已解锁' : (Math.min(have, inf.need) + ' / ' + inf.need);
+  document.getElementById('arcPips').innerHTML = Array.from({ length: inf.need }, function (_, i) {
+    return '<i class="' + (own || i < have ? 'on' : '') + '"></i>';
+  }).join('');
+  const btn = document.getElementById('btnArcGet');
+  btn.textContent = own ? '已解锁' : (have < inf.need ? (inf.item + ' 不足') : ('解锁 ' + sp.name));
+  btn.disabled = own || have < inf.need;
+  btn.dataset.arcGet = id;
+  const body = []
+    .concat('<h3>故事</h3>', inf.lore.map(function (t) { return '<p>' + t + '</p>'; }))
+    .concat('<h3>技能</h3>', ['<ul>'].concat(inf.kit.map(function (k) { return '<li><b>' + k[0] + '</b>：' + k[1] + '</li>'; }), ['</ul>']))
+    .concat('<h3>定位</h3>', ['<p>' + inf.tips + '</p>'])
+    .concat('<h3>获取</h3>', ['<p>' + inf.get + '</p>']);
+  document.getElementById('arcBody').innerHTML = body.join('');
+  document.getElementById('arcModal').classList.remove('hidden');
+}
+
 /* ===== 月辉塔罗：女祭司解锁道具 ===== */
 const MOON_NEED = 10;
 function moonTarot() { return (saveData().moonTarot || 0); }
@@ -7003,6 +7088,15 @@ init();
 document.addEventListener('click', function (ev) {
   const _gp = ev.target.closest && ev.target.closest('#growList [data-gp]');
   if (_gp) { growPage += (_gp.dataset.gp === 'next' ? 1 : -1); if (growPage < 0) growPage = 0; renderGrow(); sfx.tick(); return; }
+  const _arc = ev.target.closest && ev.target.closest('[data-arcana]');
+  if (_arc) { openArc(_arc.dataset.arcana); return; }
+  const _arcg = ev.target.closest && ev.target.closest('[data-arc-get]');
+  if (_arcg) {
+    const k = _arcg.dataset.arcGet;
+    if (k === 'temperance' && typeof summonTemperance === 'function') summonTemperance();
+    if (k === 'priestess' && typeof summonPriestess === 'function') summonPriestess();
+    openArc(k); renderBagItems(); return;
+  }
   const _pk = ev.target.closest && ev.target.closest('[data-pickkind]');
   if (_pk) { if (typeof openPick === 'function') openPick(_pk.dataset.pickkind); return; }
   const _cc = ev.target.closest && ev.target.closest('#pickList [data-pick]');
