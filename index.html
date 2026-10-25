@@ -3324,7 +3324,7 @@ function strike(src, tgt, mult, opts) {
       (function (c) { setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 900); })(_card);
       floatText(tgt.el, '命运塔罗 · 挡下', 'tarotText', 0);
     }
-    const _ps = B.units.find(function (x) { return x.side === tgt.side && x.alive && x.spirit && x.spirit.wakeOnTarot; });
+    const _ps = B.units.find(function (x) { return x.side === tgt.side && x.spirit && x.spirit.wakeOnTarot; });
     if (_ps && typeof addWake === 'function') { addWake((mult * 100 >= 350) ? 3 : 1); }
     if (typeof flashScreen === 'function') flashScreen('rgba(190,130,255,.34)');
     if (typeof tarotShow === 'function') tarotShow();
@@ -4417,7 +4417,13 @@ function kaiyangOf(side) {
   return activeCaller(side);
 }
 function addWake(n, why) {
-  const k = kaiyangOf('player');
+  /* 唤灵师阵亡后仍继续攒点：优先活着的，否则取阵亡的那位 */
+  let k = kaiyangOf('player');
+  if (!k && typeof B !== 'undefined' && B) {
+    const pick = state.activeCallerId;
+    k = B.units.filter(function (u) { return u.side === 'player' && u.spirit && u.spirit.profession === 'spiritcaller' && (!pick || u.spirit.id === pick); })[0]
+      || B.units.filter(function (u) { return u.side === 'player' && u.spirit && u.spirit.profession === 'spiritcaller'; })[0];
+  }
   if (!k) return;
   const prev = B.wake || 0;
   B.wake = Math.min(WAKE_MAX, prev + n);
@@ -4450,6 +4456,11 @@ async function wakeTrigger(k, why) {
     k.hp = Math.max(1, Math.round(k.maxHp * 0.1));
     if (k.el) k.el.classList.remove('dead');
     log('\u2726 ' + tag(k) + ' 于群星之中归来（' + Math.round(k.maxHp * 0.1) + ' 生命）', 'sys');
+  }
+  if (!wasDead) {
+    const shv = Math.round(k.maxHp * 0.10);
+    addShield(k, shv, 2);
+    log('✦ ' + tag(k) + ' 获得 ' + shv + ' 点护盾', 'sys');
   }
   const first = !k.awakened;
   k.awakened = true;
@@ -4500,7 +4511,7 @@ async function battleLoop() {
       if (u.spirit.isAdd && u.summonedBy) linkFollow(u);
       // 唤灵师：王属性队友行动 +2
       if (u.side === 'player') {
-        const _sc = B.units.find(function (x) { return x.side === 'player' && x.alive && x.spirit && x.spirit.wakeOnKing; });
+        const _sc = B.units.find(function (x) { return x.side === 'player' && x.spirit && x.spirit.wakeOnKing; });
         if (u.spirit.element === 'king' && _sc) addWake(2);
         B.units.filter(x => x.side === 'player' && x.spirit.element === 'king' && !x.alive && !x.__wakeCounted)
           .forEach(x => { x.__wakeCounted = true; addWake(2); });
