@@ -4744,7 +4744,7 @@ const pb = document.getElementById('railPickBox');
         return '<div class="rail-one">' + r.label + '：<b>' + cur.name + '</b></div>' + d;
       }
       return '<button class="rail-btn" id="btn' + r.kind.charAt(0).toUpperCase() + r.kind.slice(1) + '" data-pickkind="' + r.kind + '">'
-        + r.label + '：' + cur.name + '（' + r.items.length + ' 选 1）</button>';
+        + r.label + '：' + cur.name + '</button>';
     }).join('');
   }
   const rb = document.getElementById('railBeast');
