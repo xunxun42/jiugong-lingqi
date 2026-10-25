@@ -2055,7 +2055,23 @@ table.stats .tname em{font-style:normal;font-size:13px}
 /* ============================================================================
    0. 小工具
    ========================================================================== */
-const $  = (s, r = document) => r.querySelector(s);
+const $ = (s, r = document) => (r ? r.querySelector(s) : null) || STUB_EL;
+const STUB_EL = new Proxy({}, {
+  get(t, k) {
+    if (k === 'classList') return { add() {}, remove() {}, toggle() {}, contains() { return false; } };
+    if (k === 'style') return {};
+    if (k === 'dataset') return {};
+    if (k === 'children') return [];
+    if (k === 'innerHTML' || k === 'textContent' || k === 'value') return '';
+    if (k === 'getBoundingClientRect') return () => ({ top: 0, left: 0, width: 0, height: 0, bottom: 0, right: 0 });
+    if (k === 'querySelector') return () => STUB_EL;
+    if (k === 'querySelectorAll') return () => [];
+    if (k === 'appendChild' || k === 'removeChild' || k === 'setAttribute' || k === 'remove') return () => {};
+    if (k === 'closest') return () => null;
+    return undefined;
+  },
+  set() { return true; }
+});
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const rnd = (a, b) => a + Math.random() * (b - a);
 const chance = p => Math.random() < p;
@@ -6764,6 +6780,9 @@ document.addEventListener('click', function (ev) {
     }
 
     else if (id === 'btnSummonTemperance') { if (typeof summonTemperance === 'function') { summonTemperance(); renderBagItems(); } }
+    else if (id === 'btnClearLog') { const _lg = document.getElementById('log'); if (_lg) _lg.innerHTML = ''; }
+    else if (id === 'btnS10Close') { const _m = document.getElementById('soul10Modal') || document.getElementById('drawModal'); if (_m) _m.classList.add('hidden'); document.querySelectorAll('.mask').forEach(function (x) { if (!x.classList.contains('hidden')) x.classList.add('hidden'); }); }
+    else if (id === 'btnKySummon') { if (typeof summonKaiyang === 'function') summonKaiyang(); }
     else if (id === 'setSound') {
       state.sound = !state.sound;
       if (state.sound) { if (state.phase === 'battle' && typeof musicStart === 'function') musicStart(); }
