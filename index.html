@@ -3382,6 +3382,17 @@ onAllyDamaged(tgt, opts.hits || 1);   // 塔罗挡下也算「挨打」：摇光
   tgt.hp = Math.max(0, tgt.hp - raw);
   tgt.stats.taken += total;
   src.stats.dmg += total;
+  /* 倒吊人：绵羊受伤的 50% 共享给她本体 */
+  if (tgt && !tgt.isBoss && tgt.spirit && tgt.spirit.id === 'sheepMinion' && tgt.summonedBy && B) {
+    const _own = B.units.find(function (x) { return x.alive && x.isBoss && x.uid === tgt.summonedBy; });
+    if (_own) {
+      const _share = Math.max(1, Math.round(total * 1.0));   /* 100% 共享 */
+      _own.hp = Math.max(0, _own.hp - _share);
+      _own.stats.taken += _share;
+      if (_own.el) floatText(_own.el, '共享 -' + _share, 'dmg', rnd(-8, 8));
+      syncUnit(_own);
+    }
+  }
   gainEnergy(tgt, ENERGY_GAIN_HIT);   // 挨打攒气势（+50，溢出转技能加成）
   onAllyDamaged(tgt, (opts && opts.hits) || 1);   // 被动：己方被打时的连锁反应（按命中次数结算）
 
