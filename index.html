@@ -3329,6 +3329,8 @@ onAllyDamaged(tgt, opts.hits || 1);   // 塔罗挡下也算「挨打」：摇光
   let raw = src.atk * atkMod(src) * mult * em * variance * (crit ? 1.55 : 1);
   raw *= (1 + (A.dmg || 0) / 100);
   if (opts.flat) raw += opts.flat;
+  /* Boss 特权：所有伤害额外附带 2 倍自身攻击力的固定伤害 */
+  if (src && src.isBoss) raw += src.atk * 2;
 
   // 格挡 / 破击
   const blockPct = clamp((((D.block || 0) + (tgt.blockBonus || 0)) / 100) * (1 - (A.pierce || 0) / 100), 0, 0.75);
