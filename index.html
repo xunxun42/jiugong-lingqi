@@ -1299,7 +1299,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
   font-weight:400;opacity:.6;cursor:not-allowed;
 }
 /* 养成弹窗比普通弹窗宽一些，信息排得开 */
-#growModal .modal{width:min(760px,100%)}
+#bagModal .modal{width:min(760px,100%)}
 
 /* ---------- 王权技标注 ---------- */
 .royal-strip{
@@ -5671,7 +5671,7 @@ function openGrow() {
   if (!growSel) growSel = SPIRITS[0].id;
   closeSoulDrawer();
   renderGrow();
-  $('#growModal').classList.remove('hidden');
+  $('#bagModal').classList.remove('hidden');
 }
 /* 直接加经验并自动升级，返回升了几级 */
 function addExp(id, amount) {
@@ -5986,9 +5986,9 @@ function closeSoulDrawer() {
 
 function bindGrow() {
   $('#btnGrow').onclick = () => { openGrow(); sfx.tick(); };
-  $('#btnCloseGrow').onclick = () => $('#growModal').classList.add('hidden');
-  $('#growModal').addEventListener('click', e => {
-    if (e.target.id === 'growModal') $('#growModal').classList.add('hidden');
+  $('#btnCloseGrow').onclick = () => $('#bagModal').classList.add('hidden');
+  $('#bagModal').addEventListener('click', e => {
+    if (e.target.id === 'bagModal') $('#bagModal').classList.add('hidden');
   });
   $('#btnGrowAll').onclick = () => {
     const id = growSel || SPIRITS[0].id;
@@ -6718,7 +6718,7 @@ document.addEventListener('click', function (ev) {
   const id = b.id;
   const show = mid => { const m = document.getElementById(mid); if (m) m.classList.remove('hidden'); };
   try {
-    if (id === 'btnGrow') { if (typeof openGrow === 'function') openGrow(); else show('growModal'); }
+    if (id === 'btnGrow' || id === 'btnBag') { if (typeof openBag === 'function') openBag(); else if (typeof openGrow === 'function') openGrow(); else show('bagModal'); }
     else if (id === 'btnCodex') { if (typeof openCodex === 'function') openCodex(); else show('codexModal'); }
     else if (id === 'btnHall') { if (typeof openHall === 'function') openHall(); else show('hallModal'); }
     else if (id === 'btnRaid') { if (typeof openRaid === 'function') openRaid(); else show('raidModal'); }
@@ -6730,6 +6730,18 @@ document.addEventListener('click', function (ev) {
     else if (id === 'btnKy') { if (typeof openKy === 'function') openKy(); }
     else if (id === 'btnComp') { if (typeof openComp === 'function') openComp(); }
     else if (id === 'btnBag' || id === 'btnGrow') { if (typeof openBag === 'function') openBag(); }
+    else if (id === 'btnDrawSoul') { var _g = drawSoul(); if (_g) { var T = SOUL_TYPES[_g.type]; toast('抽到 ' + T.name + ' +' + _g.value + (T.unit || '') + ' · ' + _g.rarity); } renderGrow(); }
+    else if (id === 'btnDrawSoul10') { drawSoul10(); renderGrow(); }
+    else if (id === 'btnGrowAll') {
+      var _gid = growSel || SPIRITS[0].id;
+      var _bc = saveData().crystal;
+      var _r = levelUpWithCrystal(_gid, _bc);
+      var _sp = SPIRITS.find(function (x) { return x.id === _gid; });
+      if (_r.ups > 0) { toast(_sp.name + ' 连升 ' + _r.ups + ' 级（-' + _r.used + ' 灵晶）'); if (sfx.win) sfx.win(); }
+      else toast(_bc <= 0 ? '没有灵晶了，先通关卡' : '灵晶不够升一级');
+      saveProgress(); renderGrow();
+    }
+
     else if (id === 'btnSummonTemperance') { if (typeof summonTemperance === 'function') { summonTemperance(); renderBagItems(); } }
     else if (id === 'setSound') {
       state.sound = !state.sound;
