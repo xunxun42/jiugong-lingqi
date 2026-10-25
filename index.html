@@ -3527,7 +3527,7 @@ async function castUlt(u) {
       }
       const tt = tauntTarget(otherSide(u.side));
       if (tt) {                       // 嘲讽：全体目标集火到它，倍率 × 目标数
-        strike(u, tt, ult.mult * foes.length);
+        strike(u, tt, ult.mult * foes.length, { hits: foes.length });
         log(`（嘲讽使 ${tag(tt)} 承受了 ${foes.length} 份伤害）`, 'sys');
         break;
       }
@@ -3754,6 +3754,14 @@ async function castUlt(u) {
       }
       if (!targets.length) break;
       if (ult.summonOnUlt) { const _s = summonUnit(ult.summonOnUlt, u.side, { hp: 1, atk: 1 }, u.uid); if (_s) log('🔥 ' + tag(u) + ' 召唤了 ' + tag(_s), 'sys'); }
+      const _tt2 = tauntTarget(otherSide(u.side));
+      if (_tt2) {
+        const _all = orderedFoes(u).length || 1;
+        log('🛡️ ' + tag(u) + ' 的全阵攻击被 ' + tag(_tt2) + ' 嘲讽拦截');
+        strike(u, _tt2, mult2, { hits: _all, aoe: false });
+        if (ult.summonOnUlt) { const _s1 = summonUnit(ult.summonOnUlt, u.side, { hp: 1, atk: 1 }, u.uid); if (_s1) log('🔥 ' + tag(u) + ' 召唤了 ' + tag(_s1), 'sys'); }
+        break;
+      }
       const each = mult2 / targets.length;
       log('🌙 ' + tag(u) + (awake ? ' 通灵·全阵月蚀（合计 ' : ' 月影横断（合计 ') + Math.round(mult2 * 100) + '%）', 'sys');
       for (const f of targets) { strike(u, f, each); await pace(80); }
