@@ -3532,7 +3532,8 @@ async function castUlt(u) {
         log(`（嘲讽使 ${tag(tt)} 承受了 ${foes.length} 份伤害）`, 'sys');
         break;
       }
-      for (const t of foes) { strike(u, t, ult.mult); await pace(90); }
+      let _j = 0;
+      for (const t of foes) { strike(u, t, ult.mult, { aoe: true, first: _j === 0 }); _j++; await pace(90); }
       break;
     }
     case 'aoeDebuff': {
@@ -3765,7 +3766,8 @@ async function castUlt(u) {
       }
       const each = mult2 / targets.length;
       log('🌙 ' + tag(u) + (awake ? ' 通灵·全阵月蚀（合计 ' : ' 月影横断（合计 ') + Math.round(mult2 * 100) + '%）', 'sys');
-      for (const f of targets) { strike(u, f, each); await pace(80); }
+      let _i = 0;
+      for (const f of targets) { strike(u, f, each, { aoe: true, first: _i === 0 }); _i++; await pace(80); }
       if (u.spirit.bossWakeTarot && awake) {
         /* 通灵时额外补塔罗由 wakeTrigger 处理 */
       }
