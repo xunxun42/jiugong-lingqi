@@ -3524,7 +3524,7 @@ async function castUlt(u) {
     case 'aoe': {
       if (ult.summonOnUlt) {
         const sp2 = summonUnit(ult.summonOnUlt, u.side, { hp: 1, atk: 1 }, u.uid);
-        if (sp2) log('🔥 ' + tag(u) + ' 召唤了 ' + tag(sp2), 'sys');
+        if (sp2) { log('🔥 ' + tag(u) + ' 召唤了 ' + tag(sp2), 'sys'); if (u.spirit && u.spirit.soulEnergy) { u.atk = Math.round(u.atk * 1.05); syncUnit(u); log('⚖️ ' + tag(u) + ' 攻击力提升至 ' + Math.round(u.atk), 'sys'); } }
       }
       const tt = tauntTarget(otherSide(u.side));
       if (tt) {                       // 嘲讽：全体目标集火到它，倍率 × 目标数
@@ -3754,7 +3754,7 @@ async function castUlt(u) {
         }
       }
       if (!targets.length) break;
-      if (ult.summonOnUlt) { const _s = summonUnit(ult.summonOnUlt, u.side, { hp: 1, atk: 1 }, u.uid); if (_s) log('🔥 ' + tag(u) + ' 召唤了 ' + tag(_s), 'sys'); }
+      if (ult.summonOnUlt) { const _s = summonUnit(ult.summonOnUlt, u.side, { hp: 1, atk: 1 }, u.uid); if (_s) { log('🔥 ' + tag(u) + ' 召唤了 ' + tag(_s), 'sys'); if (u.spirit && u.spirit.soulEnergy) { u.atk = Math.round(u.atk * 1.05); syncUnit(u); if (u.el) floatText(u.el, '攻击 +5%', 'buff', 0); log('⚖️ ' + tag(u) + ' 攻击力提升至 ' + Math.round(u.atk), 'sys'); } } }
       const _tt2 = tauntTarget(otherSide(u.side));
       if (_tt2) {
         const _all = orderedFoes(u).length || 1;
@@ -4520,7 +4520,7 @@ async function battleLoop() {
       }
       if (u.alive && u.isBoss && u.spirit.summonOnAct) await summonFrom(u);
       if (u.alive && u.isBoss && u.spirit.bossBasic && u.spirit.bossBasic.summon) { await bossSummonChain(u); result = checkEnd(); if (result) break; }
-      if (u.alive && u.isBoss && u.spirit.soulEnergy) { await soulChain(u); result = checkEnd(); if (result) break; }
+      /* 硫火之灵不再出手：改为每只给正义 +5% 最大攻击力（在召唤时结算） */
       await pace(140);
     }
     if (result) break;
