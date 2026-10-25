@@ -5459,7 +5459,8 @@ async function startBattle() {
   buildBattle();
   B.tarot = { player: 0, enemy: 0 };
   B.units.forEach(function (u) { var g = (u.spirit && u.spirit.grantsTarot) || 0; if (g) addTarot(u.side, g); });
-  B.units.forEach(function (u) { if (u.spirit && u.spirit.alwaysTaunt) u.alwaysTaunt = true; });
+  /* 常驻嘲讽只对 Boss 生效，玩家侧的正义/契约兽不该带嘲讽 */
+  B.units.forEach(function (u) { if (u.isBoss && u.spirit && u.spirit.alwaysTaunt) u.alwaysTaunt = true; });
   /* 入场满气类被动（隐者） */
   B.units.forEach(function (u) {
     if (u.spirit && u.spirit.startEnergy) {
