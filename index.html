@@ -3281,7 +3281,8 @@ function strike(src, tgt, mult, opts) {
     if (typeof flashScreen === 'function') flashScreen('rgba(190,130,255,.34)');
     if (typeof tarotShow === 'function') tarotShow();
     if (typeof sfx === 'object' && sfx.win) { try { sfx.win(); } catch (e) {} }
-    log('🃏 <b style="color:#ffd76b">命运塔罗</b> 为 ' + tag(tgt) + ' 挡下伤害（剩余 ' + B.tarot[tgt.side] + '）', 'sys');
+onAllyDamaged(tgt, opts.hits || 1);   // 塔罗挡下也算「挨打」：摇光座照样加气
+  log('🃏 <b style="color:#ffd76b">命运塔罗</b> 为 ' + tag(tgt) + ' 挡下伤害（剩余 ' + B.tarot[tgt.side] + '）', 'sys');
     return { dmg: 0, crit: false, em: 1, killed: false, blocked: true };
   }
   if (!tgt || !tgt.alive) return { dmg: 0, crit: false, em: 1, killed: false };
@@ -4106,7 +4107,8 @@ function onAllyDamaged(tgt, hits) {
   for (const u of aliveUnits(tgt.side)) {
     if (!u.spirit || u.spirit.passive !== 'lonestar') continue;
     const cost = Math.round(u.maxHp * (u.spirit.passiveCost || 0.05)) * times;
-    const loss = u.hp <= 1 ? 0 : Math.min(cost, u.hp - 1);
+    const floor = Math.round(u.maxHp * 0.30);
+    const loss = u.hp <= floor ? 0 : Math.min(cost, u.hp - floor);
     if (loss > 0) {
       u.hp -= loss;
       if (u.el) floatText(u.el, '-' + loss, 'dmg', rnd(-8, 8));
