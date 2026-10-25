@@ -684,7 +684,7 @@ body.royal-on .royal-strip{
 .awaken-fx.play .aw-flash{animation:awFlash 1.8s ease forwards}
 @keyframes awFlash{0%{opacity:.95}25%{opacity:.25}100%{opacity:0}}
 .aw-stage{position:absolute;inset:0;overflow:hidden}
-.aw-form{position:absolute;inset:0;margin:auto;width:auto;height:auto;max-width:94vw;max-height:90vh;object-fit:contain;filter:drop-shadow(0 0 42px rgba(255,170,60,.55)) drop-shadow(0 0 90px rgba(255,90,40,.35));
+.aw-form{position:absolute;inset:0;margin:auto;width:auto;height:auto;max-width:94vw;max-height:90vh;object-fit:contain;-webkit-mask-image:radial-gradient(ellipse 72% 78% at 50% 45%,#000 46%,transparent 88%);mask-image:radial-gradient(ellipse 72% 78% at 50% 45%,#000 46%,transparent 88%);filter:drop-shadow(0 0 42px rgba(255,170,60,.55)) drop-shadow(0 0 90px rgba(255,90,40,.35));
   -webkit-mask-image:radial-gradient(ellipse 70% 78% at 50% 45%,#000 42%,transparent 84%);
   mask-image:radial-gradient(ellipse 70% 78% at 50% 45%,#000 42%,transparent 84%)}
 .aw-form.f1{opacity:1}
@@ -716,8 +716,74 @@ body.royal-on .royal-strip{
 .awaken-fx.play .aw-skill{animation:awLine 1.8s ease forwards}
 .aw-line{animation:awLine 1.8s ease forwards}
 @keyframes awLine{0%{opacity:0;transform:translateX(-50%) translateY(14px)}30%,80%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0}}
+/* 左侧三段栏 */
+.rail-sec{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.rail-sec:last-child{border-bottom:none}
+.rail-btn{
+  width:100%;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:800;
+  background:rgba(232,192,106,.18);border:1px solid rgba(232,192,106,.55);color:#ffe9b0;
+}
+.rail-btn:hover{background:rgba(232,192,106,.32)}
+.rail-royal,.rail-beast{font-size:10.5px;line-height:1.7;color:#cfc9d8}
+.rail-royal b,.rail-beast b{color:#ffd76b;display:block;font-size:10.5px;margin-bottom:2px}
+.rail-royal em,.rail-beast em{font-style:normal;color:var(--muted);font-size:9.5px}
+/* 背包页签 */
+.bag-tabs{display:flex;gap:6px;margin:2px 0 12px}
+.bag-tab{
+  padding:6px 16px;border-radius:9px;font-size:12px;font-weight:800;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:var(--muted);
+}
+.bag-tab.on{background:rgba(232,192,106,.22);border-color:rgba(232,192,106,.7);color:#ffe9b0}
+.bag-sec{padding:10px 0;border-top:1px solid rgba(255,255,255,.07)}
+.bag-sec:first-of-type{border-top:none}
+.bag-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);margin-bottom:8px}
+.bag-item .bi-ico{width:44px;height:44px;flex:none;border-radius:9px;display:grid;place-items:center;font-size:22px;background:rgba(0,0,0,.3)}
+.bag-item .bi-main{flex:1;min-width:0}
+.bag-item .bi-name{font-size:13px;font-weight:800;color:#fff}
+.bag-item .bi-desc{font-size:10.5px;color:var(--muted);margin-top:2px}
+.bag-item .bi-cnt{font-size:12px;font-weight:800;color:#ffe9b0}
+/* 阵容预览 */
+.comp-modal{width:min(920px,96vw);max-height:90dvh;display:flex;flex-direction:column}
+.comp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.comp-count{font-size:12px;color:var(--gold);font-weight:800}
+.comp-body{display:flex;gap:16px;flex:1;min-height:0}
+.comp-left{flex:none;width:216px}
+.comp-grid{display:grid;grid-template-columns:repeat(3,68px);grid-template-rows:repeat(3,68px);gap:4px}
+.comp-cell{
+  border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+  display:grid;place-items:center;font-size:10px;color:rgba(255,255,255,.25);position:relative;overflow:hidden;
+}
+.comp-cell.has{border-color:rgba(232,192,106,.55);background:rgba(232,192,106,.08)}
+.comp-cell img{width:100%;height:100%;object-fit:cover}
+.comp-cell .ce{position:absolute;top:2px;left:3px;font-size:11px}
+.comp-sum{margin-top:10px;font-size:11px;line-height:1.9;color:#cfc9d8}
+.comp-sum b{color:#ffe9b0}
+.comp-list{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;align-content:start}
+.comp-card{
+  display:flex;gap:9px;padding:9px;border-radius:11px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(232,192,106,.28);
+}
+.comp-card .cc-face{width:52px;height:52px;flex:none;border-radius:9px;overflow:hidden;background:rgba(0,0,0,.3)}
+.comp-card .cc-face img{width:100%;height:100%;object-fit:cover}
+.comp-card .cc-main{flex:1;min-width:0}
+.comp-card .cc-top{display:flex;align-items:baseline;gap:6px}
+.comp-card .cc-name{font-size:12.5px;font-weight:800;color:#fff}
+.comp-card .cc-lv{font-size:10px;color:#ffe9b0;font-weight:800}
+.comp-card .cc-tags{margin:3px 0;display:flex;gap:4px;flex-wrap:wrap}
+.comp-card .cc-tags span{font-size:8.5px;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,.09);color:var(--muted)}
+.comp-card .cc-sk{font-size:10px;color:#cfc9d8;line-height:1.6}
+.comp-card .cc-sk b{color:#9fd0ff;font-weight:700}
+.comp-card .cc-royal{font-size:9.5px;color:#ffd76b}
+.cc-souls{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.cc-soul{font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,.06);font-weight:800;letter-spacing:.3px}
+.cc-soul.r0{text-shadow:none}
+.cc-soul.r1{text-shadow:0 0 6px rgba(185,139,255,.75)}
+.cc-soul.r2{text-shadow:0 0 8px rgba(255,215,107,.85),0 0 16px rgba(255,190,60,.5)}
+.cc-soul.r3{text-shadow:0 0 10px rgba(255,91,138,.95),0 0 22px rgba(255,91,138,.75),0 0 38px rgba(255,120,180,.5)}
+.cc-empty{font-size:9px;color:rgba(255,255,255,.28)}
+
 /* 阵容预设 */
-.preset-bar{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:75;display:flex;align-items:flex-start;pointer-events:none}
+.preset-bar{position:fixed;left:8px;top:120px;z-index:75;display:flex;align-items:flex-start;pointer-events:none;max-height:calc(100dvh - 200px)}
 .preset-tab{
   pointer-events:auto;width:26px;padding:12px 4px;border-radius:0 10px 10px 0;cursor:pointer;
   background:rgba(20,16,30,.92);border:1px solid rgba(232,192,106,.35);border-left:none;
@@ -728,7 +794,7 @@ body.royal-on .royal-strip{
   pointer-events:auto;width:0;overflow:hidden;transition:width .25s ease;
   background:rgba(14,11,22,.96);border:1px solid rgba(232,192,106,.3);border-left:none;border-radius:0 12px 12px 0;
 }
-.preset-bar.open .preset-body{width:172px;padding:10px 10px 10px 12px}
+.preset-bar.open .preset-body{width:186px;padding:8px 10px 8px 12px;overflow-y:auto}
 .preset-title{font-size:10px;letter-spacing:2px;color:var(--gold);margin-bottom:8px;white-space:nowrap}
 .preset-list{display:flex;flex-direction:column;gap:8px}
 .preset-item{display:flex;align-items:center;gap:6px}
@@ -1491,7 +1557,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <span id="curStageName">关卡</span><i>▾</i>
     </button>
     <div class="topbtns">
-      <button class="btn ghost" id="btnGrow">养成</button>
+      <button class="btn ghost" id="btnBag">背包</button>
       <button class="btn ghost" id="btnCodex">图鉴</button>
       <button class="btn ghost" id="btnHall">召唤<span class="ky-badge" id="kyBadge">0/7</span></button>
       <button class="btn ghost" id="btnRaid">深渊</button>
@@ -1665,13 +1731,27 @@ table.stats .tname em{font-style:normal;font-size:13px}
   </div>
 </div>
 
-<!-- 阵容预设（左侧折叠） -->
+<!-- 左侧三段栏：阵容预设 / 王权技 / 契约兽 -->
 <div class="preset-bar" id="presetBar">
   <button class="preset-tab" id="presetTab">阵<br>容</button>
   <div class="preset-body">
-    <div class="preset-title">阵容预设</div>
-    <div class="preset-list" id="presetList"></div>
-    <div class="preset-hint">点格子读取 · 点“存”覆盖</div>
+    <div class="rail-sec">
+      <div class="preset-title">阵容预览</div>
+      <button class="rail-btn" id="btnComp">查看当前阵容</button>
+    </div>
+    <div class="rail-sec">
+      <div class="preset-title">阵容预设</div>
+      <div class="preset-list" id="presetList"></div>
+      <div class="preset-hint">点格子读取 · 点「存」覆盖</div>
+    </div>
+    <div class="rail-sec">
+      <div class="preset-title">王权技</div>
+      <div class="rail-royal" id="railRoyal">无</div>
+    </div>
+    <div class="rail-sec">
+      <div class="preset-title">契约兽</div>
+      <div class="rail-beast" id="railBeast">无</div>
+    </div>
   </div>
 </div>
 <!-- 命运塔罗演出 -->
@@ -1688,6 +1768,23 @@ table.stats .tname em{font-style:normal;font-size:13px}
   </div>
   <div class="aw-skill" id="awakenSkill"></div>
   <div class="aw-line" id="awakenLine"></div>
+</div>
+<!-- ================= 阵容预览 ================= -->
+<div class="mask hidden" id="compModal">
+  <div class="modal comp-modal">
+    <div class="comp-head">
+      <h2 class="h2sm">当前阵容</h2>
+      <span class="comp-count" id="compCount">0 / 7</span>
+    </div>
+    <div class="comp-body">
+      <div class="comp-left">
+        <div class="comp-grid" id="compGrid"></div>
+        <div class="comp-sum" id="compSum"></div>
+      </div>
+      <div class="comp-list" id="compList"></div>
+    </div>
+    <div class="btnrow" style="margin-top:14px"><button class="btn primary" id="btnCompClose">关闭</button></div>
+  </div>
 </div>
 <!-- ================= 开阳座 ================= -->
 <div class="mask hidden" id="kyModal">
@@ -1733,6 +1830,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
     <div class="set-row"><span>战斗音乐</span><button class="set-toggle" id="setMusic">开</button></div>
     <div class="set-row"><span>战斗特效</span><button class="set-toggle" id="setFx">开</button></div>
     <div class="set-row"><span>后台加速<small style="color:#8b8398;font-size:10px"> 最小化时跳过等待</small></span><button class="set-toggle" id="setBg">关</button></div>
+    <div class="set-row"><span>王权技</span><button class="set-toggle" id="setRoyal">开</button></div>
     <div class="set-row"><span>存档备份</span><button class="btn ghost set-mini" id="setSave">导出 / 导入</button></div>
     <div class="set-row"><span>全屏</span><button class="btn ghost set-mini" id="setFull">切换</button></div>
     <div class="btnrow" style="margin-top:14px"><button class="btn primary" id="btnSetClose">完成</button></div>
@@ -1865,10 +1963,42 @@ table.stats .tname em{font-style:normal;font-size:13px}
 </div>
 
 <!-- ================= 养成 ================= -->
-<div class="mask hidden" id="growModal">
-  <div class="modal">
-    <h2 class="h2sm">灵契养成</h2>
-    <div class="sub">灵晶换经验 · 灵念配装</div>
+<div class="mask hidden" id="bagModal">
+  <div class="modal bag-modal" style="width:min(880px,96vw);max-height:88dvh;overflow-y:auto">
+      <div class="bag-tabs" id="bagTabs">
+        <button class="bag-tab on" data-bag="grow">养成</button>
+        <button class="bag-tab" data-bag="soul">灵念</button>
+        <button class="bag-tab" data-bag="item">道具</button>
+      </div><div class="bag-pane hidden" id="bagItemPane">
+      <h3 class="h3sm" style="margin:4px 0 8px">道具</h3>
+      <div class="bag-item">
+        <div class="bi-ico">🌟</div>
+        <div class="bi-main">
+          <div class="bi-name">星轨塔罗</div>
+          <div class="bi-desc">第 11-15 关 2% · 深渊倒吊人/正义 4% 掉落<br>集满 10 枚可召唤「节制」</div>
+        </div>
+        <div class="bi-cnt" id="starTarotCount">0 / 10</div>
+      </div>
+      <div class="bag-item" style="border-color:rgba(232,192,106,.5);background:rgba(232,192,106,.08)">
+        <div class="bi-ico">🕊️</div>
+        <div class="bi-main">
+          <div class="bi-name">节制 · 阿尔卡纳 XIV</div>
+          <div class="bi-desc">光属性 · 入场送 3 层命运塔罗<br>大招：25% 血复活 2 人或给等量护盾</div>
+        </div>
+        <button class="btn primary" id="btnSummonTemperance" style="flex:none">召唤</button>
+      </div>
+      <div class="bag-item">
+        <div class="bi-ico">✦</div>
+        <div class="bi-main">
+          <div class="bi-name">开阳星屑</div>
+          <div class="bi-desc">第 6-10 关 2% · 深渊玉衡/天枢 4% 掉落<br>集满 7 枚可召唤「开阳座」</div>
+        </div>
+        <div class="bi-cnt" id="kyShardCount">0 / 7</div>
+      </div>
+
+    <h2 class="h2sm">背包</h2>
+    <div class="sub">养成 · 灵念 · 道具</div>
+        </div>
     <div class="grow-head">
       <span class="crystal">💎 灵晶 <b id="growCrystal">0</b><span class="grow-tip">通关关卡获得</span></span>
       <span style="display:flex;gap:6px;flex-wrap:wrap">
@@ -1983,7 +2113,7 @@ const SPIRITS = [
   { id:'tianquan', art:'assets/spirits/tianquan.webp', name:'天权座', title:'神源龙女', emoji:'👑',
     element:'king', hp:700, atk:152, spd:120, role:'神源·必克', gacha:true, mustCounter:true,
     basic:{ name:'天权裁击', mult:1.0 },
-    royal:{ name:'星权裁决', energy:50, desc:'在场时，己方全体每回合开始 +50 气势' },
+    royal:{ name:'星权裁决', energy:50, elem:'king', elemNeed:3, desc:'己方王属性 ≥3 只时：全体每回合开始 +50 气势' },
     ult:{ name:'天权·星渊龙灭', type:'aoe', mult:1.3,
           desc:'对全体敌人造成 130% 攻击的必克伤害' } },
 
@@ -2008,6 +2138,16 @@ const SPIRITS = [
     ult:{ name:'万魔加身', type:'multiTarget', targets:4, mult:1.4,
           desc:'对 4 个敌人各造成 140% 攻击的暗属性伤害' } },
 
+  /* 正义（Boss）召唤的硫火之灵 */
+  { id:'sulfurSpirit', art:'', name:'硫火之灵', title:'正义的裁决之火', emoji:'🔥',
+    element:'fire', hp:300, atk:80, spd:90, role:'灵体', hidden:true, isAdd:true, chainOnly:true,
+    basic:{ name:'硫火', mult:1.0 },
+    ult:{ name:'硫火', type:'single', mult:1.0, desc:'对单体造成 100% 攻击伤害' } },
+  /* 倒吊人（Boss）召唤的献祭绵羊 */
+  { id:'sheepMinion', art:'', name:'献祭绵羊', title:'倒吊人的祭品', emoji:'🐑',
+    element:'wind', hp:260, atk:70, spd:85, role:'祭品', hidden:true, isAdd:true, chainOnly:true,
+    basic:{ name:'羊撞', mult:1.0 },
+    ult:{ name:'羊撞', type:'single', mult:1.0, desc:'对单体造成 100% 攻击伤害' } },
   /* ===== 阿尔卡纳 · 契约兽（占位，待补） ===== */
   { id:'arcana_beast1', art:'', name:'？？？', title:'愚者契约兽 · 其一', emoji:'❓',
     element:'light', hp:520, atk:95, spd:100, role:'契约兽', hidden:true, isAdd:true,
@@ -2017,6 +2157,58 @@ const SPIRITS = [
     element:'light', hp:520, atk:95, spd:100, role:'契约兽', hidden:true, isAdd:true,
     basic:{ name:'未知名', mult:1.0 },
     ult:{ name:'未知名', type:'single', mult:1.5, desc:'——（尚未揭示）' } },
+  /* ===== 阿尔卡纳 · 女祭司 ===== */
+  { id:'priestess', art:'assets/spirits/priestess.webp', art2:'assets/spirits/priestess_f2.webp', wakeArt1:'assets/spirits/priestess_f1.webp', name:'女祭司', title:'阿尔卡纳 · II', emoji:'🌙',
+    element:'king', hp:1040, atk:146, spd:128, role:'阿尔卡纳·唤灵师', profession:'spiritcaller', gacha:true,
+    wakeOnTarot:true, wakeOnAwaken:{ tarot:3, taunt:1 }, wakeLine:'命数已尽，塔罗听令！',
+    bossBasic:{ name:'月影横断', type:'bossWipe', mult:3.3, mode:'row' },
+    bossUlt:{ name:'女祭司·通灵月蚀', type:'bossWipe', mult:3.3, mode:'row', wakeMult:8.0, wakeMode:'all' },
+    bossTarotPerRound:3, bossWakeTarot:2,
+    basic:{ name:'月影之刃', mult:1.7, targets:2, random:true },
+    ult:{ name:'女祭司·双月映照', type:'randomTwo', mult:1.7, tarotGain:2,
+          desc:'对随机 2 名敌人各造成 170% 伤害，并获得 2 层命运塔罗' },
+    wakeBasic:{ name:'通灵·横断月华', mult:3.3, rowBasic:true },
+    wakeUlt:{ name:'通灵·纵贯星轨', type:'colTotal', mult:3.3,
+              desc:'对敌方一列合计造成 330% 伤害' } },
+  /* ===== 阿尔卡纳 · 倒吊人 ===== */
+  { id:'hanged', art:'assets/spirits/hanged.webp', name:'倒吊人', title:'阿尔卡纳 · XII', emoji:'🙃',
+    element:'wind', hp:1000, atk:150, spd:116, role:'阿尔卡纳·献吊', gacha:true,
+    basic:{ name:'倒悬一击', mult:1.0 },
+    bossBasic:{ name:'倒悬之刃', mult:2.2, targets:3 },
+    bossUlt:{ name:'倒吊人·群羊献祭', type:'sheepArmy', count:8 },
+    ult:{ name:'倒吊人·献祭之绳', type:'single', mult:2.0,
+          desc:'对单体造成 200% 攻击伤害' } },
+  /* ===== 阿尔卡纳 · 节制 ===== */
+  { id:'temperance', art:'assets/spirits/temperance.webp', name:'节制', title:'阿尔卡纳 · XIV', emoji:'🕊️',
+    element:'light', hp:1060, atk:138, spd:118, role:'阿尔卡纳·调和', gacha:true,
+    grantsTarot:3,
+    basic:{ name:'甘露之触', mult:1.0 },
+    ult:{ name:'节制·生死流转', type:'reviveOrShield', mult:1.0, pct:0.25,
+          desc:'以自身 25% 最大生命复活 2 名阵亡队友；若无阵亡者，则为生命最低的 2 名队友提供等量护盾' } },
+  /* ===== 阿尔卡纳 · 魔术师 ===== */
+  { id:'magician', art:'assets/spirits/magician.webp', name:'魔术师', title:'阿尔卡纳 · I', emoji:'🎩',
+    element:'dark', hp:1000, atk:155, spd:126, role:'阿尔卡纳·巧手', gacha:true,
+    basic:{ name:'戏法之刃', mult:1.6 },
+    ult:{ name:'魔术师·万象牵引', type:'rowSplit', mult:2.0,
+          desc:'对敌方前排合计造成 200% 攻击伤害，并获得 1 层命运塔罗' } },
+
+  /* ===== 阿尔卡纳 · 正义 ===== */
+  { id:'justice', art:'assets/spirits/justice.webp', name:'正义', title:'阿尔卡纳 · XI', emoji:'⚖️',
+    element:'fire', hp:1010, atk:158, spd:120, role:'阿尔卡纳·裁决', gacha:true,
+    basic:{ name:'天平之刃', mult:1.5 },
+    bossBasic:{ name:'天平双斩', mult:2.2, targets:2 },
+    bossUlt:{ name:'正义·天秤裁决', type:'aoe', mult:1.6, summonOnUlt:'sulfurSpirit' },
+    alwaysTaunt:true, soulEnergy:50, soulHeal:{ threshold:0.3, pct:0.05 },
+    ult:{ name:'正义·最终裁断', type:'aoeFinisher', mult:1.6, extra:1.5,
+          desc:'对全体敌人造成 160% 伤害，再对生命值最低的敌人追加 150% 伤害' } },
+  /* ===== 阿尔卡纳 · 隐者 ===== */
+  { id:'hermit', art:'assets/spirits/hermit.webp', name:'隐者', title:'阿尔卡纳 · IX', emoji:'🕯️',
+    royal:{ name:'隐者·星辉庇护', type:'callerBuff', elemNeed:3, hpPct:0.25, block:50, tarot:1,
+            desc:'己方属性 ≥3 种时：唤灵师生命上限 +25%、格挡 +50%，每回合得 1 层命运塔罗' },
+    element:'dark', hp:980, atk:152, spd:124, role:'阿尔卡纳·守夜', gacha:true,
+    basic:{ name:'孤灯之刃', mult:1.6 },
+    ult:{ name:'隐者·提灯独行', type:'tauntCaller', mult:2.2,
+          desc:'对单体造成 220% 攻击伤害，并使己方唤灵师获得 1 回合嘲讽' } },
   /* ===== 阿尔卡纳 · 愚者 ===== */
   { id:'fool', art:'assets/spirits/fool.webp', name:'愚者', title:'阿尔卡纳 · 0', emoji:'🃏',
     element:'light', hp:1020, atk:150, spd:132, role:'阿尔卡纳·召唤师', profession:'summoner', gacha:true,
@@ -2047,7 +2239,7 @@ const SPIRITS = [
 
   /* ===== 天枢座 · 引星神女（召唤师） ===== */
   { id:'tianshu', art:'assets/spirits/tianshu.webp', name:'天枢座', title:'引星神女', emoji:'🌙',
-    element:'king', hp:1050, atk:150, spd:175, role:'引星·召唤师', profession:'summoner', gacha:true, linkOnContract:true,
+    element:'king', hp:1050, atk:150, spd:175, role:'引星·召唤师', profession:'summoner', gacha:true, linkOnContract:true, wakeOnKing:true,
     summoner:{ units:['yuheng','yaoguang'], slots:1 },
     basic:{ name:'引星击', mult:1.0, mustCounter:true },
     ult:{ name:'天枢·星引连衡', type:'comboStrike', mult:2.0, combos:2,
@@ -2098,7 +2290,10 @@ const RAID = {
   bosses: [
     { id:'xumoluo', slot:4, mult:{ hp:90, atk:2.25 } },
     { id:'leizeya', slot:4, mult:{ hp:21, atk:4.90 } },
-    { id:'yuheng', slot:4, mult:{ hp:40, atk:2.20 } },
+    { id:'yuheng', slot:4, mult:{ hp:30, atk:2.00 } },
+    { id:'hanged', slot:4, mult:{ hp:67, atk:2.20 } },
+    { id:'justice', slot:4, mult:{ hp:66, atk:1.41 } },
+    { id:'priestess', slot:4, mult:{ hp:64, atk:1.53 } },
     { id:'tianshu', slot:4, mult:{ hp:26, atk:2.95 } },
   ],
 };
@@ -2146,6 +2341,42 @@ const RAID_INFO = {
       '打法：她的爆发不在自己身上，而在星灵围攻 —— 先用群体伤害清场，或者集火在她第二次连击前打断',
     ],
   },
+  hanged: {
+    name: '倒吊人 · 献祭者', face: '🙃', color: '143,224,162',
+    lines: [
+      '🌪️ 风属性 · 生命 100500 · 攻击 370',
+      '小技能：对 3 名敌人各造成 220% 伤害',
+      '大招：召唤 8 只献祭绵羊，所有绵羊依次出手',
+      '每只绵羊：100% 单体伤害 + 倒吊人最大攻击力 100% 的固定伤害',
+      '被动：每只绵羊出手后，倒吊人攻击力 +1%（可叠加）',
+      '打法：绵羊越多她越强 —— 必须尽快清场，或用群攻一次打掉多只',
+    ],
+  },
+  justice: {
+    name: '正义 · 天秤裁决者', face: '⚖️', color: '255,170,120',
+    lines: [
+      '🔥 火属性 · 生命 99990 · 攻击 250',
+      '被动：自身<b style="color:#ffcf6b">永久嘲讽</b>，全体火力被强行拉到她身上',
+      '小技能：对 2 名敌人各造成 220% 伤害',
+      '大招：对全体造成 160% 伤害，并召唤 1 只硫火之灵',
+      '硫火之灵：每次出手给正义 +50 气势，越打她的技能越快',
+      '生命低于 30% 时吞噬全部硫火之灵，每只回复 5% 最大生命',
+      '打法：她越拖越强 —— 必须在她回血前用爆发一次性压穿血量',
+    ],
+  },
+  priestess: {
+    name: '女祭司 · 通灵月蚀', face: '🌙', color: '170,160,255',
+    lines: [
+      '🌙 王属性 · 生命 99960 · 攻击 250',
+      '被动：<b style="color:#ffcf6b">每回合给自己发放 3 层命运塔罗</b>（上限 5）',
+      '未通灵 小技能/大招：对<b>横排</b>合计 330% 伤害，平均分摊',
+      '通灵后 小技能/大招：对<b>全阵</b>合计 800% 伤害，平均分摊',
+      '每次通灵额外获得 2 层命运塔罗',
+      '塔罗抵消伤害会给她攒唤灵点 —— 打得越狠，她通灵越快',
+      '通关掉落：月辉塔罗 4%（集满 10 枚解锁女祭司）',
+      '打法：要么一击穿透塔罗，要么在她通灵前结束战斗',
+    ],
+  },
 };
 
 /* 关卡：team 里的 slot = 逻辑格子号（r*3+c），c=2 是前线 */
@@ -2180,6 +2411,18 @@ const STAGES = [
 
   { name:'星穹之巅', desc:'神源龙女镇守的天穹 · 终战', mult:{hp:2.25, atk:1.80}, boss:'tianquan',
     team:[ {id:'tianquan',slot:5}, {id:'golem',slot:8}, {id:'nox',slot:4}, {id:'phoenix',slot:2}, {id:'luna',slot:1}, {id:'nauti',slot:0} ] },
+
+  /* ===== 11-15：后期关卡（13 关起机制为主，纯数值碾压已不够） ===== */
+  { name:'蚀月回廊', desc:'暗潮涌动的长廊 · 数值考验', mult:{hp:10, atk:2.30},
+    team:[ {id:'nox',slot:5}, {id:'igris',slot:8}, {id:'phoenix',slot:4}, {id:'golem',slot:2}, {id:'luna',slot:1}, {id:'nauti',slot:0} ] },
+  { name:'焚星祭坛', desc:'嘲讽与反伤 · 无脑输出会被弹死', mult:{hp:9, atk:2.20}, boss:'tianji',
+    team:[ {id:'tianji',slot:5}, {id:'igris',slot:8}, {id:'nox',slot:4}, {id:'phoenix',slot:2}, {id:'luna',slot:1}, {id:'golem',slot:0} ] },
+  { name:'霜封天阶', desc:'溢出闪避 · 不带命中就等于空砍', mult:{hp:10, atk:2.20}, boss:'yuheng',
+    team:[ {id:'yuheng',slot:5}, {id:'nox',slot:8}, {id:'phoenix',slot:4}, {id:'golem',slot:2}, {id:'luna',slot:1}, {id:'aisling',slot:0} ] },
+  { name:'缚魂深井', desc:'神隐封印 · 每回合有人被夺走出手', mult:{hp:13, atk:2.40}, boss:'leizeya',
+    team:[ {id:'leizeya',slot:5}, {id:'igris',slot:8}, {id:'nox',slot:4}, {id:'phoenix',slot:2}, {id:'luna',slot:1}, {id:'golem',slot:0} ] },
+  { name:'阿尔卡纳 · 终局', desc:'塔罗免疫 + 召唤链 + 通灵 · 综合机制终战', mult:{hp:12, atk:2.00}, boss:'priestess',
+    team:[ {id:'priestess',slot:5}, {id:'tianshu',slot:8}, {id:'fool',slot:4}, {id:'hanged',slot:2}, {id:'justice',slot:1}, {id:'temperance',slot:0} ] },
 ];
 
 /* 灵契成长：每通关 1 关，我方全体 +4% 生命与攻击 */
@@ -2872,7 +3115,37 @@ function addShield(u, amount, rounds) {
   floatText(u.el, `🛡+${Math.round(amount)}`, 'shield');
   syncUnit(u);
 }
+/* 倒吊人：把目标变成绵羊（攻 100 / 血 1500 / 只会平 A，1 回合，可净化） */
+function sheepify(u, rounds) {
+  if (!u || !u.alive) return false;
+  if (!u._sheepOrig) u._sheepOrig = { atk: u.atk, maxHp: u.maxHp, hp: u.hp };
+  u.sheepTurns = rounds || 1;
+  u.atk = 100;
+  u.maxHp = 1500;
+  u.hp = Math.min(u.hp, 1500);
+  u.isSheep = true;
+  if (u.el) {
+    u.el.classList.add('sheep');
+    floatText(u.el, '咩', 'debuff', 0);
+  }
+  syncUnit(u);
+  return true;
+}
+function unsheep(u) {
+  if (!u.isSheep) return;
+  u.isSheep = false;
+  u.sheepTurns = 0;
+  if (u._sheepOrig) {
+    u.atk = u._sheepOrig.atk;
+    u.maxHp = u._sheepOrig.maxHp;
+    u.hp = Math.min(u.hp, u.maxHp);
+    u._sheepOrig = null;
+  }
+  if (u.el) u.el.classList.remove('sheep');
+  syncUnit(u);
+}
 function cleanse(u) {
+  if (u.isSheep) { unsheep(u); if (u.el) floatText(u.el, '复原', 'buff', 6); }
   u.effects = u.effects.filter(e => e.type === 'atkUp');
   const wasSealed = u.sealed > 0;
   u.sealed = 0;
@@ -2957,6 +3230,15 @@ function killUnit(u, src) {  if (!u.alive) return;
 }
 
 /* 核心：一次攻击结算 */
+/* 命运塔罗：每阵营共享，上限 5 层 */
+const TAROT_MAX = 5;
+function addTarot(side, n) {
+  if (!B) return 0;
+  B.tarot = B.tarot || { player: 0, enemy: 0 };
+  const before = B.tarot[side] || 0;
+  B.tarot[side] = Math.min(TAROT_MAX, before + n);
+  return B.tarot[side] - before;
+}
 function strike(src, tgt, mult, opts) {
   opts = opts || {};
   /* 命运塔罗：抵挡一次伤害（AOE 只有最前排能触发） */
@@ -2970,10 +3252,12 @@ function strike(src, tgt, mult, opts) {
       (function (c) { setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 900); })(_card);
       floatText(tgt.el, '命运塔罗 · 挡下', 'tarotText', 0);
     }
+    const _ps = activeCaller(tgt.side);
+    if (_ps && _ps.spirit.wakeOnTarot && typeof addWake === 'function') { addWake((mult * 100 >= 350) ? 3 : 1); }
     if (typeof flashScreen === 'function') flashScreen('rgba(190,130,255,.34)');
     if (typeof tarotShow === 'function') tarotShow();
     if (typeof sfx === 'object' && sfx.win) { try { sfx.win(); } catch (e) {} }
-    log('uD83CuDCCF <b style="color:#ffd76b">命运塔罗</b> 为 ' + tag(tgt) + ' 挡下伤害（剩余 ' + B.tarot[tgt.side] + '）', 'sys');
+    log('🃏 <b style="color:#ffd76b">命运塔罗</b> 为 ' + tag(tgt) + ' 挡下伤害（剩余 ' + B.tarot[tgt.side] + '）', 'sys');
     return { dmg: 0, crit: false, em: 1, killed: false, blocked: true };
   }
   if (!tgt || !tgt.alive) return { dmg: 0, crit: false, em: 1, killed: false };
@@ -2998,9 +3282,10 @@ function strike(src, tgt, mult, opts) {
   const variance = rnd(0.9, 1.1);
   let raw = src.atk * atkMod(src) * mult * em * variance * (crit ? 1.55 : 1);
   raw *= (1 + (A.dmg || 0) / 100);
+  if (opts.flat) raw += opts.flat;
 
   // 格挡 / 破击
-  const blockPct = clamp(((D.block || 0) / 100) * (1 - (A.pierce || 0) / 100), 0, 0.35);
+  const blockPct = clamp((((D.block || 0) + (tgt.blockBonus || 0)) / 100) * (1 - (A.pierce || 0) / 100), 0, 0.75);
   if (blockPct > 0) {
     raw *= (1 - blockPct);
     if (blockPct >= 0.04 && tgt.el) floatText(tgt.el, '格挡', 'block');
@@ -3100,6 +3385,18 @@ async function basicAttack(u) {
   if (u.awakened && u.spirit.wakeBasic) base = u.spirit.wakeBasic;
   const n = base.targets || 1;
   const bOpt = base.mustCounter ? { mustCounter: true } : undefined;
+  /* 女祭司通灵：横排合计伤害 */
+  if (base.rowBasic) {
+    const fs = orderedFoes(u);
+    if (fs.length) {
+      const bc = fs[0].col;
+      const row = fs.filter(function (f) { return f.col === bc; });
+      const each = base.mult / Math.max(1, row.length);
+      for (const f of row) { strike(u, f, each); await pace(80); }
+    }
+    gainEnergy(u, ENERGY_GAIN_ATTACK);
+    return;
+  }
   const t = pickTarget(u);
   if (!t) return;
   u.el.classList.add(u.side === 'player' ? 'lunge-r' : 'lunge-l');
@@ -3150,6 +3447,10 @@ async function castUlt(u) {
 
   switch (ult.type) {
     case 'aoe': {
+      if (ult.summonOnUlt) {
+        const sp2 = summonUnit(ult.summonOnUlt, u.side, { hp: 1, atk: 1 }, u.uid);
+        if (sp2) log('🔥 ' + tag(u) + ' 召唤了 ' + tag(sp2), 'sys');
+      }
       const tt = tauntTarget(otherSide(u.side));
       if (tt) {                       // 嘲讽：全体目标集火到它，倍率 × 目标数
         strike(u, tt, ult.mult * foes.length);
@@ -3362,11 +3663,149 @@ async function castUlt(u) {
         log('🪞 ' + tag(u) + ' 溢出不足以成形（' + Math.round(ovBefore) + ' 点）', 'sys');
       }
       break;
+    }    /* 女祭司 Boss：横排合计 330%（未通灵）/ 全阵合计 800%（通灵） */
+    case 'bossWipe': {
+      const awake = !!u.awakened;
+      const mult2 = awake ? (ult.wakeMult || 8.0) : (ult.mult || 3.3);
+      const mode = awake ? (ult.wakeMode || 'all') : (ult.mode || 'row');
+      let targets = [];
+      if (mode === 'all') {
+        targets = orderedFoes(u);
+      } else {
+        const fs = orderedFoes(u);
+        if (fs.length) {
+          const c = fs[0].col;
+          targets = fs.filter(f => f.col === c);
+        }
+      }
+      if (!targets.length) break;
+      const each = mult2 / targets.length;
+      log('🌙 ' + tag(u) + (awake ? ' 通灵·全阵月蚀（合计 ' : ' 月影横断（合计 ') + Math.round(mult2 * 100) + '%）', 'sys');
+      for (const f of targets) { strike(u, f, each); await pace(80); }
+      if (u.spirit.bossWakeTarot && awake) {
+        /* 通灵时额外补塔罗由 wakeTrigger 处理 */
+      }
+      break;
+    }    /* 倒吊人 Boss：召唤 8 只绵羊并依次出手 */
+    case 'sheepArmy': {
+      const army = [];
+      const need = ult.count || 8;
+      for (let i = 0; i < need; i++) {
+        const add = summonUnit('sheepMinion', u.side, { hp: 1, atk: 1 }, u.uid);
+        if (!add) break;
+        army.push(add);
+        await pace(60);
+      }
+      log('🙃 ' + tag(u) + ' 唤出 ' + army.length + ' 只献祭绵羊', 'sys');
+      for (const sh of army) {
+        if (!sh.alive || state.phase !== 'battle') continue;
+        if (!aliveUnits('player').length) break;
+        const tt = pickTarget(sh);
+        if (!tt) continue;
+        B.current = sh;
+        renderStrip();
+        const flat = Math.round(u.atk);
+        strike(sh, tt, 1.0, { flat: flat });
+        u.atk = Math.round(u.atk * 1.01);
+        syncUnit(u);
+        if (sh.el) floatText(sh.el, '咩', 'buff', 0);
+        await pace(90);
+      }
+      B.current = u;
+      renderStrip();
+      log('🙃 ' + tag(u) + ' 攻击力提升至 ' + Math.round(u.atk), 'sys');
+      break;
+    }    /* 女祭司：随机 2 名 170% + 获得塔罗 */
+    case 'randomTwo': {
+      const foes = orderedFoes(u).slice();
+      for (let i = foes.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const tmp = foes[i]; foes[i] = foes[j]; foes[j] = tmp; }
+      const pick2 = foes.slice(0, ult.targets || 2);
+      for (const f of pick2) { strike(u, f, ult.mult); await pace(80); }
+      if (ult.tarotGain) {
+        addTarot(u.side, ult.tarotGain);
+        log('🌙 ' + tag(u) + ' 获得 ' + ult.tarotGain + ' 层命运塔罗（' + B.tarot[u.side] + '/' + TAROT_MAX + '）', 'sys');
+      }
+      break;
+    }
+    /* 女祭司通灵：竖排合计 330% */
+    case 'colTotal': {
+      const fs2 = orderedFoes(u);
+      if (fs2.length) {
+        const cols = {};
+        fs2.forEach(f => { cols[f.col] = (cols[f.col] || 0) + 1; });
+        const bestCol = Object.keys(cols).sort((a, b) => cols[b] - cols[a])[0];
+        const col = fs2.filter(f => String(f.col) === String(bestCol));
+        const each = ult.mult / Math.max(1, col.length);
+        for (const f of col) { strike(u, f, each); await pace(80); }
+      }
+      break;
+    }    /* 节制：复活两名 / 否则给最低血两人护盾 */
+    case 'reviveOrShield': {
+      const amt = Math.round(u.maxHp * (ult.pct || 0.25));
+      const dead = B.units.filter(x => x.side === u.side && !x.alive && !(x.spirit && x.spirit.isAdd));
+      if (dead.length) {
+        for (const d of dead.slice(0, 2)) {
+          d.alive = true;
+          d.hp = Math.max(1, amt);
+          d.shield = 0;
+          if (d.el) d.el.classList.remove('dead');
+          syncUnit(d);
+          log('🕊️ ' + tag(u) + ' 以 ' + amt + ' 生命唤回了 ' + tag(d), 'sys');
+          await pace(120);
+        }
+      } else {
+        const low = B.units.filter(x => x.side === u.side && x.alive)
+          .sort((a, b) => a.hp - b.hp).slice(0, 2);
+        for (const a of low) {
+          addShield(a, amt, 2);
+          log('🕊️ ' + tag(a) + ' 获得 ' + amt + ' 点护盾', 'sys');
+          await pace(100);
+        }
+      }
+      break;
+    }    /* 魔术师：前排合计 200% + 1 层塔罗 */
+    case 'rowSplit': {
+      const fs = orderedFoes(u);
+      if (fs.length) {
+        const frontCol = fs[0].col;
+        const row = fs.filter(f => f.col === frontCol);
+        const each = ult.mult / Math.max(1, row.length);
+        for (const f of row) { strike(u, f, each); await pace(80); }
+      }
+      addTarot(u.side, 1);
+      log('🃏 ' + tag(u) + ' 获得 1 层命运塔罗（' + B.tarot[u.side] + '/' + TAROT_MAX + '）', 'sys');
+      break;
+    }
+    /* 正义：全体 160% + 最低血追打 150% */
+    case 'aoeFinisher': {
+      for (const f of orderedFoes(u)) { strike(u, f, ult.mult); await pace(70); }
+      const alive = orderedFoes(u);
+      if (alive.length) {
+        const low = alive.slice().sort((a, b) => a.hp - b.hp)[0];
+        if (low) {
+          log('⚖️ ' + tag(u) + ' 对 ' + tag(low) + ' 追加裁断', 'sys');
+          strike(u, low, ult.extra || 1.5);
+        }
+      }
+      break;
+    }    /* 隐者：220% 单体 + 给己方唤灵师 1 回合嘲讽 */
+    case 'tauntCaller': {
+      const th = pickTarget(u);
+      if (th) strike(u, th, ult.mult);
+      const sc = B.units.find(x => x.side === u.side && x.alive && x.spirit && x.spirit.profession === 'spiritcaller');
+      if (sc) {
+        sc.taunt = true;
+        sc.tauntRounds = 1;
+        log('🕯️ ' + tag(sc) + ' 被隐者庇护，获得 1 回合嘲讽', 'sys');
+      } else {
+        log('🕯️ 场上没有唤灵师可以庇护', 'sys');
+      }
+      break;
     }    /* 愚者：220% 单体 + 抽一张命运塔罗 */
     case 'tarotStrike': {
       const tt2 = pickTarget(u);
       if (tt2) strike(u, tt2, ult.mult);
-      if (B && B.tarot) { B.tarot[u.side] = (B.tarot[u.side] || 0) + 1; log('🃏 ' + tag(u) + ' 抽到一张命运塔罗（' + B.tarot[u.side] + '）', 'sys'); }
+      if (B && B.tarot) { addTarot(u.side, 1); log('🃏 ' + tag(u) + ' 抽到一张命运塔罗（' + B.tarot[u.side] + '/' + TAROT_MAX + '）', 'sys'); }
       break;
     }
     /* 天枢：200% 必克必中 + 连击（额外出手） */
@@ -3489,6 +3928,15 @@ function checkEnd() {
 }
 
 async function endOfRound() {
+  if (B && B.units && B.units.length) {
+    B.units.forEach(function (u3) {
+      if (u3.alive && u3.spirit && u3.spirit.bossTarotPerRound) addTarot(u3.side, u3.spirit.bossTarotPerRound);
+    });
+  }
+  if (B && B.units && B.units.some(function (u) { return u.spirit && u.spirit.soulHeal; })) { try { soulDrainCheck(); } catch (e) {} }
+  for (const su of B.units.slice()) {
+    if (su.isSheep && su.sheepTurns > 0) { su.sheepTurns--; if (su.sheepTurns <= 0) unsheep(su); }
+  }
   // 中毒结算
   for (const u of B.units.slice()) {
     if (!u.alive) continue;
@@ -3535,12 +3983,36 @@ function renderRoyal(units) {
 /* 王权技结算：每回合开始，持有者给己方全体加气势 */
 function applyRoyal() {
   if (!B) return;
+  if (state.royalOff) { log('👑 王权技已关闭（设置中开启）', 'sys'); return; }
   const holders = B.units.filter(u => u.side === 'player' && u.alive && u.spirit && u.spirit.royal);
   if (!holders.length) return;
   const mates = aliveUnits('player');
   let total = 0, healed = 0;
   for (const h of holders) {
     const royal = h.spirit.royal;
+    if (royal.type === 'callerBuff') {
+      /* 隐者王权：属性种类达标 → 强化唤灵师并每回合给塔罗 */
+      const elems = new Set(mates.map(m => m.element));
+      if (elems.size >= (royal.elemNeed || 3)) {
+        const caller = activeCaller('player');
+        if (caller) {
+          if (!caller._royalHpBoosted) {
+            caller._royalHpBoosted = true;
+            caller.maxHp = Math.round(caller.maxHp * (1 + (royal.hpPct || 0.25)));
+            caller.hp = Math.min(caller.maxHp, caller.hp + Math.round(caller.maxHp * 0.25));
+            syncUnit(caller);
+            log('🕯️ 王权技：' + tag(caller) + ' 生命上限提升', 'sys');
+          }
+          caller.blockBonus = (royal.block || 50);
+          addTarot('player', royal.tarot || 1);
+          log('🕯️ 王权技：' + tag(caller) + ' 格挡 +' + (royal.block || 50) + '% · 命运塔罗 +' + (royal.tarot || 1), 'sys');
+          if (caller.el) floatText(caller.el, '守护', 'buff', 0);
+        }
+      } else {
+        log('🕯️ 王权技未能生效：己方属性仅 ' + elems.size + ' 种（需 ' + (royal.elemNeed || 3) + '）', 'sys');
+      }
+      continue;
+    }
     if (royal.type === 'regen') {
       /* 神佑型：每回合回复最大生命百分比 */
       for (const m of mates) {
@@ -3548,7 +4020,11 @@ function applyRoyal() {
         healed += healUnit(m, amt, h);
       }
     } else {
-      /* 王权型：每回合加气势 */
+      /* 王权型：每回合加气势（可带属性数量门槛） */
+      if (royal.elem && royal.elemNeed) {
+        const cnt = mates.filter(m => m.element === royal.elem).length;
+        if (cnt < royal.elemNeed) { log('👑 王权技未生效：' + (royal.elem === 'king' ? '王属性' : royal.elem) + ' 仅 ' + cnt + ' 只（需 ' + royal.elemNeed + '）', 'sys'); continue; }
+      }
       const amt = royal.energy || 0;
       total += amt;
       for (const m of mates) {
@@ -3632,6 +4108,40 @@ function queueExtraTurn(u) {
 }
 
 /* 天枢座（Boss）：每次行动后召唤 1 个星灵，然后所有星灵依次行动 */
+/* 正义（Boss）：硫火之灵依次出手，每只给她 +50 气势 */
+async function soulChain(boss) {
+  const souls = B.units.filter(function (x) { return x.side === boss.side && x.alive && x.spirit && x.spirit.id === 'sulfurSpirit'; });
+  for (const s of souls) {
+    if (!s.alive || state.phase !== 'battle') continue;
+    const foe = pickTarget(s);
+    if (!foe) break;
+    B.current = s; renderStrip();
+    strike(s, foe, 1.0);
+    gainEnergy(boss, 50);
+    if (boss.el) floatText(boss.el, '⚡+50', 'buff', 0);
+    await pace(80);
+  }
+  B.current = boss; renderStrip();
+}
+/* 正义（Boss）：生命低于 30% 时吞噬全部硫火之灵回血 */
+function soulDrainCheck() {
+  const boss = B.units.find(function (u) { return u.isBoss && u.spirit && u.spirit.soulHeal; });
+  if (!boss || !boss.alive) return;
+  const heals = boss.spirit.soulHeal;
+  if (boss.hp / boss.maxHp >= heals.threshold) return;
+  const souls = B.units.filter(function (x) { return x.side === boss.side && x.alive && x.spirit && x.spirit.id === 'sulfurSpirit'; });
+  if (!souls.length) return;
+  let total = 0;
+  for (const s of souls) {
+    s.alive = false; s.hp = 0;
+    if (s.el) s.el.classList.add('dead');
+    total += Math.round(boss.maxHp * heals.pct);
+  }
+  boss.hp = Math.min(boss.maxHp, boss.hp + total);
+  syncUnit(boss);
+  if (boss.el) floatText(boss.el, '+' + total, 'buff', 0);
+  log('⚖️ ' + tag(boss) + ' 吞噬 ' + souls.length + ' 只硫火之灵，回复 ' + total + ' 生命', 'sys');
+}
 async function bossSummonChain(u) {
   const isAdd = x => x.spirit && x.spirit.isAdd && x.summonedBy === u.uid;
   const adds0 = B.units.filter(x => x.side === u.side && x.alive && isAdd(x));
@@ -3679,8 +4189,8 @@ async function awakenCinematic(k, first) {
       if (l1) l1.src = k.spirit.wakeArt1 || k.spirit.art || '';
       if (l2) l2.src = k.spirit.art2 || k.spirit.art || '';
       const nm = document.getElementById('awakenSkill');
-      if (nm) nm.textContent = first ? '觉醒 · 万龙天罚' : '万龙天罚 · 再临';
-      if (txt) txt.textContent = first ? '北斗星移，万龙听令！' : '群星再聚，万龙随行！';
+      if (nm) nm.textContent = first ? ((k.spirit.wakeUlt && k.spirit.wakeUlt.name) || '觉醒 · 万龙天罚') : ((k.spirit.wakeUlt && k.spirit.wakeUlt.name) || '再临');
+      if (txt) txt.textContent = first ? (k.spirit.wakeLine || '北斗星移，万龙听令！') : '通灵 · 再临';
       root.classList.remove('hidden');
       root.classList.add('play');
       if (typeof flashScreen === 'function') flashScreen('rgba(255,245,220,.92)');
@@ -3694,8 +4204,15 @@ async function awakenCinematic(k, first) {
 }
 /* ===== 唤灵师：唤灵点 / 觉醒 ===== */
 const WAKE_MAX = 10;
+function activeCaller(side) {
+  if (!B) return null;
+  var list = B.units.filter(function (u) { return u.side === side && u.alive && u.spirit && u.spirit.profession === 'spiritcaller'; });
+  if (!list.length) return null;
+  list.sort(function (a, b) { return (b.col - a.col) || (a.row - b.row) || (a.uid - b.uid); });
+  return list[0];
+}
 function kaiyangOf(side) {
-  return B ? B.units.find(u => u.spirit && u.spirit.profession === 'spiritcaller' && u.side === side) : null;
+  return activeCaller(side);
 }
 function addWake(n, why) {
   const k = kaiyangOf('player');
@@ -3703,6 +4220,7 @@ function addWake(n, why) {
   const prev = B.wake || 0;
   B.wake = Math.min(WAKE_MAX, prev + n);
   renderWakeBar();
+  try { renderRail(); } catch (e) {}
   if (B.wake > prev && k.el) {
     k.el.classList.remove('wakeflash'); void k.el.offsetWidth; k.el.classList.add('wakeflash');
   }
@@ -3731,6 +4249,12 @@ async function wakeTrigger(k, why) {
   }
   const first = !k.awakened;
   k.awakened = true;
+  if (k.spirit && k.spirit.bossWakeTarot) { addTarot(k.side, k.spirit.bossWakeTarot); log('🌙 ' + tag(k) + ' 通灵：命运塔罗 +' + k.spirit.bossWakeTarot, 'sys'); }
+  const wa = k.spirit && k.spirit.wakeOnAwaken;
+  if (wa) {
+    if (wa.tarot) { addTarot(k.side, wa.tarot); log('🌙 ' + tag(k) + ' 通灵：获得 ' + wa.tarot + ' 层命运塔罗', 'sys'); }
+    if (wa.taunt) { k.taunt = true; k.tauntRounds = wa.taunt; log('🌙 ' + tag(k) + ' 通灵：获得 ' + wa.taunt + ' 回合嘲讽', 'sys'); }
+  }
   await awakenCinematic(k, first);
   // 强制插队：最高优先级额外回合
   k.energy = 100;
@@ -3765,20 +4289,22 @@ async function battleLoop() {
       }
       B.current = u;
       renderStrip();
-      if (u.energy >= 100) await castUlt(u);
+      if (u.energy >= 100 && !u.isSheep) await castUlt(u);
       else                 await basicAttack(u);
       result = checkEnd();
       if (result) break;
       if (u.spirit.isAdd && u.summonedBy) linkFollow(u);
       // 唤灵师：王属性队友行动 +2
       if (u.side === 'player') {
-        if (u.spirit.element === 'king') addWake(2);
+        const _sc = activeCaller('player');
+        if (u.spirit.element === 'king' && _sc && _sc.spirit.wakeOnKing) addWake(2);
         B.units.filter(x => x.side === 'player' && x.spirit.element === 'king' && !x.alive && !x.__wakeCounted)
           .forEach(x => { x.__wakeCounted = true; addWake(2); });
         if (u.awakened && u.spirit.profession === 'spiritcaller' && !u.__acted2) { u.__acted2 = true; queueExtraTurn(u); }
       }
       if (u.alive && u.isBoss && u.spirit.summonOnAct) await summonFrom(u);
       if (u.alive && u.isBoss && u.spirit.bossBasic && u.spirit.bossBasic.summon) { await bossSummonChain(u); result = checkEnd(); if (result) break; }
+      if (u.alive && u.isBoss && u.spirit.soulEnergy) { await soulChain(u); result = checkEnd(); if (result) break; }
       await pace(140);
     }
     if (result) break;
@@ -3988,6 +4514,7 @@ function syncSetUI() {
   if (g('setMusic')) { g('setMusic').textContent = MUSIC.on ? '开' : '关'; g('setMusic').classList.toggle('off', !MUSIC.on); }
   if (g('setFx')) { g('setFx').textContent = state.fxOff ? '关' : '开'; g('setFx').classList.toggle('off', !!state.fxOff); }
   if (g('setBg')) { g('setBg').textContent = state.bgFast ? '开' : '关'; g('setBg').classList.toggle('off', !state.bgFast); }
+  if (g('setRoyal')) { g('setRoyal').textContent = state.royalOff ? '关' : '开'; g('setRoyal').classList.toggle('off', !!state.royalOff); }
 }
 function toggleFx() {
   state.fxOff = !state.fxOff;
@@ -4005,9 +4532,95 @@ function bindSettings() {
   g('setSound').onclick = () => { state.sound = !state.sound; saveProgress(); if (state.sound) sfx.tick(); else musicStop(0.3); syncSetUI(); };
   g('setMusic').onclick = () => { musicToggle(); syncSetUI(); };
   g('setFx').onclick = () => toggleFx();
+  g('setRoyal').onclick = () => { state.royalOff = !state.royalOff; saveProgress(); syncSetUI(); toast(state.royalOff ? '王权技已关闭' : '王权技已开启'); };
   g('setBg').onclick = () => { state.bgFast = !state.bgFast; saveProgress(); syncSetUI(); toast(state.bgFast ? '后台加速已开启：最小化时战斗快速推进' : '后台加速已关闭：最小化时按正常速度继续'); };
   g('setSave').onclick = () => { g('setModal').classList.add('hidden'); const sm = document.getElementById('saveModal'); if (sm) sm.classList.remove('hidden'); };
   g('setFull').onclick = () => toggleFull();
+}
+/* 左侧三段栏渲染：王权技 / 契约兽 */
+function renderRail() {
+  const rr = document.getElementById('railRoyal');
+  if (rr) {
+    const holders = Object.values(state.lineup).map(id => SPIRITS.find(s => s.id === id)).filter(s => s && s.royal);
+    if (!holders.length) rr.innerHTML = '<em>当前阵容无王权技</em>';
+    else rr.innerHTML = holders.map(s => '<b>👑 ' + s.name + '「' + s.royal.name + '」</b><em>' + s.royal.desc + '</em>').join('');
+  }
+  const rb = document.getElementById('railBeast');
+  if (rb) {
+    const sum = Object.values(state.lineup).map(id => SPIRITS.find(s => s.id === id)).filter(s => s && s.profession === 'summoner');
+    if (!sum.length) rb.innerHTML = '<em>当前阵容无召唤师</em>';
+    else {
+      const sd = saveData();
+      rb.innerHTML = sum.map(s => {
+        const pool = (s.summoner && s.summoner.units) || [];
+        const cur = sd.contract && pool.includes(sd.contract) ? sd.contract : pool[0];
+        const t = SPIRITS.find(x => x.id === cur);
+        return '<b>' + s.emoji + ' ' + s.name + '</b><em>契约：' + (t ? (t.name === '？？？' ? '未揭示的契约兽' : t.name) : '—') + '</em>';
+      }).join('');
+    }
+  }
+}
+/* ===== 阵容预览 ===== */
+function openComp() {
+  const grid = document.getElementById('compGrid');
+  const list = document.getElementById('compList');
+  if (!grid || !list) return;
+  const cells = [];
+  for (let s = 0; s < 9; s++) {
+    const id = state.lineup[s];
+    const sp = id ? SPIRITS.find(x => x.id === id) : null;
+    if (sp) {
+      const el = ELEM[sp.element] || {};
+      cells.push('<div class="comp-cell has">' + (sp.art ? '<img src="' + sp.art + '" alt="">' : '') +
+        '<span class="ce">' + (el.emoji || '') + '</span></div>');
+    } else {
+      cells.push('<div class="comp-cell">' + ({ 0: '后1', 1: '中1', 2: '前1', 3: '后2', 4: '中2', 5: '前2', 6: '后3', 7: '中3', 8: '前3' }[s] || '') + '</div>');
+    }
+  }
+  grid.innerHTML = cells.join('');
+
+  const ids = Object.keys(state.lineup).map(k => state.lineup[k]);
+  document.getElementById('compCount').textContent = ids.length + ' / 7';
+
+  const els = new Set();
+  let totalLv = 0;
+  const rows = ids.map(id => {
+    const sp = SPIRITS.find(x => x.id === id);
+    if (!sp) return '';
+    const sv = spiritSave(id);
+    const el = ELEM[sp.element] || {};
+    els.add(sp.element);
+    totalLv += (sv.lv || 1);
+    const prof = sp.profession === 'summoner' ? '召唤师' : sp.profession === 'spiritcaller' ? '唤灵师' : '常规';
+    return '<div class="comp-card">' +
+      '<div class="cc-face">' + (sp.art ? '<img src="' + sp.art + '" alt="">' : '<div style="display:grid;place-items:center;height:100%;font-size:22px">' + sp.emoji + '</div>') + '</div>' +
+      '<div class="cc-main">' +
+        '<div class="cc-top"><span class="cc-name">' + sp.name + '</span><span class="cc-lv">Lv.' + (sv.lv || 1) + '</span></div>' +
+        '<div class="cc-tags"><span>' + (el.emoji || '') + (el.name || '') + '</span><span>' + prof + '</span><span>' + (sp.role || '') + '</span></div>' +
+        '<div class="cc-sk"><b>' + (sp.basic ? sp.basic.name : '') + '</b> ' + Math.round((sp.basic ? sp.basic.mult : 1) * 100) + '% · <b>' + (sp.ult ? sp.ult.name : '') + '</b> ' + Math.round((sp.ult ? sp.ult.mult : 1) * 100) + '%</div>' +
+        (function () {
+          const list = (sv.souls || []).filter(x => x != null);
+          if (!list.length) return '<div class="cc-souls"><span class="cc-empty">未装配灵念</span></div>';
+          const RANK = { '凡': 0, '珍': 1, '绝': 2, '圣': 3 };
+          return '<div class="cc-souls">' + list.map(uid => {
+            const s = soulById(uid);
+            if (!s) return '';
+            const T = SOUL_TYPES[s.type] || {};
+            const rk = RANK[s.rarity] || 0;
+            return '<span class="cc-soul r' + rk + '" style="color:' + (s.color || '#fff') + '">' +
+              (T.name || '') + ' +' + s.value + (T.unit || '') + '</span>';
+          }).join('') + '</div>';
+        })() +
+        (sp.royal ? '<div class="cc-royal">👑 ' + sp.royal.name + '</div>' : '') +
+      '</div></div>';
+  }).join('');
+  list.innerHTML = rows || '<div style="color:var(--muted);font-size:12px">还没有上阵精灵</div>';
+
+  const cps = ids.reduce((s, id) => s + (typeof spiritCP === 'function' ? spiritCP(id) : 0), 0);
+  document.getElementById('compSum').innerHTML =
+    '属性种类 <b>' + els.size + '</b> 种<br>总战力 <b>' + cps + '</b><br>平均等级 <b>' + (ids.length ? Math.round(totalLv / ids.length) : 0) + '</b>';
+  document.getElementById('compModal').classList.remove('hidden');
+  sfx.tick();
 }
 /* ===== 阵容预设 ===== */
 function presets() {
@@ -4056,10 +4669,9 @@ function loadPreset(i) {
   sfx.tick();
 }
 function bindPresets() {
-  document.getElementById('presetTab').onclick = () => {
-    document.getElementById('presetBar').classList.toggle('open');
-    sfx.tick();
-  };
+  const _pt = document.getElementById('presetTab');
+  if (_pt) { _pt.onclick = function (e) { e.stopPropagation(); const bar = document.getElementById('presetBar'); if (bar) bar.classList.toggle('open'); }; }
+  /* 展开/收起由全局委托统一处理 */
   document.getElementById('presetList').addEventListener('click', e => {
     const g = e.target.closest('[data-p]');
     if (g) { loadPreset(+g.dataset.p); return; }
@@ -4124,6 +4736,93 @@ function summonKaiyang() {
   if (c10) c10.onclick = () => document.getElementById('soul10Modal').classList.add('hidden');
   renderPresets(); renderRoster(); renderDeploy();
 }
+/* ===== 背包 ===== */
+function renderBagItems() {
+  const a = document.getElementById('starTarotCount');
+  if (a) a.textContent = Math.min(starTarot(), STAR_TAROT_NEED) + ' / ' + STAR_TAROT_NEED;
+  const b = document.getElementById('kyShardCount');
+  if (b) b.textContent = Math.min(kyShards(), KY_SHARDS) + ' / ' + KY_SHARDS;
+  const btn = document.getElementById('btnSummonTemperance');
+  if (btn) {
+    const own = !!(saveData().owned || {})['temperance'];
+    btn.disabled = own || starTarot() < STAR_TAROT_NEED;
+    btn.textContent = own ? '已拥有' : (starTarot() < STAR_TAROT_NEED ? '不足' : '召唤');
+  }
+}
+function openBag(tab) {
+  renderBagItems();
+  if (typeof renderGrow === 'function') renderGrow();
+  const m = document.getElementById('bagModal');
+  if (m) m.classList.remove('hidden');
+  bagTab(tab || 'grow');
+}
+function bagTab(k) {
+  document.querySelectorAll('#bagTabs .bag-tab').forEach(function (b) { b.classList.toggle('on', b.dataset.bag === k); });
+  var modal = document.querySelector('#bagModal .bag-modal');
+  if (!modal) return;
+  var tabs = document.getElementById('bagTabs');
+  var item = document.getElementById('bagItemPane');
+  Array.prototype.forEach.call(modal.children, function (ch) {
+    if (ch === tabs) return;
+    if (ch === item) { ch.classList.toggle('hidden', k !== 'item'); return; }
+    ch.classList.toggle('hidden', k === 'item');
+  });
+  modal.scrollTop = 0;
+  if (k === 'item' && typeof renderBagItems === 'function') renderBagItems();
+}
+/* ===== 月辉塔罗：女祭司解锁道具 ===== */
+const MOON_NEED = 10;
+function moonTarot() { return (saveData().moonTarot || 0); }
+function rollMoonTarot() {
+  if (state.mode !== 'raid' || raidSel !== 'priestess') return 0;
+  if (Math.random() > 0.04) return 0;
+  const sd = saveData();
+  sd.moonTarot = (sd.moonTarot || 0) + 1;
+  saveProgress();
+  return 1;
+}
+function summonPriestess() {
+  const sd = saveData();
+  sd.owned = sd.owned || {};
+  if (sd.owned['priestess']) { toast('已经拥有女祭司'); return; }
+  if (moonTarot() < MOON_NEED) { toast('月辉塔罗不足（' + moonTarot() + '/' + MOON_NEED + '）'); return; }
+  sd.moonTarot -= MOON_NEED;
+  sd.owned['priestess'] = true;
+  const p3 = spiritSave('priestess'); p3.lv = 1;
+  saveProgress();
+  toast('🌙 女祭司 已收入灵契');
+  renderDeploy();
+}
+/* ===== 星轨塔罗：节制本体兑换材料 ===== */
+const STAR_TAROT_NEED = 10;
+function starTarot() { return (saveData().starTarot || 0); }
+function rollStarTarot() {
+  let chance = 0;
+  if (state.mode === 'raid') {
+    chance = (raidSel === 'hanged' || raidSel === 'justice') ? 0.04 : 0;
+  } else {
+    chance = (state.stage >= 10) ? 0.02 : 0;
+  }
+  if (!chance) return 0;
+  if (Math.random() > chance) return 0;
+  const sd = saveData();
+  sd.starTarot = (sd.starTarot || 0) + 1;
+  saveProgress();
+  return 1;
+}
+function summonTemperance() {
+  const sd = saveData();
+  sd.owned = sd.owned || {};
+  if (sd.owned['temperance']) { toast('已经拥有节制'); return; }
+  if (starTarot() < STAR_TAROT_NEED) { toast('星轨塔罗不足（' + starTarot() + '/' + STAR_TAROT_NEED + '）'); return; }
+  sd.starTarot -= STAR_TAROT_NEED;
+  sd.owned['temperance'] = true;
+  const sp2 = spiritSave('temperance'); sp2.lv = 1;
+  saveProgress();
+  toast('🕊️ 节制 已收入灵契');
+  renderDeploy();
+}
+
 /* 掉落：关卡 6-10 与深渊玉衡/天枢 */
 function rollKyShard() {
   let chance = 0;
@@ -4409,6 +5108,7 @@ function renderDeploy() {
   renderRoyal(pUnits);
   bindGridDrag();
   renderWakeBar();
+  try { renderRail(); } catch (e) {}
   try { renderPresets(); } catch (e) {}
 }
 
@@ -4501,9 +5201,20 @@ async function startBattle() {
 
   buildBattle();
   B.tarot = { player: 0, enemy: 0 };
-  B.units.forEach(function (u) { var g = (u.spirit && u.spirit.grantsTarot) || 0; if (g) B.tarot[u.side] += g; });
+  B.units.forEach(function (u) { var g = (u.spirit && u.spirit.grantsTarot) || 0; if (g) addTarot(u.side, g); });
+  B.units.forEach(function (u) { if (u.spirit && u.spirit.alwaysTaunt) u.alwaysTaunt = true; });
+  B.units.filter(function (x) { return x.spirit && x.spirit.onEnterSheep && x.side === 'player'; }).forEach(function (src) {
+    var foes = B.units.filter(function (x) { return x.side !== src.side && x.alive; });
+    if (!foes.length) return;
+    var sorted = foes.slice().sort(function (a, b) { return (b.col - a.col) || (a.row - b.row); });
+    var targets = [sorted[0], sorted[sorted.length - 1]].filter(Boolean);
+    var seen = {};
+    targets.forEach(function (t) { if (seen[t.uid]) return; seen[t.uid] = 1; sheepify(t, 1); });
+    log('🙃 ' + tag(src) + ' 将敌方首位与末尾化作了绵羊', 'sys');
+  });
   renderRoyal(B.units.filter(u => u.side === 'player'));
   renderWakeBar();
+  try { renderRail(); } catch (e) {}
   /* 王权技：入局演出 + 战场染金 */
   const royalHolders = B.units.filter(u => u.side === 'player' && u.spirit.royal);
   document.body.classList.toggle('royal-on', royalHolders.length > 0);
@@ -4585,6 +5296,29 @@ function finishBattle(result) {
     (B.rewards = B.rewards || []).push('💎 灵晶 +' + gain);
       log(`💎 通关奖励 ${gain} 灵晶（当前 ${saveData().crystal}）`, 'sys');
       saveProgress();
+    }
+  }
+
+  /* 星轨塔罗掉落 + 深渊首通解锁 */
+  if (win) {
+    const _mt = rollMoonTarot();
+    if (_mt) { (B.rewards = B.rewards || []).push('🌙 月辉塔罗 ×1'); toast('🌙 掉落：月辉塔罗 ×1（' + moonTarot() + '/' + MOON_NEED + '）'); }
+    const _st = rollStarTarot();
+    if (_st) {
+      (B.rewards = B.rewards || []).push('🌟 星轨塔罗 ×1');
+      toast('🌟 掉落：星轨塔罗 ×1（' + starTarot() + '/' + STAR_TAROT_NEED + '）');
+    }
+    if (state.mode === 'raid' && (raidSel === 'hanged' || raidSel === 'justice')) {
+      const sdU = saveData(); sdU.owned = sdU.owned || {};
+      const nm = (SPIRITS.find(s => s.id === raidSel) || {}).name || raidSel;
+      if (!sdU.owned[raidSel]) {
+        sdU.owned[raidSel] = true;
+        const p2 = spiritSave(raidSel); if (!p2.lv) p2.lv = 1;
+        saveProgress();
+        log('✦ 深渊首通：' + nm + ' 被收入灵契', 'sys');
+        toast('✦ 首通奖励：' + nm);
+        renderDeploy();
+      }
     }
   }
 
@@ -4765,7 +5499,7 @@ function saveProgress() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       v: 2, unlocked: state.unlocked, crystal: d.crystal,
       spirits: d.spirits, pack: d.pack, uid: d.uid,
-      owned: d.owned, pity: d.pity, divine: d.divine, kyShards: d.kyShards, clears: d.clears, fxOff: !!d.fxOff, bgFast: !!d.bgFast, contract: d.contract, presets: d.presets,
+      owned: d.owned, pity: d.pity, divine: d.divine, kyShards: d.kyShards, starTarot: d.starTarot || 0, moonTarot: d.moonTarot || 0, clears: d.clears, fxOff: !!d.fxOff, royalOff: !!d.royalOff, bgFast: !!d.bgFast, contract: d.contract, presets: d.presets,
     }));
     localStorage.setItem('jiugong_unlocked', String(state.unlocked));
   } catch (e) {}
@@ -4781,7 +5515,7 @@ function loadProgress() {
         crystal: o.crystal || 0, spirits: o.spirits || {},
         pack: o.pack || [], uid: o.uid || 1,
         owned: o.owned || {}, pity: o.pity || 0, divine: o.divine || null,
-        kyShards: o.kyShards || 0, clears: o.clears || {}, fxOff: !!o.fxOff, bgFast: !!o.bgFast, contract: o.contract || null, presets: o.presets || [null,null,null,null,null],
+        kyShards: o.kyShards || 0, starTarot: o.starTarot || 0, moonTarot: o.moonTarot || 0, clears: o.clears || {}, fxOff: !!o.fxOff, bgFast: !!o.bgFast, contract: o.contract || null, presets: o.presets || [null,null,null,null,null],
       };
       return;
     }
@@ -5436,7 +6170,7 @@ function bindGrow() {
    ========================================================================== */
 const HALL_SERIES = [
   { id:'beidou', name:'北斗', cost:300, units:['tianquan','tianji','tianxuan','yaoguang'] },
-  { id:'arcana', name:'阿尔卡纳', cost:500, units:['fool'] },
+  { id:'arcana', name:'阿尔卡纳', cost:500, units:['fool','magician','hermit'] },
 ];
 let hallSeries = 'beidou';
 const hallSeriesConf = () => HALL_SERIES.find(s => s.id === hallSeries) || HALL_SERIES[0];
@@ -5977,6 +6711,8 @@ init();
 
 /* ===== 导航兜底：全局委托，不依赖 bindEvents ===== */
 document.addEventListener('click', function (ev) {
+  const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
+  if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const b = ev.target.closest && ev.target.closest('button[id]');
   if (!b) return;
   const id = b.id;
@@ -5992,6 +6728,9 @@ document.addEventListener('click', function (ev) {
     else if (id === 'btnStage') { show('stageModal'); }
     else if (id === 'btnFull') { if (typeof toggleFull === 'function') toggleFull(); }
     else if (id === 'btnKy') { if (typeof openKy === 'function') openKy(); }
+    else if (id === 'btnComp') { if (typeof openComp === 'function') openComp(); }
+    else if (id === 'btnBag' || id === 'btnGrow') { if (typeof openBag === 'function') openBag(); }
+    else if (id === 'btnSummonTemperance') { if (typeof summonTemperance === 'function') { summonTemperance(); renderBagItems(); } }
     else if (id === 'setSound') {
       state.sound = !state.sound;
       if (state.sound) { if (state.phase === 'battle' && typeof musicStart === 'function') musicStart(); }
@@ -6038,6 +6777,8 @@ document.addEventListener('click', function (ev) {
 }, true);
 /* 召唤系列切换：全局委托兜底 */
 document.addEventListener('click', function (ev) {
+  const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
+  if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const b = ev.target.closest && ev.target.closest('#hallSeries [data-series]');
   if (!b || b.disabled) return;
   const k = b.dataset.series;
@@ -6054,12 +6795,8 @@ document.addEventListener('click', function (ev) {
 }, true);
 /* 阵容预设栏兜底：全局委托，确保一定能展开 */
 document.addEventListener('click', function (ev) {
-  const tab = ev.target.closest && ev.target.closest('#presetTab');
-  if (tab) {
-    const bar = document.getElementById('presetBar');
-    if (bar) { bar.classList.toggle('open'); }
-    return;
-  }
+  const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
+  if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const g = ev.target.closest && ev.target.closest('#presetList [data-p]');
   if (g) { if (typeof loadPreset === 'function') loadPreset(+g.dataset.p); return; }
   const b = ev.target.closest && ev.target.closest('#presetList [data-ps]');
