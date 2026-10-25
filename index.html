@@ -727,6 +727,14 @@ body.royal-on .royal-strip{
 .rail-royal,.rail-beast{font-size:10.5px;line-height:1.7;color:#cfc9d8}
 .rail-royal b,.rail-beast b{color:#ffd76b;display:block;font-size:10.5px;margin-bottom:2px}
 .rail-royal em,.rail-beast em{font-style:normal;color:var(--muted);font-size:9.5px}
+/* 角色列表分页 */
+.grow-pager{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 0 4px}
+.gp-btn{
+  padding:5px 14px;border-radius:9px;font-size:11.5px;font-weight:800;cursor:pointer;
+  background:rgba(232,192,106,.16);border:1px solid rgba(232,192,106,.5);color:#ffe9b0;
+}
+.gp-btn:disabled{opacity:.35;cursor:default}
+.gp-info{font-size:11px;color:var(--muted);font-weight:800}
 /* 背包页签 */
 .bag-tabs{display:flex;gap:6px;margin:2px 0 12px}
 .bag-tab{
@@ -5666,6 +5674,7 @@ function drawSoul10() {
 }
 /* ---------------- 面板 ---------------- */
 let growSel = null;
+let growPage = 0;
 let soulDrawerSlot = null;   // 侧边栏当前要装进第几格（null = 收起）
 function openGrow() {
   if (!growSel) growSel = SPIRITS[0].id;
@@ -5894,7 +5903,13 @@ function renderGrow() {
       : '<div class="soul empty">没有可用的灵念</div>';
   }
 
-  $('#growList').innerHTML = ownedSpirits().map(sp => {
+  const _allOwned = ownedSpirits();
+  const GROW_PER_PAGE = 7;
+  const _pages = Math.max(1, Math.ceil(_allOwned.length / GROW_PER_PAGE));
+  if (typeof growPage !== 'number') growPage = 0;
+  growPage = Math.max(0, Math.min(growPage, _pages - 1));
+  const _pageList = _allOwned.slice(growPage * GROW_PER_PAGE, growPage * GROW_PER_PAGE + GROW_PER_PAGE);
+  document.getElementById('growList').innerHTML = _pageList.map(sp => {
     const p = spiritSave(sp.id);
     const maxed = p.lv >= LV_MAX;
     const soul = soulStats(p);
@@ -5940,7 +5955,11 @@ function renderGrow() {
         </button>
       </span>
     </div>`;
-  }).join('');
+  }).join('') + (_pages > 1
+    ? '<div class="grow-pager"><button class="gp-btn" data-gp="prev" ' + (growPage <= 0 ? 'disabled' : '') + '>‹ 上一页</button>'
+      + '<span class="gp-info">' + (growPage + 1) + ' / ' + _pages + '</span>'
+      + '<button class="gp-btn" data-gp="next" ' + (growPage >= _pages - 1 ? 'disabled' : '') + '>下一页 ›</button></div>'
+    : '');
 }
 
 /* 某个灵念装在谁身上 */
@@ -5985,7 +6004,7 @@ function closeSoulDrawer() {
 }
 
 function bindGrow() {
-  $('#btnGrow').onclick = () => { openGrow(); sfx.tick(); };
+const _bg = document.getElementById('btnBag') || document.getElementById('btnGrow'); if (_bg) _bg.onclick = () => { openBag(); sfx.tick(); };
   $('#btnCloseGrow').onclick = () => $('#bagModal').classList.add('hidden');
   $('#bagModal').addEventListener('click', e => {
     if (e.target.id === 'bagModal') $('#bagModal').classList.add('hidden');
@@ -6711,6 +6730,8 @@ init();
 
 /* ===== 导航兜底：全局委托，不依赖 bindEvents ===== */
 document.addEventListener('click', function (ev) {
+  const _gp = ev.target.closest && ev.target.closest('#growList [data-gp]');
+  if (_gp) { growPage += (_gp.dataset.gp === 'next' ? 1 : -1); if (growPage < 0) growPage = 0; renderGrow(); sfx.tick(); return; }
   const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
   if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const b = ev.target.closest && ev.target.closest('button[id]');
@@ -6789,6 +6810,8 @@ document.addEventListener('click', function (ev) {
 }, true);
 /* 召唤系列切换：全局委托兜底 */
 document.addEventListener('click', function (ev) {
+  const _gp = ev.target.closest && ev.target.closest('#growList [data-gp]');
+  if (_gp) { growPage += (_gp.dataset.gp === 'next' ? 1 : -1); if (growPage < 0) growPage = 0; renderGrow(); sfx.tick(); return; }
   const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
   if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const b = ev.target.closest && ev.target.closest('#hallSeries [data-series]');
@@ -6807,6 +6830,8 @@ document.addEventListener('click', function (ev) {
 }, true);
 /* 阵容预设栏兜底：全局委托，确保一定能展开 */
 document.addEventListener('click', function (ev) {
+  const _gp = ev.target.closest && ev.target.closest('#growList [data-gp]');
+  if (_gp) { growPage += (_gp.dataset.gp === 'next' ? 1 : -1); if (growPage < 0) growPage = 0; renderGrow(); sfx.tick(); return; }
   const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
   if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const g = ev.target.closest && ev.target.closest('#presetList [data-p]');
