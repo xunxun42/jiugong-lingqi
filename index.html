@@ -3356,7 +3356,7 @@ onAllyDamaged(tgt, opts.hits || 1);   // 塔罗挡下也算「挨打」：摇光
   raw *= (1 + (A.dmg || 0) / 100);
   if (opts.flat) raw += opts.flat;
   /* Boss 特权：所有伤害额外附带 2 倍自身攻击力的固定伤害 */
-  if (src && src.isBoss) raw += src.atk * 2;
+  if (src && src.isBoss) raw += src.atk * 1.2;
 
   // 格挡 / 破击
   const blockPct = clamp((((D.block || 0) + (tgt.blockBonus || 0)) / 100) * (1 - (A.pierce || 0) / 100), 0, 0.75);
@@ -3956,9 +3956,9 @@ function computeRoundOrder() {
     const ordered2 = [];
     const bosses = B.firstSide === 'player' ? e : p;
     const actors = B.firstSide === 'player' ? p : e;
-    actors.forEach(function (u) {
+    actors.forEach(function (u, i) {
       ordered2.push(u);
-      bosses.forEach(function (b) { ordered2.push(b); });
+      if ((i + 1) % 2 === 0) { bosses.forEach(function (b) { ordered2.push(b); }); }
     });
     return { first: B.firstSide, pSpd: B.pSpdInit, eSpd: B.eSpdInit, ordered: ordered2 };
   }
