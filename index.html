@@ -754,6 +754,8 @@ body.royal-on .royal-strip{
 .rail-one{font-size:10.5px;color:#cfc9d8;padding:3px 0}
 .rail-one b{color:#ffd76b}
 .rail-desc{font-size:9.5px;color:var(--muted);line-height:1.5;padding:2px 0 5px}
+.cdx-detail{margin-left:auto;padding:3px 10px;font-size:10.5px;border-radius:7px}
+.cdx-top{display:flex;align-items:center;gap:8px}
 /* 通灵技选择 */
 .pc-sub{font-size:9.5px;color:#cfc9d8;text-align:center;padding:0 4px 7px;line-height:1.35}
 .caller-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:12px}
@@ -4763,6 +4765,16 @@ function ultDetail(ult) {
   return bits.join(' · ');
 }
 
+
+function basicDesc(s) {
+  const b = s.basic || {};
+  const n = b.targets || 1;
+  const m = Math.round((b.mult || 1) * 100);
+  if (b.rowBasic) return '对横排合计 <em>' + m + '%</em> 伤害（平均分摊）';
+  if (n > 1) return '对 <em>' + n + '</em> 名敌人各 <em>' + m + '%</em> 伤害';
+  return '对单体 <em>' + m + '%</em> 伤害' + (b.mustCounter ? '（必克 ×1.5）' : '');
+}
+
 function renderCodex(focusId) {
   const box = $('#codexList');
   if (!box) return;
@@ -4780,7 +4792,7 @@ function renderCodex(focusId) {
         <div class="cdx-row"><i>普攻</i><span style="color:#5c5877">？？？</span></div>
         <div class="cdx-row"><i>王权技</i><span style="color:#5c5877">？？？</span></div>
         <div class="cdx-row"><i>大招</i><span style="color:#5c5877">？？？</span></div>
-        <div class="cdx-row"><i>线索</i><span style="color:#8f89ad">${s.gacha ? '在「群星圣堂」或深渊中等待被唤醒' : '尚未收入灵契'}</span></div>
+        <div class="cdx-row"><i>线索</i><span style="color:#8f89ad">${s.gacha ? '可在卡池、深渊首通或材料兑换中获得' : '尚未收入灵契'}</span></div>
       </div>`;
     }
     return `<div class="cdx${s.id === focusId ? ' hl' : ''}" data-sid="${s.id}">
@@ -4788,9 +4800,10 @@ function renderCodex(focusId) {
         <span class="cdx-emoji">${faceHTML(s)}</span><b>${s.name}</b>
         <span style="color:${el.color};font-size:10.5px">${el.emoji}${el.name}系</span>
         <span class="cdx-meta">${s.role}</span>
+        ${ARC_INFO[s.id] ? `<button class="btn ghost cdx-detail" data-arcana="${s.id}">详情</button>` : ''}
       </div>
       <div class="cdx-stats">HP ${s.hp} · 攻击 ${s.atk} · 灵速 ${s.spd}</div>
-      <div class="cdx-row"><i>普攻</i><span>单体 <em>100%</em> 攻击伤害，暴击率 12%（暴击 ×1.55）。
+      <div class="cdx-row"><i>普攻</i><span>${basicDesc(s)}<br>暴击率 12%（暴击 ×1.55）。
         ${s.mustCounter ? '<br><b style="color:#ffd76b">必克</b>：该角色的伤害恒定视为克制（×1.5），不受属性关系影响。' : ''}<br>
         命中回复气势 <em>+50</em>，目标也回 <em>+50</em>。</span></div>
       <div class="cdx-row"><i>王权技</i><span>${s.royal
@@ -5158,6 +5171,66 @@ const ARC_INFO = {
     ],
     tips: '她是「越挨打越强」的核心：命运塔罗挡得越多，她通灵越快，通灵后从单体随机两点变成横竖排 330% 洗地。要注意塔罗层数上限只有 5，别在关键时刻空池。',
     get: '深渊「女祭司」通关 4% 掉落「月辉塔罗」，集满 10 枚即可解锁。',
+  },
+  fool: {
+    need: 0, item: '灵晶', fn: '',
+    tags: ['光属性', '召唤师', '命运塔罗'],
+    lore: ['他把行囊系在一根木杖上，杖头悬着一枚小铃。走到哪里，哪里就是路的开头。', '「别问我下一步去哪儿——我已经在这儿了，这本身就是答案。」'],
+    kit: [
+      ['涟漪之舞（普攻）', '对单体造成 100% 伤害'],
+      ['愚者·命运之跃（大招）', '对单体造成 220% 伤害，并获得 1 层命运塔罗'],
+      ['入场被动', '开场为己方送上 1 层命运塔罗'],
+      ['召唤', '可契约召唤「倒吊人」「正义」协助作战'],
+    ],
+    tips: '命运塔罗体系的起点：层数全队共享，谁挨打谁调用。他是卡池里最易获取的一张，也是塔罗队的地基。',
+    get: '阿尔卡纳卡池 500 灵晶/抽。',
+  },
+  magician: {
+    need: 0, item: '灵晶', fn: '',
+    tags: ['暗属性', '阿尔卡纳 I', '前排压制'],
+    lore: ['指尖一张牌，桌上一座山。他从不解释原理，只在你分神的那一瞬把结果递到你手里。', '「你看见的是戏法——我看见的是你眨眼的时机。」'],
+    kit: [
+      ['戏法之刃（普攻）', '对单体造成 160% 伤害'],
+      ['魔术师·万象牵引（大招）', '对敌方前排合计造成 200% 伤害（平均分摊），并获得 1 层命运塔罗'],
+    ],
+    tips: '专门打前排的收割位，前排越少分摊越高。自带塔罗补给，很适合接进塔罗体系。',
+    get: '阿尔卡纳卡池 500 灵晶/抽。',
+  },
+  hermit: {
+    need: 0, item: '灵晶', fn: '',
+    tags: ['暗属性', '阿尔卡纳 IX', '保护 / 王权技'],
+    lore: ['她提着灯走进没有星的地方，只为让后来的人知道这里曾经有人走过。', '「灯不是为了照路——是为了让你看见，我也在走。」'],
+    kit: [
+      ['孤灯之刃（普攻）', '对单体造成 160% 伤害'],
+      ['隐者·提灯独行（大招）', '对单体造成 220% 伤害，并使己方唤灵师获得 1 回合嘲讽'],
+      ['入场被动', '以 100 气势进场，开局即可释放大招'],
+      ['王权技 · 星辉庇护', '己方属性 ≥3 种时：唤灵师生命上限 +25%、格挡 +50%，每回合获得 1 层命运塔罗'],
+    ],
+    tips: '开局满气 + 给唤灵师套嘲讽，等于开局就把保护体系搭好。适合当第二个坦克用。',
+    get: '阿尔卡纳卡池 500 灵晶/抽。',
+  },
+  hanged: {
+    need: 0, item: '灵晶', fn: '',
+    tags: ['草属性', '阿尔卡纳 XII', '控制 / 变形'],
+    lore: ['她被倒吊在树上七天七夜，换来的是一句真话：抽签不必怕，被抽中才是开始。', '「世界倒过来看，绳子就成了台阶。」'],
+    kit: [
+      ['倒悬一击（普攻）', '对单体造成 100% 伤害'],
+      ['倒吊人·献祭之绳（大招）', '对单体造成 200% 伤害'],
+      ['入场被动', '敌方最靠前与最靠后的单位化为「绵羊」（攻击 100 / 生命 1500，只会普攻），持续 1 回合，可被净化'],
+    ],
+    tips: '开局废掉敌方首尾两个位子，配合爆发可以直接拆掉对方前排核心。变身可被净化。',
+    get: '深渊「倒吊人」首通解锁。',
+  },
+  justice: {
+    need: 0, item: '灵晶', fn: '',
+    tags: ['火属性', '阿尔卡纳 XI', '裁决 / 追打'],
+    lore: ['天平从不倾斜，倾斜的是放在天平上的东西。她只负责让结果变得不可争辩。', '「我不裁决对错——我裁决代价。」'],
+    kit: [
+      ['天平之刃（普攻）', '对单体造成 150% 伤害'],
+      ['正义·最终裁断（大招）', '对全体造成 160% 伤害，再对生命值最低的敌人追加 150% 伤害'],
+    ],
+    tips: '全体压血 + 收割残血，很适合接在群体伤害之后收人头。',
+    get: '深渊「正义」首通解锁。',
   },
 };
 function openArc(id) {
