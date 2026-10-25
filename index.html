@@ -3954,7 +3954,7 @@ function computeRoundOrder() {
   const e = aliveUnits('enemy').filter(u => !bossAdd(u));
 
   // 同一方内部：前线列 → 后阵，每列从上到下
-  const bySide = arr => arr.slice().sort((a, b) => (b.col - a.col) || (a.row - b.row));
+  const bySide = arr => arr.slice().sort((a, b) => (a.slot != null ? a.slot : 99) - (b.slot != null ? b.slot : 99));
   const lead  = bySide(B.firstSide === 'player' ? p : e);
   const trail = bySide(B.firstSide === 'player' ? e : p);
 
