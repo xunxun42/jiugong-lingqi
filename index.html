@@ -2237,7 +2237,7 @@ const SPIRITS = [
     element:'fire', hp:1010, atk:158, spd:120, role:'阿尔卡纳·裁决', gacha:true,
     basic:{ name:'天平之刃', mult:1.5 },
     bossBasic:{ name:'天平双斩', mult:2.2, targets:2 },
-    bossUlt:{ name:'正义·天秤裁决', type:'aoe', mult:1.6, summonOnUlt:'sulfurSpirit' },
+    bossUlt:{ name:'正义·天秤裁决', type:'bossWipe', mult:10, mode:'all', summonOnUlt:'sulfurSpirit' },
     ultArt:'assets/spirits/justice_ult.webp',
     alwaysTaunt:true, soulEnergy:50, soulHeal:{ threshold:0.3, pct:0.05 },
     ult:{ name:'正义·最终裁断', type:'aoeFinisher', mult:1.6, extra:1.5,
@@ -2747,6 +2747,10 @@ function gainEnergy(u, amount) {
 /* 吸取气势：从目标抽取并转给自己（溢出照常累积） */
 function drainEnergy(src, tgt, amount) {
   if (!tgt || !tgt.alive) return 0;
+  if (tgt.isBoss) {
+    if (tgt.el) floatText(tgt.el, '免疫', 'buff', rnd(-8, 8));
+    return 0;
+  }
   const amt = Math.min(tgt.energy || 0, amount);
   if (amt <= 0) return 0;
   tgt.energy -= amt;
@@ -3721,6 +3725,7 @@ async function castUlt(u) {
         }
       }
       if (!targets.length) break;
+      if (ult.summonOnUlt) { const _s = summonUnit(ult.summonOnUlt, u.side, { hp: 1, atk: 1 }, u.uid); if (_s) log('🔥 ' + tag(u) + ' 召唤了 ' + tag(_s), 'sys'); }
       const each = mult2 / targets.length;
       log('🌙 ' + tag(u) + (awake ? ' 通灵·全阵月蚀（合计 ' : ' 月影横断（合计 ') + Math.round(mult2 * 100) + '%）', 'sys');
       for (const f of targets) { strike(u, f, each); await pace(80); }
