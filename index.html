@@ -2270,6 +2270,7 @@ const SPIRITS = [
           desc:'对全体敌人造成 160% 伤害，再对生命值最低的敌人追加 150% 伤害' } },
   /* ===== 阿尔卡纳 · 隐者 ===== */
   { id:'hermit', art:'assets/spirits/hermit.webp', name:'隐者', title:'阿尔卡纳 · IX', emoji:'🕯️',
+    startEnergy:100,
     royal:{ name:'隐者·星辉庇护', type:'callerBuff', elemNeed:3, hpPct:0.25, block:50, tarot:1,
             desc:'己方属性 ≥3 种时：唤灵师生命上限 +25%、格挡 +50%，每回合得 1 层命运塔罗' },
     element:'dark', hp:980, atk:152, spd:124, role:'阿尔卡纳·守夜', gacha:true,
@@ -5447,6 +5448,13 @@ async function startBattle() {
   B.tarot = { player: 0, enemy: 0 };
   B.units.forEach(function (u) { var g = (u.spirit && u.spirit.grantsTarot) || 0; if (g) addTarot(u.side, g); });
   B.units.forEach(function (u) { if (u.spirit && u.spirit.alwaysTaunt) u.alwaysTaunt = true; });
+  /* 入场满气类被动（隐者） */
+  B.units.forEach(function (u) {
+    if (u.spirit && u.spirit.startEnergy) {
+      u.energy = Math.min(typeof ENERGY_MAX === 'number' ? ENERGY_MAX : 100, u.spirit.startEnergy);
+      if (u.el && u.energy >= 100) u.el.classList.add('ready');
+    }
+  });
   B.units.filter(function (x) { return x.spirit && x.spirit.onEnterSheep && x.side === 'player'; }).forEach(function (src) {
     var foes = B.units.filter(function (x) { return x.side !== src.side && x.alive; });
     if (!foes.length) return;
