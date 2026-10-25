@@ -752,6 +752,7 @@ body.royal-on .royal-strip{
 .gp-btn:disabled{opacity:.35;cursor:default}
 .gp-info{font-size:11px;color:var(--muted);font-weight:800}
 /* 通灵技选择 */
+.pc-sub{font-size:9.5px;color:#cfc9d8;text-align:center;padding:0 4px 7px;line-height:1.35}
 .caller-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:12px}
 .caller-card{
   position:relative;border-radius:12px;overflow:hidden;cursor:pointer;
@@ -1777,7 +1778,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
   <div class="preset-body">
     <div class="rail-sec">
       <div class="preset-title">阵容预览</div>
-      <button class="rail-btn" id="btnComp">查看当前阵容</button>`r`n        <button class="rail-btn" id="btnCaller" style="margin-top:6px">选择通灵技</button>
+      <button class="rail-btn" id="btnComp">查看当前阵容</button>`r`n        <div id="railPickBox"></div>
     </div>
     <div class="rail-sec">
       <div class="preset-title">阵容预设</div>
@@ -1809,15 +1810,16 @@ table.stats .tname em{font-style:normal;font-size:13px}
   <div class="aw-skill" id="awakenSkill"></div>
   <div class="aw-line" id="awakenLine"></div>
 </div>
-<!-- ================= 通灵技选择 ================= -->
-<div class="mask hidden" id="callerModal">
-  <div class="modal" style="width:min(560px,94vw)">
-    <h2 class="h2sm">选择阵上使用的通灵技</h2>
-    <div class="sub">同阵营只生效一位，其余唤灵师退化为普通单位</div>
-    <div class="caller-grid" id="callerList"></div>
-    <div class="btnrow" style="margin-top:14px"><button class="btn primary" id="btnCallerClose">关闭</button></div>
+<!-- ================= 选择生效对象（通灵技 / 王权技 / 契约兽） ================= -->
+<div class="mask hidden" id="pickModal">
+  <div class="modal" style="width:min(620px,94vw)">
+    <h2 class="h2sm" id="pickTitle">选择</h2>
+    <div class="sub" id="pickSub"></div>
+    <div class="caller-grid" id="pickList"></div>
+    <div class="btnrow" style="margin-top:14px"><button class="btn primary" id="btnPickClose">关闭</button></div>
   </div>
 </div>
+
 <!-- ================= 阵容预览 ================= -->
 <div class="mask hidden" id="compModal">
   <div class="modal comp-modal">
@@ -4058,8 +4060,14 @@ function renderRoyal(units) {
 function applyRoyal() {
   if (!B) return;
   if (state.royalOff) { log('👑 王权技已关闭（设置中开启）', 'sys'); return; }
-  const holders = B.units.filter(u => u.side === 'player' && u.alive && u.spirit && u.spirit.royal);
+  let holders = B.units.filter(u => u.side === 'player' && u.alive && u.spirit && u.spirit.royal);
   if (!holders.length) return;
+  /* 多个王权技持有者时，只生效玩家选中的那一位 */
+  if (holders.length > 1) {
+    const pick = state.activeRoyalId;
+    const hit = pick ? holders.filter(function (h) { return h.spirit.id === pick; }) : [];
+    holders = hit.length ? hit : [holders[0]];
+  }
   const mates = aliveUnits('player');
   let total = 0, healed = 0;
   for (const h of holders) {
@@ -4306,9 +4314,60 @@ function pickCaller(id) {
   saveProgress();
   try { renderRail(); } catch (e) {}
   try { renderWakeBar(); } catch (e) {}
-  var m = document.getElementById('callerModal'); if (m) m.classList.add('hidden');
+  var m = document.getElementById('pickModal'); if (m) m.classList.add('hidden');
   var nm = (SPIRITS.find(function (s) { return s.id === id; }) || {}).name || '—';
   toast('通灵技已切换为 ' + nm);
+  sfx.tick();
+}
+/* ===== 通用「选择生效对象」面板：通灵技 / 王权技 / 契约兽 ===== */
+const PICK_KIND = {
+  caller:   { title: '选择阵上使用的通灵技', sub: '同阵营只生效一位，其余唤灵师退化为普通单位', field: 'activeCallerId', test: s => s.profession === 'spiritcaller' },
+  royal:    { title: '选择生效的王权技',     sub: '多个王权技同时上场时，只有你选的那一个会触发', field: 'activeRoyalId',    test: s => !!s.royal },
+  contract: { title: '选择生效的契约兽',     sub: '多个召唤师同时上场时，只有你选的那一个会召唤', field: 'activeContractId', test: s => s.profession === 'summoner' },
+};
+let pickKind = 'caller';
+function pickOptions(kind) {
+  const ids = Object.keys(state.lineup || {}).map(function (k) { return state.lineup[k]; });
+  const out = [];
+  ids.forEach(function (id) {
+    const sp = SPIRITS.find(function (s) { return s.id === id; });
+    if (sp && PICK_KIND[kind].test(sp) && out.indexOf(sp) < 0) out.push(sp);
+  });
+  return out;
+}
+function openPick(kind) {
+  pickKind = kind || 'caller';
+  const K = PICK_KIND[pickKind];
+  const box = document.getElementById('pickList');
+  if (!box) return;
+  document.getElementById('pickTitle').textContent = K.title;
+  document.getElementById('pickSub').textContent = K.sub;
+  const opts = pickOptions(pickKind);
+  const cur = state[K.field] || (opts[0] ? opts[0].id : null);
+  box.innerHTML = opts.length ? opts.map(function (sp) {
+    const on = sp.id === cur;
+    let extra = '';
+    if (pickKind === 'royal') extra = '<div class="pc-sub">' + (sp.royal ? sp.royal.name : '') + '</div>';
+    if (pickKind === 'contract') extra = '<div class="pc-sub">' + ((sp.summoner && sp.summoner.units) || []).map(function (u) {
+      const x = SPIRITS.find(function (y) { return y.id === u; });
+      return x ? x.name : u;
+    }).join(' / ') + '</div>';
+    return '<div class="caller-card' + (on ? ' on' : '') + '" data-pick="' + sp.id + '">'
+      + '<div class="cc-pic">' + (sp.art ? '<img src="' + sp.art + '" alt="">' : '<span style="font-size:34px">' + sp.emoji + '</span>') + '</div>'
+      + (on ? '<div class="cc-badge">当前生效</div>' : '')
+      + '<div class="cc-nm">' + sp.name + '</div>' + extra + '</div>';
+  }).join('') : '<div style="color:var(--muted);font-size:12px">场上没有可选项</div>';
+  document.getElementById('pickModal').classList.remove('hidden');
+}
+function doPick(id) {
+  const K = PICK_KIND[pickKind];
+  state[K.field] = id || null;
+  saveProgress();
+  renderRail();
+  try { renderWakeBar(); } catch (e) {}
+  const m = document.getElementById('pickModal'); if (m) m.classList.add('hidden');
+  const nm = (SPIRITS.find(function (s) { return s.id === id; }) || {}).name || '—';
+  toast('已切换为 ' + nm);
   sfx.tick();
 }
 function openCallerPick() {
@@ -4326,7 +4385,7 @@ function openCallerPick() {
       + '<div class="cc-nm">' + sp.name + '</div>'
       + '</div>';
   }).join('');
-  document.getElementById('callerModal').classList.remove('hidden');
+  document.getElementById('pickModal').classList.remove('hidden');
 }
 function kaiyangOf(side) {
   return activeCaller(side);
@@ -4663,6 +4722,25 @@ function renderRail() {
     const holders = Object.values(state.lineup).map(id => SPIRITS.find(s => s.id === id)).filter(s => s && s.royal);
     if (!holders.length) rr.innerHTML = '<em>当前阵容无王权技</em>';
     else rr.innerHTML = holders.map(s => '<b>👑 ' + s.name + '「' + s.royal.name + '」</b><em>' + s.royal.desc + '</em>').join('');
+  }
+const pb = document.getElementById('railPickBox');
+  if (pb) {
+    const rows = [
+      { kind: 'caller',   label: '通灵技', items: pickOptions('caller')   },
+      { kind: 'royal',    label: '王权技', items: pickOptions('royal')    },
+      { kind: 'contract', label: '契约兽', items: pickOptions('contract') },
+    ];
+    pb.innerHTML = rows.map(function (r) {
+      if (!r.items.length) return '';
+      const field = PICK_KIND[r.kind].field;
+      const curId = state[field];
+      const cur = r.items.filter(function (s) { return s.id === curId; })[0] || r.items[0];
+      if (r.items.length === 1) {
+        return '<div class="rail-one">' + r.label + '：<b>' + cur.name + '</b></div>';
+      }
+      return '<button class="rail-btn" id="btn' + r.kind.charAt(0).toUpperCase() + r.kind.slice(1) + '" data-pickkind="' + r.kind + '">'
+        + r.label + '：' + cur.name + '（' + r.items.length + ' 选 1）</button>';
+    }).join('');
   }
   const rb = document.getElementById('railBeast');
   if (rb) {
@@ -6862,8 +6940,10 @@ init();
 document.addEventListener('click', function (ev) {
   const _gp = ev.target.closest && ev.target.closest('#growList [data-gp]');
   if (_gp) { growPage += (_gp.dataset.gp === 'next' ? 1 : -1); if (growPage < 0) growPage = 0; renderGrow(); sfx.tick(); return; }
-  const _cc = ev.target.closest && ev.target.closest('#callerList [data-caller]');
-  if (_cc) { if (typeof pickCaller === 'function') pickCaller(_cc.dataset.caller); return; }
+  const _pk = ev.target.closest && ev.target.closest('[data-pickkind]');
+  if (_pk) { if (typeof openPick === 'function') openPick(_pk.dataset.pickkind); return; }
+  const _cc = ev.target.closest && ev.target.closest('#pickList [data-pick]');
+  if (_cc) { if (typeof doPick === 'function') doPick(_cc.dataset.pick); return; }
   const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
   if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const b = ev.target.closest && ev.target.closest('button[id]');
@@ -6882,8 +6962,10 @@ document.addEventListener('click', function (ev) {
     else if (id === 'btnFull') { if (typeof toggleFull === 'function') toggleFull(); }
     else if (id === 'btnKy') { if (typeof openKy === 'function') openKy(); }
     else if (id === 'btnComp') { if (typeof openComp === 'function') openComp(); }
-    else if (id === 'btnCaller') { if (typeof openCallerPick === 'function') openCallerPick(); }
-    else if (id === 'btnCallerClose') { const _cm = document.getElementById('callerModal'); if (_cm) _cm.classList.add('hidden'); }
+    else if (id === 'btnCaller') { openPick('caller'); }
+    else if (id === 'btnRoyal') { openPick('royal'); }
+    else if (id === 'btnContract') { openPick('contract'); }
+    else if (id === 'btnPickClose') { const _cm = document.getElementById('pickModal'); if (_cm) _cm.classList.add('hidden'); }
     else if (id === 'btnBag' || id === 'btnGrow') { if (typeof openBag === 'function') openBag(); }
     else if (id === 'btnDrawSoul') { var _g = drawSoul(); if (_g) { var T = SOUL_TYPES[_g.type]; toast('抽到 ' + T.name + ' +' + _g.value + (T.unit || '') + ' · ' + _g.rarity); } renderGrow(); }
     else if (id === 'btnDrawSoul10') { drawSoul10(); renderGrow(); }
@@ -6949,8 +7031,10 @@ document.addEventListener('click', function (ev) {
 document.addEventListener('click', function (ev) {
   const _gp = ev.target.closest && ev.target.closest('#growList [data-gp]');
   if (_gp) { growPage += (_gp.dataset.gp === 'next' ? 1 : -1); if (growPage < 0) growPage = 0; renderGrow(); sfx.tick(); return; }
-  const _cc = ev.target.closest && ev.target.closest('#callerList [data-caller]');
-  if (_cc) { if (typeof pickCaller === 'function') pickCaller(_cc.dataset.caller); return; }
+  const _pk = ev.target.closest && ev.target.closest('[data-pickkind]');
+  if (_pk) { if (typeof openPick === 'function') openPick(_pk.dataset.pickkind); return; }
+  const _cc = ev.target.closest && ev.target.closest('#pickList [data-pick]');
+  if (_cc) { if (typeof doPick === 'function') doPick(_cc.dataset.pick); return; }
   const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
   if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const b = ev.target.closest && ev.target.closest('#hallSeries [data-series]');
@@ -6971,8 +7055,10 @@ document.addEventListener('click', function (ev) {
 document.addEventListener('click', function (ev) {
   const _gp = ev.target.closest && ev.target.closest('#growList [data-gp]');
   if (_gp) { growPage += (_gp.dataset.gp === 'next' ? 1 : -1); if (growPage < 0) growPage = 0; renderGrow(); sfx.tick(); return; }
-  const _cc = ev.target.closest && ev.target.closest('#callerList [data-caller]');
-  if (_cc) { if (typeof pickCaller === 'function') pickCaller(_cc.dataset.caller); return; }
+  const _pk = ev.target.closest && ev.target.closest('[data-pickkind]');
+  if (_pk) { if (typeof openPick === 'function') openPick(_pk.dataset.pickkind); return; }
+  const _cc = ev.target.closest && ev.target.closest('#pickList [data-pick]');
+  if (_cc) { if (typeof doPick === 'function') doPick(_cc.dataset.pick); return; }
   const _bt = ev.target.closest && ev.target.closest('#bagTabs .bag-tab');
   if (_bt) { if (typeof bagTab === 'function') bagTab(_bt.dataset.bag); return; }
   const g = ev.target.closest && ev.target.closest('#presetList [data-p]');
