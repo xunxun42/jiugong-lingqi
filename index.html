@@ -751,6 +751,9 @@ body.royal-on .royal-strip{
 }
 .gp-btn:disabled{opacity:.35;cursor:default}
 .gp-info{font-size:11px;color:var(--muted);font-weight:800}
+.rail-one{font-size:10.5px;color:#cfc9d8;padding:3px 0}
+.rail-one b{color:#ffd76b}
+.rail-desc{font-size:9.5px;color:var(--muted);line-height:1.5;padding:2px 0 5px}
 /* 通灵技选择 */
 .pc-sub{font-size:9.5px;color:#cfc9d8;text-align:center;padding:0 4px 7px;line-height:1.35}
 .caller-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:12px}
@@ -1778,7 +1781,7 @@ table.stats .tname em{font-style:normal;font-size:13px}
   <div class="preset-body">
     <div class="rail-sec">
       <div class="preset-title">阵容预览</div>
-      <button class="rail-btn" id="btnComp">查看当前阵容</button>`r`n        <div id="railPickBox"></div>
+      <button class="rail-btn" id="btnComp">查看当前阵容</button>
     </div>
     <div class="rail-sec">
       <div class="preset-title">阵容预设</div>
@@ -1786,12 +1789,8 @@ table.stats .tname em{font-style:normal;font-size:13px}
       <div class="preset-hint">点格子读取 · 点「存」覆盖</div>
     </div>
     <div class="rail-sec">
-      <div class="preset-title">王权技</div>
-      <div class="rail-royal" id="railRoyal">无</div>
-    </div>
-    <div class="rail-sec">
-      <div class="preset-title">契约兽</div>
-      <div class="rail-beast" id="railBeast">无</div>
+      <div class="preset-title">生效选择</div>
+      <div id="railPickBox"></div>
     </div>
   </div>
 </div>
@@ -4736,7 +4735,13 @@ const pb = document.getElementById('railPickBox');
       const curId = state[field];
       const cur = r.items.filter(function (s) { return s.id === curId; })[0] || r.items[0];
       if (r.items.length === 1) {
-        return '<div class="rail-one">' + r.label + '：<b>' + cur.name + '</b></div>';
+        var d = '';
+        if (r.kind === 'royal' && cur.royal) d = '<div class="rail-desc">' + cur.royal.desc + '</div>';
+        if (r.kind === 'contract') {
+          var pool = (cur.summoner && cur.summoner.units) || [];
+          d = '<div class="rail-desc">' + pool.map(function (u) { var x = SPIRITS.find(function (y) { return y.id === u; }); return x ? x.name : u; }).join(' / ') + '</div>';
+        }
+        return '<div class="rail-one">' + r.label + '：<b>' + cur.name + '</b></div>' + d;
       }
       return '<button class="rail-btn" id="btn' + r.kind.charAt(0).toUpperCase() + r.kind.slice(1) + '" data-pickkind="' + r.kind + '">'
         + r.label + '：' + cur.name + '（' + r.items.length + ' 选 1）</button>';
